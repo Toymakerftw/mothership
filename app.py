@@ -60,6 +60,8 @@ def chat():
         "Components: attractive header, content area with grid-based layout when applicable, and a clean action bar. "
         "Still provide three files only: index.html (links Tailwind CDN), styles.css (only minimal custom additions if needed), and script.js. "
         "Do not inline CSS except Tailwind CDN; prefer Tailwind classes in markup. "
+        "Icons: include and use Feather Icons (via CDN script, e.g., https://unpkg.com/feather-icons) and/or Font Awesome (via CDN link) wherever icons improve UX (buttons, nav, status). "
+        "If using Feather, add data-feather attributes in markup and call feather.replace() in script.js after DOM load. If using Font Awesome, use <i> tags with appropriate classes. "
         "Use modern JS (no frameworks) and ensure offline support works with provided service worker outside of these files. "
         "Separate each file with the following exact tags: [HTML]...[/HTML] [CSS]...[/CSS] [JS]...[/JS]"
     )
