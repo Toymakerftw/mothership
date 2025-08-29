@@ -8,6 +8,7 @@ import base64
 import hashlib
 import time
 import sqlite3
+import uuid
 from io import BytesIO
 from cachetools import TTLCache
 from flask_compress import Compress
@@ -69,6 +70,10 @@ def init_db():
                   FOREIGN KEY (app_id) REFERENCES apps (id))''')
     conn.commit()
     conn.close()
+
+def generate_unique_app_name(prompt):
+    """Generate a unique app name using a UUID"""
+    return str(uuid.uuid4())
 
 # Initialize database on startup
 init_db()
@@ -475,14 +480,11 @@ def generate_files():
         logger.warning("Missing response text in generate request")
         return jsonify({"status": "error", "message": "Missing response text"}), 400
     
-    if not prompt:
-        prompt = provided_app_name or "pwa-app"
+    # Ensure we have a valid prompt
+    if not prompt or prompt.strip() == "":
+        prompt = "pwa-app"
     
-    if provided_app_name:
-        app_name = re.sub(r'[^a-z0-9\-]', '', str(provided_app_name).replace(" ", "-").lower())
-    else:
-        app_name = re.sub(r'[^a-z0-9\-]', '', prompt.replace(" ", "-").lower())
-    
+    app_name = generate_unique_app_name(prompt)
     app_dir = f"generated/{app_name}"
     
     try:

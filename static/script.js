@@ -1,5 +1,6 @@
 let currentAppName = "";
 let currentResponse = "";
+let originalPrompt = ""; // Store the original prompt
 
 // Add event listener for Enter key
 document.getElementById("userInput").addEventListener("keypress", function(e) {
@@ -32,6 +33,9 @@ function formatMessage(content, isUser = false) {
 async function sendPrompt(files = null) {
     const userInput = document.getElementById("userInput").value.trim();
     if (!userInput) return;
+
+    // Store the original prompt
+    originalPrompt = userInput;
 
     // Display user message
     const chatBox = document.getElementById("chatBox");
@@ -73,8 +77,10 @@ async function sendPrompt(files = null) {
             
             // Show action buttons
             document.getElementById("actionButtons").style.display = "flex";
+            
+            // Generate a unique app name based on the original prompt
             if (!currentAppName) {
-                currentAppName = userInput.replace(/[^a-z0-9\-]/g, '').toLowerCase();
+                currentAppName = generateUniqueAppName(userInput);
                 localStorage.setItem("currentAppName", currentAppName);
             }
         }
@@ -91,6 +97,16 @@ async function sendPrompt(files = null) {
     }
 }
 
+// Helper function to generate unique app names
+function generateUniqueAppName(prompt) {
+    const cleanInput = prompt.replace(/[^a-z0-9\s]/gi, '').toLowerCase();
+    const words = cleanInput.split(/\s+/).filter(word => word.length > 0);
+    // Take first few words and add timestamp
+    const nameWords = words.slice(0, 4).join('-');
+    const timestamp = Date.now().toString(36); // Base-36 timestamp for shorter string
+    return `${nameWords}-${timestamp}`.replace(/[^a-z0-9\-]/g, '');
+}
+
 async function generateApp() {
     if (!currentResponse) return;
 
@@ -102,14 +118,19 @@ async function generateApp() {
     document.getElementById("actionButtons").style.display = "none";
 
     try {
+        // Generate improved app name if not already set
+        if (!currentAppName) {
+            currentAppName = generateUniqueAppName(originalPrompt || "pwa-app");
+        }
+        
         const response = await fetch("/generate", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({ 
-                prompt: document.getElementById("userInput").dataset.originalPrompt || document.getElementById("userInput").value || "pwa-app",
-                app_name: currentAppName || (document.getElementById("userInput").value || "pwa-app").replace(/[^a-z0-9\-]/g, '').toLowerCase(),
+                prompt: originalPrompt || "pwa-app",
+                app_name: currentAppName,
                 response_text: currentResponse 
             }),
         });
