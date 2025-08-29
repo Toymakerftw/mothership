@@ -5,7 +5,10 @@ import re
 import json
 import logging
 import base64
+import hashlib
+import time
 from io import BytesIO
+from cachetools import TTLCache
 
 from config import (
     OPENROUTER_API_KEY, OPENROUTER_API_URL,
@@ -18,6 +21,12 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Initialize caches with TTL (time-to-live)
+# Cache for optimized prompts (5 minutes TTL, max 100 entries)
+prompt_cache = TTLCache(maxsize=100, ttl=300)
+# Cache for generated code responses (10 minutes TTL, max 50 entries)
+code_cache = TTLCache(maxsize=50, ttl=600)
 
 @app.route("/")
 def index():
@@ -143,7 +152,14 @@ def chat():
             user_prompt += f"--- {filename} ---\n{content}\n"
 
     try:
-        # Step 1: Optimize Prompt
+        # Create cache keys
+        prompt_cache_key = hashlib.md5(user_prompt.encode()).hexdigest()
+        
+        # Track if we used cached responses
+        prompt_cached = False
+        code_cached = False
+        
+        # Step 1: Optimize Prompt (with caching)
         optimizer_system = """
 You are a prompt optimizer for PWA generation. Refine the user's prompt to be more detailed using this structure:
 
@@ -184,10 +200,22 @@ You are a prompt optimizer for PWA generation. Refine the user's prompt to be mo
 
 Output only the optimized prompt following this structure.
 """
-        logger.info("Optimizing prompt...")
-        optimized_prompt = call_openrouter(OPTIMIZER_MODEL, optimizer_system, user_prompt)
-
-        # Step 2: Generate Code
+        
+        # Check cache first
+        if prompt_cache_key in prompt_cache:
+            logger.info("Using cached optimized prompt")
+            optimized_prompt = prompt_cache[prompt_cache_key]
+            prompt_cached = True
+        else:
+            logger.info("Optimizing prompt...")
+            optimized_prompt = call_openrouter(OPTIMIZER_MODEL, optimizer_system, user_prompt)
+            # Cache the optimized prompt
+            prompt_cache[prompt_cache_key] = optimized_prompt
+        
+        # Create cache key for code generation
+        code_cache_key = hashlib.md5(optimized_prompt.encode()).hexdigest()
+        
+        # Step 2: Generate Code (with caching)
         generator_system = """
 ONLY USE HTML, CSS AND JAVASCRIPT. Create the best, modern, responsive UI possible.
 MAKE IT RESPONSIVE USING TAILWINDCSS. Import Tailwind via CDN in <head> using <script src="https://cdn.tailwindcss.com"></script>.
@@ -199,8 +227,17 @@ IMPORTANT: For this API, ALWAYS output exactly three files: index.html (with Tai
 Ensure offline compatibility with an external service worker (do not generate it inside these files). Include <link rel="manifest" href="manifest.json"> in index.html and service worker registration in script.js: if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }
 Separate each file with the following exact tags: [HTML]...[/HTML] [CSS]...[/CSS] [JS]...[/JS]
 """
-        logger.info("Generating code...")
-        generated_response = call_openrouter(GENERATOR_MODEL, generator_system, f"Create a PWA for: {optimized_prompt}")
+        
+        # Check cache first
+        if code_cache_key in code_cache:
+            logger.info("Using cached generated code")
+            generated_response = code_cache[code_cache_key]
+            code_cached = True
+        else:
+            logger.info("Generating code...")
+            generated_response = call_openrouter(GENERATOR_MODEL, generator_system, f"Create a PWA for: {optimized_prompt}")
+            # Cache the generated code
+            code_cache[code_cache_key] = generated_response
 
         # Step 3: Verify and Iterate
         current_response = generated_response
@@ -268,7 +305,8 @@ Output format:
 
         return jsonify({
             "response": current_response,
-            "js_bug_report": js_bug_report if js_bug_report else ["No JavaScript errors detected"]
+            "js_bug_report": js_bug_report if js_bug_report else ["No JavaScript errors detected"],
+            "cached": prompt_cached and code_cached  # True only if both prompt and code were cached
         })
     except ValueError as e:
         return jsonify({"error": str(e), "js_bug_report": []}), 500
@@ -453,23 +491,37 @@ def rework_app():
     if not app_name or not rework_prompt:
         return jsonify({"error": "Missing app_name or rework_prompt"}), 400
 
-    try:
-        # 1. Read existing files
-        app_dir = os.path.join("generated", app_name)
-        if not os.path.isdir(app_dir):
-            return jsonify({"error": "App not found"}), 404
+    # Create cache key for rework
+    rework_cache_key = hashlib.md5(f"{app_name}:{rework_prompt}".encode()).hexdigest()
+    
+    # Track if we used cached response
+    rework_cached = False
+    
+    # Check cache first
+    if rework_cache_key in code_cache:
+        logger.info("Using cached rework response")
+        reworked_response = code_cache[rework_cache_key]
+        # Skip to verification step with cached response
+        current_response = reworked_response
+        rework_cached = True
+    else:
+        try:
+            # 1. Read existing files
+            app_dir = os.path.join("generated", app_name)
+            if not os.path.isdir(app_dir):
+                return jsonify({"error": "App not found"}), 404
 
-        files = {}
-        for filename in ["index.html", "styles.css", "script.js"]:
-            filepath = os.path.join(app_dir, filename)
-            if os.path.isfile(filepath):
-                with open(filepath, "r", encoding="utf-8") as f:
-                    files[filename] = f.read()
-            else:
-                files[filename] = ""
+            files = {}
+            for filename in ["index.html", "styles.css", "script.js"]:
+                filepath = os.path.join(app_dir, filename)
+                if os.path.isfile(filepath):
+                    with open(filepath, "r", encoding="utf-8") as f:
+                        files[filename] = f.read()
+                else:
+                    files[filename] = ""
 
-        # 2. Construct a detailed prompt for the rework
-        rework_user_prompt = f"""
+            # 2. Construct a detailed prompt for the rework
+            rework_user_prompt = f"""
 Rework the following PWA application based on the user's request.
 
 User Request: {rework_prompt}
@@ -485,8 +537,8 @@ Current Files:
 {files["script.js"]}
 """
 
-        # 3. Call the generator model with the rework prompt
-        generator_system = """
+            # 3. Call the generator model with the rework prompt
+            generator_system = """
 You are an expert PWA developer. Your task is to rework an existing application based on the user's request.
 - ONLY USE HTML, CSS AND JAVASCRIPT.
 - Make sure to only make changes to the section mentioned in the rework prompt.
@@ -497,55 +549,61 @@ You are an expert PWA developer. Your task is to rework an existing application 
 - ALWAYS output exactly three files: index.html, styles.css, and script.js.
 - Separate each file with the following exact tags: [HTML]...[/HTML] [CSS]...[/CSS] [JS]...[/JS]
 """
-        logger.info(f"Reworking app: {app_name}")
-        reworked_response = call_openrouter(GENERATOR_MODEL, generator_system, rework_user_prompt)
+            logger.info(f"Reworking app: {app_name}")
+            reworked_response = call_openrouter(GENERATOR_MODEL, generator_system, rework_user_prompt)
+            # Cache the rework response
+            code_cache[rework_cache_key] = reworked_response
 
-        # 4. Verify and Iterate (similar to the /chat endpoint)
-        current_response = reworked_response
-        for i in range(MAX_VERIFICATION_ITERATIONS):
-            logger.info(f"Rework verification iteration {i+1}/{MAX_VERIFICATION_ITERATIONS}")
-            verifier_system = """
+            # Set current_response for verification step
+            current_response = reworked_response
+        except Exception as e:
+            logger.error(f"Error reworking app {app_name}: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+
+    # 4. Verify and Iterate (similar to the /chat endpoint)
+    for i in range(MAX_VERIFICATION_ITERATIONS):
+        logger.info(f"Rework verification iteration {i+1}/{MAX_VERIFICATION_ITERATIONS}")
+        verifier_system = """
 You are a code reviewer for HTML/CSS/JS PWAs. Check the generated code for:
 - Syntax errors, bugs, or inefficiencies.
 - Compliance with the rework request.
 - That only the requested section was changed.
 Output: If good, say 'VALID' and return the code unchanged. If issues, say 'INVALID', list fixes, and provide the full revised code in [HTML]...[/HTML] [CSS]...[/CSS] [JS]...[/JS] format.
 """
-            verification = call_openrouter(VERIFIER_MODEL, verifier_system, current_response)
-            
-            if "VALID" in verification.upper():
-                logger.info("Reworked code verified as valid.")
-                break
-            elif "INVALID" in verification.upper():
-                logger.info("Reworked code invalid; extracting revisions.")
-                current_response = extract_revised_code(verification)
-            else:
-                raise ValueError("Verification response unclear")
+        verification = call_openrouter(VERIFIER_MODEL, verifier_system, current_response)
+        
+        if "VALID" in verification.upper():
+            logger.info("Reworked code verified as valid.")
+            break
+        elif "INVALID" in verification.upper():
+            logger.info("Reworked code invalid; extracting revisions.")
+            current_response = extract_revised_code(verification)
+            # Update cache with revised code
+            code_cache[rework_cache_key] = current_response
+        else:
+            raise ValueError("Verification response unclear")
 
-        # 5. Save the reworked files
-        html_code = extract_code(current_response, "HTML")
-        css_code = extract_code(current_response, "CSS")
-        js_code = extract_code(current_response, "JS")
+    # 5. Save the reworked files
+    html_code = extract_code(current_response, "HTML")
+    css_code = extract_code(current_response, "CSS")
+    js_code = extract_code(current_response, "JS")
 
-        if html_code:
-            with open(os.path.join(app_dir, "index.html"), "w", encoding="utf-8") as f:
-                f.write(html_code)
-        if css_code:
-            with open(os.path.join(app_dir, "styles.css"), "w", encoding="utf-8") as f:
-                f.write(css_code)
-        if js_code:
-            with open(os.path.join(app_dir, "script.js"), "w", encoding="utf-8") as f:
-                f.write(js_code)
+    if html_code:
+        with open(os.path.join(app_dir, "index.html"), "w", encoding="utf-8") as f:
+            f.write(html_code)
+    if css_code:
+        with open(os.path.join(app_dir, "styles.css"), "w", encoding="utf-8") as f:
+            f.write(css_code)
+    if js_code:
+        with open(os.path.join(app_dir, "script.js"), "w", encoding="utf-8") as f:
+            f.write(js_code)
 
-        return jsonify({
-            "status": "success",
-            "app_name": app_name,
-            "preview_url": f"/generated/{app_name}/index.html"
-        })
-
-    except Exception as e:
-        logger.error(f"Error reworking app {app_name}: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+    return jsonify({
+        "status": "success",
+        "app_name": app_name,
+        "preview_url": f"/generated/{app_name}/index.html",
+        "cached": rework_cached
+    })
 
 if __name__ == "__main__":
     os.makedirs("generated", exist_ok=True)

@@ -65,7 +65,11 @@ async function sendPrompt(files = null) {
             chatBox.innerHTML += formatMessage(`Error: ${result.error}`, false);
         } else {
             currentResponse = result.response;
-            chatBox.innerHTML += formatMessage(`I've created a plan for your "${userInput}" PWA. Click "Compile App" to create the application.`, false);
+            let message = `I've created a plan for your "${userInput}" PWA. Click "Compile App" to create the application.`;
+            if (result.cached) {
+                message += " (Used cached response to save costs)";
+            }
+            chatBox.innerHTML += formatMessage(message, false);
             
             // Show action buttons
             document.getElementById("actionButtons").style.display = "flex";
@@ -201,7 +205,11 @@ async function reworkApp(rework_prompt_from_url = null) {
         const result = await response.json();
         
         if (result.status === "success") {
-            chatBox.innerHTML += formatMessage(`Success! Your app has been reworked.`, false);
+            let message = "Success! Your app has been reworked.";
+            if (result.cached) {
+                message += " (Used cached response to save costs)";
+            }
+            chatBox.innerHTML += formatMessage(message, false);
             
             // Show action buttons again
             document.getElementById("actionButtons").style.display = "flex";
