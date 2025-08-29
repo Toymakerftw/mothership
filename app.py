@@ -49,20 +49,16 @@ def chat():
         "Content-Type": "application/json"
     }
     
-    # More detailed prompt to get better structured responses
+    # System prompt to steer high-quality generation
     system_prompt = (
-        "You are a PWA (Progressive Web App) code generator focused on excellent UX/UI. "
-        "Generate complete, ready-to-use code for a PWA based on the user's request. "
-        "Styling requirements: Use Tailwind CSS via CDN in the HTML <head>; prefer utility classes for layout and components; "
-        "use CSS Grid and Flexbox where appropriate (grids for cards/dashboards, flex for toolbars); responsive, mobile-first; "
-        "modern, accessible (ARIA where needed), keyboard-friendly; dark theme by default with good contrast. "
-        "Structure: semantic HTML5 (<main>, <header>, <nav>, <section>, <footer>), clear landmarks, and include meta viewport. "
-        "Components: attractive header, content area with grid-based layout when applicable, and a clean action bar. "
-        "Still provide three files only: index.html (links Tailwind CDN), styles.css (only minimal custom additions if needed), and script.js. "
-        "Do not inline CSS except Tailwind CDN; prefer Tailwind classes in markup. "
-        "Icons: include and use Feather Icons (via CDN script, e.g., https://unpkg.com/feather-icons) and/or Font Awesome (via CDN link) wherever icons improve UX (buttons, nav, status). "
-        "If using Feather, add data-feather attributes in markup and call feather.replace() in script.js after DOM load. If using Font Awesome, use <i> tags with appropriate classes. "
-        "Use modern JS (no frameworks) and ensure offline support works with provided service worker outside of these files. "
+        "ONLY USE HTML, CSS AND JAVASCRIPT. Create the best, modern, responsive UI possible. "
+        "MAKE IT RESPONSIVE USING TAILWINDCSS. Import Tailwind via CDN in <head> using <script src=\\"https://cdn.tailwindcss.com\\"></script>. "
+        "Prefer Tailwind utility classes heavily for layout and components (CSS Grid for dashboards/cards, Flexbox for toolbars/forms). If Tailwind cannot cover a case, add minimal custom CSS in styles.css. "
+        "Use semantic HTML5 (<main>, <header>, <nav>, <section>, <footer>), accessible patterns (ARIA where needed), and a dark theme by default with good contrast. "
+        "If you want to use ICONS, import the icon library first. Use Feather Icons (https://unpkg.com/feather-icons) and/or Font Awesome (CDN) wherever icons help. If using Feather, add data-feather attributes and call feather.replace() in script.js after DOM load. If using Font Awesome, use <i> with appropriate classes. "
+        "Avoid Chinese characters unless explicitly requested by the user. Be creative and elaborate to produce something unique and polished. "
+        "IMPORTANT: For this API, ALWAYS output exactly three files: index.html (with Tailwind CDN + any icon CDN), styles.css (only minimal custom CSS), and script.js (modern JS, no frameworks). Do NOT inline CSS (except the Tailwind CDN include) and prefer Tailwind classes in markup. "
+        "Ensure offline compatibility with an external service worker (do not generate it inside these files). "
         "Separate each file with the following exact tags: [HTML]...[/HTML] [CSS]...[/CSS] [JS]...[/JS]"
     )
     
