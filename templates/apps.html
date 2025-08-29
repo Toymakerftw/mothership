@@ -80,6 +80,9 @@
                     <button onclick="deleteApp('{{ app.name }}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors">
                       <i class="fas fa-trash mr-1"></i> Delete
                     </button>
+                    <button onclick="reworkApp('{{ app.name }}')" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                      <i class="fas fa-redo mr-1"></i> Rework
+                    </button>
                   </div>
                 </div>
               {% endfor %}
@@ -168,6 +171,14 @@
           alert('An error occurred while deleting the app.');
         });
       }
+    }
+
+    function reworkApp(appName) {
+      const rework_prompt = prompt("How would you like to revise your app?");
+      if (!rework_prompt) return;
+
+      // Redirect to the main page with the app name and rework prompt as query parameters
+      window.location.href = `/?rework_app=${appName}&rework_prompt=${encodeURIComponent(rework_prompt)}`;
     }
   </script>
 </body>

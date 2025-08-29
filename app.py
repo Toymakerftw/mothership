@@ -108,11 +108,39 @@ def serve_icons(icon_filename):
     png_bytes = base64.b64decode(one_px_png_base64)
     return app.response_class(png_bytes, mimetype="image/png")
 
+@app.route("/get_app_files/<app_name>")
+def get_app_files(app_name):
+    try:
+        app_dir = os.path.join("generated", app_name)
+        if not os.path.isdir(app_dir):
+            return jsonify({"error": "App not found"}), 404
+
+        files = {}
+        for filename in ["index.html", "styles.css", "script.js"]:
+            filepath = os.path.join(app_dir, filename)
+            if os.path.isfile(filepath):
+                with open(filepath, "r", encoding="utf-8") as f:
+                    files[filename] = f.read()
+            else:
+                files[filename] = ""
+        
+        return jsonify(files)
+    except Exception as e:
+        logger.error(f"Error getting app files for {app_name}: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/chat", methods=["POST"])
 def chat():
     user_prompt = request.json.get("prompt")
+    files = request.json.get("files")
+
     if not user_prompt:
         return jsonify({"error": "No prompt provided"}), 400
+
+    if files:
+        user_prompt += "\n\nHere are the current files:\n"
+        for filename, content in files.items():
+            user_prompt += f"--- {filename} ---\n{content}\n"
 
     try:
         # Step 1: Optimize Prompt
@@ -379,6 +407,108 @@ def delete_app(app_name):
     except Exception as e:
         logger.error(f"Error deleting app {app_name}: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/rework", methods=["POST"])
+def rework_app():
+    app_name = request.json.get("app_name")
+    rework_prompt = request.json.get("rework_prompt")
+
+    if not app_name or not rework_prompt:
+        return jsonify({"error": "Missing app_name or rework_prompt"}), 400
+
+    try:
+        # 1. Read existing files
+        app_dir = os.path.join("generated", app_name)
+        if not os.path.isdir(app_dir):
+            return jsonify({"error": "App not found"}), 404
+
+        files = {}
+        for filename in ["index.html", "styles.css", "script.js"]:
+            filepath = os.path.join(app_dir, filename)
+            if os.path.isfile(filepath):
+                with open(filepath, "r", encoding="utf-8") as f:
+                    files[filename] = f.read()
+            else:
+                files[filename] = ""
+
+        # 2. Construct a detailed prompt for the rework
+        rework_user_prompt = f"""
+Rework the following PWA application based on the user's request.
+
+User Request: {rework_prompt}
+
+Current Files:
+--- index.html ---
+{files["index.html"]}
+
+--- styles.css ---
+{files["styles.css"]}
+
+--- script.js ---
+{files["script.js"]}
+"""
+
+        # 3. Call the generator model with the rework prompt
+        generator_system = """
+You are an expert PWA developer. Your task is to rework an existing application based on the user's request.
+- ONLY USE HTML, CSS AND JAVASCRIPT.
+- Make sure to only make changes to the section mentioned in the rework prompt.
+- Do not let other functionalities be affected.
+- MAKE IT RESPONSIVE USING TAILWINDCSS.
+- Use semantic HTML5, accessible patterns, and a dark theme by default.
+- Use Feather Icons or Font Awesome for icons.
+- ALWAYS output exactly three files: index.html, styles.css, and script.js.
+- Separate each file with the following exact tags: [HTML]...[/HTML] [CSS]...[/CSS] [JS]...[/JS]
+"""
+        logger.info(f"Reworking app: {app_name}")
+        reworked_response = call_openrouter(GENERATOR_MODEL, generator_system, rework_user_prompt)
+
+        # 4. Verify and Iterate (similar to the /chat endpoint)
+        current_response = reworked_response
+        for i in range(MAX_VERIFICATION_ITERATIONS):
+            logger.info(f"Rework verification iteration {i+1}/{MAX_VERIFICATION_ITERATIONS}")
+            verifier_system = """
+You are a code reviewer for HTML/CSS/JS PWAs. Check the generated code for:
+- Syntax errors, bugs, or inefficiencies.
+- Compliance with the rework request.
+- That only the requested section was changed.
+Output: If good, say 'VALID' and return the code unchanged. If issues, say 'INVALID', list fixes, and provide the full revised code in [HTML]...[/HTML] [CSS]...[/CSS] [JS]...[/JS] format.
+"""
+            verification = call_openrouter(VERIFIER_MODEL, verifier_system, current_response)
+            
+            if "VALID" in verification.upper():
+                logger.info("Reworked code verified as valid.")
+                break
+            elif "INVALID" in verification.upper():
+                logger.info("Reworked code invalid; extracting revisions.")
+                current_response = extract_revised_code(verification)
+            else:
+                raise ValueError("Verification response unclear")
+
+        # 5. Save the reworked files
+        html_code = extract_code(current_response, "HTML")
+        css_code = extract_code(current_response, "CSS")
+        js_code = extract_code(current_response, "JS")
+
+        if html_code:
+            with open(os.path.join(app_dir, "index.html"), "w", encoding="utf-8") as f:
+                f.write(html_code)
+        if css_code:
+            with open(os.path.join(app_dir, "styles.css"), "w", encoding="utf-8") as f:
+                f.write(css_code)
+        if js_code:
+            with open(os.path.join(app_dir, "script.js"), "w", encoding="utf-8") as f:
+                f.write(js_code)
+
+        return jsonify({
+            "status": "success",
+            "app_name": app_name,
+            "preview_url": f"/generated/{app_name}/index.html"
+        })
+
+    except Exception as e:
+        logger.error(f"Error reworking app {app_name}: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     os.makedirs("generated", exist_ok=True)

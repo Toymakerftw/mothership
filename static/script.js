@@ -29,7 +29,7 @@ function formatMessage(content, isUser = false) {
     `;
 }
 
-async function sendPrompt() {
+async function sendPrompt(files = null) {
     const userInput = document.getElementById("userInput").value.trim();
     if (!userInput) return;
 
@@ -45,13 +45,18 @@ async function sendPrompt() {
     document.getElementById("sendButton").disabled = true;
 
     try {
+        const payload = { prompt: userInput };
+        if (files) {
+            payload.files = files;
+        }
+
         // Call Flask backend
         const response = await fetch("/chat", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ prompt: userInput }),
+            body: JSON.stringify(payload),
         });
         
         const result = await response.json();
@@ -64,7 +69,10 @@ async function sendPrompt() {
             
             // Show action buttons
             document.getElementById("actionButtons").style.display = "flex";
-            currentAppName = userInput.replace(/[^a-z0-9\-]/g, '').toLowerCase();
+            if (!currentAppName) {
+                currentAppName = userInput.replace(/[^a-z0-9\-]/g, '').toLowerCase();
+                localStorage.setItem("currentAppName", currentAppName);
+            }
         }
     } catch (error) {
         console.error("Error:", error);
@@ -162,15 +170,69 @@ async function deployApp() {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-async function reworkApp() {
-    const userInput = prompt("How would you like to revise your app?");
-    if (userInput) {
-        document.getElementById("userInput").value = userInput;
-        sendPrompt();
+async function reworkApp(rework_prompt_from_url = null) {
+    if (!currentAppName) {
+        alert("Please generate an app first.");
+        return;
+    }
+
+    const rework_prompt = rework_prompt_from_url || prompt("How would you like to revise your app?");
+    if (!rework_prompt) return;
+
+    const chatBox = document.getElementById("chatBox");
+    chatBox.innerHTML += formatMessage(`Reworking app based on your request: "${rework_prompt}"`, false);
+    
+    // Show loading indicator
+    document.getElementById("loadingIndicator").style.display = "flex";
+    document.getElementById("actionButtons").style.display = "none";
+
+    try {
+        const response = await fetch("/rework", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ 
+                app_name: currentAppName,
+                rework_prompt: rework_prompt 
+            }),
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === "success") {
+            chatBox.innerHTML += formatMessage(`Success! Your app has been reworked.`, false);
+            
+            // Show action buttons again
+            document.getElementById("actionButtons").style.display = "flex";
+        } else {
+            chatBox.innerHTML += formatMessage(`Error: ${result.error}`, false);
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        chatBox.innerHTML += formatMessage("Failed to rework the app.", false);
+    } finally {
+        // Hide loading indicator
+        document.getElementById("loadingIndicator").style.display = "none";
+        
+        // Scroll to bottom of chat
+        chatBox.scrollTop = chatBox.scrollHeight;
     }
 }
 
 // Initialize the app
 document.addEventListener("DOMContentLoaded", function() {
     console.log("PWA Generator initialized");
+    currentAppName = localStorage.getItem("currentAppName") || "";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const reworkAppParam = urlParams.get('rework_app');
+    const reworkPromptParam = urlParams.get('rework_prompt');
+
+    if (reworkAppParam && reworkPromptParam) {
+        currentAppName = reworkAppParam;
+        localStorage.setItem("currentAppName", currentAppName);
+        // Call reworkApp with the prompt, but we need to modify reworkApp to accept a prompt
+        reworkApp(reworkPromptParam);
+    }
 });
