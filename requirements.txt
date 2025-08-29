@@ -5,3 +5,5 @@ gunicorn
 cachetools
 flask-compress
 sqlite3
+circuitbreaker
+tenacity

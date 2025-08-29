@@ -11,6 +11,8 @@ import sqlite3
 from io import BytesIO
 from cachetools import TTLCache
 from flask_compress import Compress
+from circuitbreaker import circuit
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from config import (
     OPENROUTER_API_KEY, OPENROUTER_API_URL,
@@ -31,6 +33,23 @@ Compress(app)
 prompt_cache = TTLCache(maxsize=100, ttl=300)
 # Cache for generated code responses (10 minutes TTL, max 50 entries)
 code_cache = TTLCache(maxsize=50, ttl=600)
+
+# Circuit breaker configuration
+# Trip after 3 failures, reset after 60 seconds
+OPENROUTER_CIRCUIT_BREAKER = circuit(
+    failure_threshold=3,
+    recovery_timeout=60,
+    expected_exception=(requests.exceptions.RequestException, ValueError)
+)
+
+# Retry configuration with exponential backoff
+# Retry up to 3 times with exponential backoff (1s, 2s, 4s)
+OPENROUTER_RETRY = retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type((requests.exceptions.Timeout, requests.exceptions.ConnectionError)),
+    reraise=True
+)
 
 # Database setup
 def init_db():
@@ -155,6 +174,8 @@ def generated_files(app_name, filename):
         return jsonify({"error": "Invalid file path"}), 400
     return send_from_directory(f"generated/{app_name}", safe_path)
 
+@OPENROUTER_CIRCUIT_BREAKER
+@OPENROUTER_RETRY
 def call_openrouter(model, system_prompt, user_content):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
@@ -238,6 +259,7 @@ def chat():
     files = request.json.get("files")
 
     if not user_prompt:
+        logger.warning("No prompt provided in chat request")
         return jsonify({"error": "No prompt provided"}), 400
 
     if files:
@@ -373,8 +395,12 @@ Simulate execution step-by-step, assuming a modern browser context (window, docu
 - Provide the line number (or approximate if unclear).
 - Explain the issue and suggest a fix.
 Output format:
-- If no issues: 'VALID_JS\n[JS]{code}[/JS]'
-- If issues: 'INVALID_JS\nErrors:\n- [Error Type]: [Description, line ~X, fix suggestion]\n[JS]{revised code}[/JS]'
+- If no issues: 'VALID_JS
+[JS]{code}[/JS]'
+- If issues: 'INVALID_JS
+Errors:
+- [Error Type]: [Description, line ~X, fix suggestion]
+[JS]{revised code}[/JS]'
 """
             logger.info("Performing JS-specific bug check...")
             js_verification = call_openrouter(VERIFIER_MODEL, js_verifier_system, js_code)
@@ -403,7 +429,14 @@ Output format:
             "cached": prompt_cached and code_cached  # True only if both prompt and code were cached
         })
     except ValueError as e:
+        logger.error(f"Value error in chat endpoint: {str(e)}")
         return jsonify({"error": str(e), "js_bug_report": []}), 500
+    except requests.exceptions.RequestException as e:
+        logger.error(f"API request error in chat endpoint: {str(e)}")
+        return jsonify({"error": "API service temporarily unavailable", "js_bug_report": []}), 503
+    except Exception as e:
+        logger.error(f"Unexpected error in chat endpoint: {str(e)}", exc_info=True)
+        return jsonify({"error": "An unexpected error occurred", "js_bug_report": []}), 500
 
 def extract_revised_code(response_text):
     """Extract revised code from verifier response, similar to extract_code but combined."""
@@ -439,6 +472,7 @@ def generate_files():
     provided_app_name = request.json.get("app_name")
     
     if not response_text:
+        logger.warning("Missing response text in generate request")
         return jsonify({"status": "error", "message": "Missing response text"}), 400
     
     if not prompt:
@@ -450,7 +484,12 @@ def generate_files():
         app_name = re.sub(r'[^a-z0-9\-]', '', prompt.replace(" ", "-").lower())
     
     app_dir = f"generated/{app_name}"
-    os.makedirs(app_dir, exist_ok=True)
+    
+    try:
+        os.makedirs(app_dir, exist_ok=True)
+    except OSError as e:
+        logger.error(f"Failed to create directory {app_dir}: {str(e)}")
+        return jsonify({"status": "error", "message": f"Failed to create app directory: {str(e)}"}), 500
 
     html_code = extract_code(response_text, "HTML")
     css_code = extract_code(response_text, "CSS")
@@ -561,9 +600,13 @@ self.addEventListener('fetch', e => {
             c.execute("UPDATE app_stats SET generate_count = generate_count + 1 WHERE app_id = (SELECT id FROM apps WHERE name = ?)", (app_name,))
             conn.commit()
             conn.close()
-        except Exception as db_error:
+        except sqlite3.Error as db_error:
             logger.error(f"Database error: {str(db_error)}")
+            # Don't fail the whole request if database update fails
+        except Exception as e:
+            logger.error(f"Unexpected error updating database: {str(e)}")
         
+        logger.info(f"Successfully generated app: {app_name}")
         return jsonify({
             "status": "success", 
             "files": files_created, 
@@ -571,9 +614,15 @@ self.addEventListener('fetch', e => {
             "preview_url": f"/generated/{app_name}/index.html"
         })
         
+    except PermissionError as e:
+        logger.error(f"Permission error creating files for {app_name}: {str(e)}")
+        return jsonify({"status": "error", "message": "Permission denied when creating app files"}), 500
+    except OSError as e:
+        logger.error(f"OS error creating files for {app_name}: {str(e)}")
+        return jsonify({"status": "error", "message": f"Failed to create app files: {str(e)}"}), 500
     except Exception as e:
-        logger.error(f"File creation failed: {str(e)}")
-        return jsonify({"status": "error", "message": f"File creation failed: {str(e)}"}), 500
+        logger.error(f"Unexpected error generating files for {app_name}: {str(e)}", exc_info=True)
+        return jsonify({"status": "error", "message": f"An unexpected error occurred: {str(e)}"}), 500
 
 @app.route("/delete_app/<app_name>", methods=["DELETE"])
 def delete_app(app_name):
@@ -722,6 +771,78 @@ Output: If good, say 'VALID' and return the code unchanged. If issues, say 'INVA
         "preview_url": f"/generated/{app_name}/index.html",
         "cached": rework_cached
     })
+
+@app.route("/health")
+def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Check database connectivity
+        conn = sqlite3.connect('pwa_generator.db')
+        c = conn.cursor()
+        c.execute("SELECT 1")
+        conn.close()
+        
+        # Check if generated directory exists
+        if not os.path.exists("generated"):
+            return jsonify({
+                "status": "unhealthy",
+                "details": "Generated directory does not exist"
+            }), 503
+        
+        return jsonify({
+            "status": "healthy",
+            "timestamp": time.time()
+        })
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e)
+        }), 503
+
+@app.route("/health/db")
+def db_health_check():
+    """Database-specific health check"""
+    try:
+        conn = sqlite3.connect('pwa_generator.db', timeout=5)
+        c = conn.cursor()
+        c.execute("PRAGMA schema_version")
+        version = c.fetchone()
+        conn.close()
+        
+        return jsonify({
+            "status": "healthy",
+            "database_version": version[0] if version else None
+        })
+    except Exception as e:
+        logger.error(f"Database health check failed: {str(e)}")
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e)
+        }), 503
+
+@app.route("/health/api")
+def api_health_check():
+    """API-specific health check"""
+    # Check if we can access the OpenRouter API (circuit breaker status)
+    try:
+        # Just check if the circuit breaker is closed
+        if OPENROUTER_CIRCUIT_BREAKER.closed:
+            return jsonify({
+                "status": "healthy",
+                "circuit_breaker": "closed"
+            })
+        else:
+            return jsonify({
+                "status": "degraded",
+                "circuit_breaker": "open"
+            }), 503
+    except Exception as e:
+        logger.error(f"API health check failed: {str(e)}")
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e)
+        }), 503
 
 if __name__ == "__main__":
     os.makedirs("generated", exist_ok=True)
