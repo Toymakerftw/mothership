@@ -1,14 +1,24 @@
+# app.py
 from flask import Flask, render_template, request, jsonify, send_from_directory
-import os, requests, re, json
-from dotenv import load_dotenv
+import os
+import requests
+import re
+import json
+import logging
+import base64
+from io import BytesIO
 
-load_dotenv()
+from config import (
+    OPENROUTER_API_KEY, OPENROUTER_API_URL,
+    OPTIMIZER_MODEL, GENERATOR_MODEL, VERIFIER_MODEL,
+    MAX_VERIFICATION_ITERATIONS, REQUEST_TIMEOUT
+)
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-
-# Environment variables
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 @app.route("/")
 def index():
@@ -32,64 +42,151 @@ def list_apps():
                 })
         return render_template("apps.html", apps=entries)
     except Exception as e:
+        logger.error(f"Error listing apps: {str(e)}")
         return render_template("apps.html", apps=[], error=str(e))
 
 @app.route("/generated/<app_name>/<path:filename>")
 def generated_files(app_name, filename):
-    return send_from_directory(f"generated/{app_name}", filename)
+    # Basic path normalization to prevent traversal
+    safe_path = os.path.normpath(filename)
+    if '..' in safe_path or safe_path.startswith('/'):
+        return jsonify({"error": "Invalid file path"}), 400
+    return send_from_directory(f"generated/{app_name}", safe_path)
+
+def call_openrouter(model, system_prompt, user_content):
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        # OpenRouter recommends identifying your app; some free routes require a referrer
+        "HTTP-Referer": request.host_url.rstrip('/'),
+        "X-Title": "PWA Generator"
+    }
+    data = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content}
+        ]
+    }
+    try:
+        response = requests.post(OPENROUTER_API_URL, headers=headers, json=data, timeout=REQUEST_TIMEOUT)
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as http_err:
+            # Include server response body to aid debugging
+            error_body = None
+            try:
+                error_body = response.json()
+            except Exception:
+                error_body = response.text
+            logger.error(f"API request failed ({response.status_code}): {error_body}")
+            raise ValueError(f"OpenRouter error {response.status_code}: {error_body}")
+
+        result = response.json()
+        content = result["choices"][0]["message"]["content"]
+        logger.debug(f"API call to {model} successful. Response length: {len(content)}")
+        return content
+    except requests.exceptions.Timeout:
+        logger.error("API request timeout")
+        raise ValueError("Request timeout")
+    except requests.exceptions.RequestException as e:
+        logger.error(f"API request failed: {str(e)}")
+        raise ValueError(f"API request failed: {str(e)}")
+    except (KeyError, IndexError) as e:
+        logger.error(f"Unexpected response format: {str(e)}")
+        raise ValueError(f"Unexpected response format: {str(e)}")
+
+@app.route("/static/icons/<path:icon_filename>")
+def serve_icons(icon_filename):
+    """Serve icons from static/icons or fall back to a 1x1 PNG to avoid 404s."""
+    static_icons_dir = os.path.join(app.root_path, "static", "icons")
+    requested_path = os.path.join(static_icons_dir, icon_filename)
+
+    # If the icon exists on disk, serve it directly
+    if os.path.isfile(requested_path):
+        return send_from_directory(static_icons_dir, icon_filename)
+
+    # Transparent 1x1 PNG (base64) as a fallback
+    one_px_png_base64 = (
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAukB9Wl0C3sAAAAASUVORK5CYII="
+    )
+    png_bytes = base64.b64decode(one_px_png_base64)
+    return app.response_class(png_bytes, mimetype="image/png")
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    prompt = request.json.get("prompt")
-    if not prompt:
+    user_prompt = request.json.get("prompt")
+    if not user_prompt:
         return jsonify({"error": "No prompt provided"}), 400
-    
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    # System prompt to steer high-quality generation
-    system_prompt = """
+
+    try:
+        # Step 1: Optimize Prompt
+        optimizer_system = """
+You are a prompt optimizer for PWA generation. Refine the user's prompt to be more detailed, include UI/UX best practices, responsiveness with Tailwind, accessibility, and PWA features like manifest and service worker hints. Output only the optimized prompt.
+"""
+        logger.info("Optimizing prompt...")
+        optimized_prompt = call_openrouter(OPTIMIZER_MODEL, optimizer_system, user_prompt)
+
+        # Step 2: Generate Code
+        generator_system = """
 ONLY USE HTML, CSS AND JAVASCRIPT. Create the best, modern, responsive UI possible.
 MAKE IT RESPONSIVE USING TAILWINDCSS. Import Tailwind via CDN in <head> using <script src="https://cdn.tailwindcss.com"></script>.
 Prefer Tailwind utility classes heavily for layout and components (CSS Grid for dashboards/cards, Flexbox for toolbars/forms). If Tailwind cannot cover a case, add minimal custom CSS in styles.css.
 Use semantic HTML5 (<main>, <header>, <nav>, <section>, <footer>), accessible patterns (ARIA where needed), and a dark theme by default with good contrast.
-If you want to use ICONS, import the icon library first. Use Feather Icons (https://unpkg.com/feather-icons) and/or Font Awesome (CDN) wherever icons help. If using Feather, add data-feather attributes and call feather.replace() in script.js after DOM load. If using Font Awesome, use <i> with appropriate classes.
+If you want to use ICONS, import the icon library first. Use Feather Icons[](https://unpkg.com/feather-icons) and/or Font Awesome (CDN) wherever icons help. If using Feather, add data-feather attributes and call feather.replace() in script.js after DOM load. If using Font Awesome, use <i> with appropriate classes.
 Avoid Chinese characters unless explicitly requested by the user. Be creative and elaborate to produce something unique and polished.
 IMPORTANT: For this API, ALWAYS output exactly three files: index.html (with Tailwind CDN + any icon CDN), styles.css (only minimal custom CSS), and script.js (modern JS, no frameworks). Do NOT inline CSS (except the Tailwind CDN include) and prefer Tailwind classes in markup.
-Ensure offline compatibility with an external service worker (do not generate it inside these files).
+Ensure offline compatibility with an external service worker (do not generate it inside these files). Include <link rel="manifest" href="manifest.json"> in index.html and service worker registration in script.js: if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }
 Separate each file with the following exact tags: [HTML]...[/HTML] [CSS]...[/CSS] [JS]...[/JS]
 """
-    
-    data = {
-        "model": "qwen/qwen-2.5-coder-32b-instruct:free",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Create a PWA for: {prompt}"}
-        ]
-    }
+        logger.info("Generating code...")
+        generated_response = call_openrouter(GENERATOR_MODEL, generator_system, f"Create a PWA for: {optimized_prompt}")
 
-    try:
-        response = requests.post(OPENROUTER_API_URL, headers=headers, json=data, timeout=30)
-        response.raise_for_status()
-        result = response.json()
-        return jsonify({"response": result["choices"][0]["message"]["content"]})
-    except requests.exceptions.Timeout:
-        return jsonify({"error": "Request timeout"}), 408
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": f"API request failed: {str(e)}"}), 500
-    except (KeyError, IndexError) as e:
-        return jsonify({"error": f"Unexpected response format: {str(e)}"}), 500
+        # Step 3: Verify and Iterate
+        current_response = generated_response
+        for i in range(MAX_VERIFICATION_ITERATIONS):
+            logger.info(f"Verification iteration {i+1}/{MAX_VERIFICATION_ITERATIONS}")
+            verifier_system = """
+You are a code reviewer for HTML/CSS/JS PWAs. Check the generated code for:
+- Syntax errors, bugs, or inefficiencies.
+- Compliance with instructions (Tailwind, semantic HTML, accessibility, dark theme, icons).
+- Responsiveness and modern best practices.
+- PWA features (manifest link, SW registration in JS).
+Output: If good, say 'VALID' and return the code unchanged. If issues, say 'INVALID', list fixes, and provide the full revised code in [HTML]...[/HTML] [CSS]...[/CSS] [JS]...[/JS] format.
+"""
+            verification = call_openrouter(VERIFIER_MODEL, verifier_system, current_response)
+            
+            if "VALID" in verification.upper():
+                logger.info("Code verified as valid.")
+                break
+            elif "INVALID" in verification.upper():
+                logger.info("Code invalid; extracting revisions.")
+                current_response = extract_revised_code(verification)
+            else:
+                raise ValueError("Verification response unclear")
+
+        return jsonify({"response": current_response})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 500
+
+def extract_revised_code(response_text):
+    """Extract revised code from verifier response, similar to extract_code but combined."""
+    patterns = [
+        rf"\[HTML\](.*?)\[\/HTML\].*?\[CSS\](.*?)\[\/CSS\].*?\[JS\](.*?)\[\/JS\]",
+        rf"```html\s*(.*?)\s*```.*```css\s*(.*?)\s*```.*```javascript\s*(.*?)\s*```",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, response_text, re.DOTALL | re.IGNORECASE)
+        if match:
+            return f"[HTML]{match.group(1).strip()}[/HTML] [CSS]{match.group(2).strip()}[/CSS] [JS]{match.group(3).strip()}[/JS]"
+    # Fallback: return original if no match
+    return response_text
 
 def extract_code(response_text, file_type):
     """Extract code for a specific file type using multiple patterns"""
     patterns = [
-        # Pattern 1: [HTML]...[/HTML]
         rf"\[{file_type}\](.*?)\[\/{file_type}\]",
-        # Pattern 2: ```html...```
-        rf"```(?:html|{file_type.lower()})\s*(.*?)```",
-        # Pattern 3: <file_type> code: ... (fallback)
+        rf"```(?:{file_type.lower()})\s*(.*?)```",
         rf"{file_type} code:(.*?)(?=\n\w+ code:|\Z)",
     ]
     
@@ -109,11 +206,9 @@ def generate_files():
     if not response_text:
         return jsonify({"status": "error", "message": "Missing response text"}), 400
     
-    # Ensure we always have a human-readable prompt for metadata (title/manifest)
     if not prompt:
         prompt = provided_app_name or "pwa-app"
     
-    # Create a safe directory name, allowing explicit app_name override
     if provided_app_name:
         app_name = re.sub(r'[^a-z0-9\-]', '', str(provided_app_name).replace(" ", "-").lower())
     else:
@@ -122,7 +217,6 @@ def generate_files():
     app_dir = f"generated/{app_name}"
     os.makedirs(app_dir, exist_ok=True)
 
-    # Extract code for each file type
     html_code = extract_code(response_text, "HTML")
     css_code = extract_code(response_text, "CSS")
     js_code = extract_code(response_text, "JS")
@@ -135,7 +229,6 @@ def generate_files():
                 f.write(html_code)
             files_created.append("index.html")
         else:
-            # Create a basic HTML template if extraction failed
             basic_html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -160,7 +253,6 @@ def generate_files():
                 f.write(css_code)
             files_created.append("styles.css")
         else:
-            # Create basic CSS if extraction failed
             basic_css = """body {
     font-family: Arial, sans-serif;
     max-width: 800px;
@@ -177,13 +269,11 @@ def generate_files():
                 f.write(js_code)
             files_created.append("script.js")
         else:
-            # Create basic JS if extraction failed
             basic_js = "console.log('PWA loaded successfully');"
             with open(f"{app_dir}/script.js", "w", encoding="utf-8") as f:
                 f.write(basic_js)
             files_created.append("script.js")
         
-        # Generate a basic manifest for the PWA
         manifest_data = {
             "name": prompt,
             "short_name": app_name[:12],
@@ -192,16 +282,8 @@ def generate_files():
             "background_color": "#ffffff",
             "theme_color": "#007BFF",
             "icons": [
-                {
-                    "src": "icon-192.png",
-                    "sizes": "192x192",
-                    "type": "image/png"
-                },
-                {
-                    "src": "icon-512.png",
-                    "sizes": "512x512",
-                    "type": "image/png"
-                }
+                {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+                {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"}
             ]
         }
         
@@ -209,7 +291,6 @@ def generate_files():
             json.dump(manifest_data, f, indent=2)
         files_created.append("manifest.json")
         
-        # Create a basic service worker
         sw_content = """self.addEventListener('install', e => {
   e.waitUntil(
     caches.open('pwa-store').then(cache => {
@@ -244,6 +325,7 @@ self.addEventListener('fetch', e => {
         })
         
     except Exception as e:
+        logger.error(f"File creation failed: {str(e)}")
         return jsonify({"status": "error", "message": f"File creation failed: {str(e)}"}), 500
 
 if __name__ == "__main__":
