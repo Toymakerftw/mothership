@@ -14,6 +14,26 @@ OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 def index():
     return render_template("index.html")
 
+@app.route("/apps")
+def list_apps():
+    base_dir = "generated"
+    os.makedirs(base_dir, exist_ok=True)
+    try:
+        entries = []
+        for name in sorted(os.listdir(base_dir)):
+            path = os.path.join(base_dir, name)
+            if os.path.isdir(path):
+                index_path = os.path.join(path, "index.html")
+                has_index = os.path.isfile(index_path)
+                entries.append({
+                    "name": name,
+                    "has_index": has_index,
+                    "preview_url": f"/generated/{name}/index.html" if has_index else None
+                })
+        return render_template("apps.html", apps=entries)
+    except Exception as e:
+        return render_template("apps.html", apps=[], error=str(e))
+
 @app.route("/generated/<app_name>/<path:filename>")
 def generated_files(app_name, filename):
     return send_from_directory(f"generated/{app_name}", filename)
@@ -82,12 +102,21 @@ def extract_code(response_text, file_type):
 def generate_files():
     prompt = request.json.get("prompt")
     response_text = request.json.get("response_text")
+    provided_app_name = request.json.get("app_name")
     
-    if not prompt or not response_text:
-        return jsonify({"status": "error", "message": "Missing prompt or response text"}), 400
+    if not response_text:
+        return jsonify({"status": "error", "message": "Missing response text"}), 400
     
-    # Create a safe directory name
-    app_name = re.sub(r'[^a-z0-9\-]', '', prompt.replace(" ", "-").lower())
+    # Ensure we always have a human-readable prompt for metadata (title/manifest)
+    if not prompt:
+        prompt = provided_app_name or "pwa-app"
+    
+    # Create a safe directory name, allowing explicit app_name override
+    if provided_app_name:
+        app_name = re.sub(r'[^a-z0-9\-]', '', str(provided_app_name).replace(" ", "-").lower())
+    else:
+        app_name = re.sub(r'[^a-z0-9\-]', '', prompt.replace(" ", "-").lower())
+    
     app_dir = f"generated/{app_name}"
     os.makedirs(app_dir, exist_ok=True)
 

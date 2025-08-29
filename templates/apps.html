@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generated Apps</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Generated Apps</h1>
+      <p><a href="/">Back to Generator</a></p>
+    </header>
+
+    {% if error %}
+      <div class="message bot-message"><strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+
+    {% if apps and apps|length > 0 %}
+      <ul>
+        {% for app in apps %}
+          <li>
+            <strong>{{ app.name }}</strong>
+            {% if app.has_index %}
+              - <a href="{{ app.preview_url }}" target="_blank">Open</a>
+            {% else %}
+              - No index.html found
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No apps generated yet.</p>
+    {% endif %}
+  </div>
+</body>
+</html>
+
+

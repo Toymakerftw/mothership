@@ -75,7 +75,8 @@ async function generateApp() {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({ 
-                prompt: document.getElementById("userInput").value || "pwa-app",
+                prompt: document.getElementById("userInput").dataset.originalPrompt || document.getElementById("userInput").value || "pwa-app",
+                app_name: currentAppName || (document.getElementById("userInput").value || "pwa-app").replace(/[^a-z0-9\-]/g, '').toLowerCase(),
                 response_text: currentResponse 
             }),
         });
