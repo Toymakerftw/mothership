@@ -25,6 +25,17 @@ generated/pwa-app/    # Generated PWA assets
   sw.js
 ```
 
+
+## Environment Variables
+
+Create a `.env` file in the project root and add your OpenRouter API key:
+
+```env
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+```
+
+Replace `your_openrouter_api_key_here` with your actual OpenRouter API key.
+
 ## Getting Started
 
 1. **Install dependencies:**
