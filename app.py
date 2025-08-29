@@ -1,4 +1,3 @@
-# app.py
 from flask import Flask, render_template, request, jsonify, send_from_directory
 import os
 import requests
@@ -57,7 +56,6 @@ def call_openrouter(model, system_prompt, user_content):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        # OpenRouter recommends identifying your app; some free routes require a referrer
         "HTTP-Referer": request.host_url.rstrip('/'),
         "X-Title": "PWA Generator"
     }
@@ -73,7 +71,6 @@ def call_openrouter(model, system_prompt, user_content):
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as http_err:
-            # Include server response body to aid debugging
             error_body = None
             try:
                 error_body = response.json()
@@ -102,11 +99,9 @@ def serve_icons(icon_filename):
     static_icons_dir = os.path.join(app.root_path, "static", "icons")
     requested_path = os.path.join(static_icons_dir, icon_filename)
 
-    # If the icon exists on disk, serve it directly
     if os.path.isfile(requested_path):
         return send_from_directory(static_icons_dir, icon_filename)
 
-    # Transparent 1x1 PNG (base64) as a fallback
     one_px_png_base64 = (
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAukB9Wl0C3sAAAAASUVORK5CYII="
     )
@@ -133,7 +128,7 @@ ONLY USE HTML, CSS AND JAVASCRIPT. Create the best, modern, responsive UI possib
 MAKE IT RESPONSIVE USING TAILWINDCSS. Import Tailwind via CDN in <head> using <script src="https://cdn.tailwindcss.com"></script>.
 Prefer Tailwind utility classes heavily for layout and components (CSS Grid for dashboards/cards, Flexbox for toolbars/forms). If Tailwind cannot cover a case, add minimal custom CSS in styles.css.
 Use semantic HTML5 (<main>, <header>, <nav>, <section>, <footer>), accessible patterns (ARIA where needed), and a dark theme by default with good contrast.
-If you want to use ICONS, import the icon library first. Use Feather Icons[](https://unpkg.com/feather-icons) and/or Font Awesome (CDN) wherever icons help. If using Feather, add data-feather attributes and call feather.replace() in script.js after DOM load. If using Font Awesome, use <i> with appropriate classes.
+If you want to use ICONS, import the icon library first. Use Feather Icons (https://unpkg.com/feather-icons) and/or Font Awesome (CDN) wherever icons help. If using Feather, add data-feather attributes and call feather.replace() in script.js after DOM load. If using Font Awesome, use <i> with appropriate classes.
 Avoid Chinese characters unless explicitly requested by the user. Be creative and elaborate to produce something unique and polished.
 IMPORTANT: For this API, ALWAYS output exactly three files: index.html (with Tailwind CDN + any icon CDN), styles.css (only minimal custom CSS), and script.js (modern JS, no frameworks). Do NOT inline CSS (except the Tailwind CDN include) and prefer Tailwind classes in markup.
 Ensure offline compatibility with an external service worker (do not generate it inside these files). Include <link rel="manifest" href="manifest.json"> in index.html and service worker registration in script.js: if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }
@@ -165,27 +160,70 @@ Output: If good, say 'VALID' and return the code unchanged. If issues, say 'INVA
             else:
                 raise ValueError("Verification response unclear")
 
-        return jsonify({"response": current_response})
+        # Step 4: JS-Specific Bug Check (Browser Console Simulation)
+        js_code = extract_code(current_response, "JS")
+        js_bug_report = []
+        if js_code:
+            js_verifier_system = """
+You are a JavaScript debugger simulating a browser console (e.g., Chrome DevTools). Analyze this JS code as if executed in a browser environment with DOM, assuming it runs alongside the generated HTML/CSS. Check for:
+- Syntax errors (e.g., missing semicolons, unbalanced brackets).
+- Runtime errors (e.g., ReferenceError for undefined variables, TypeError for null/undefined operations).
+- DOM-related issues (e.g., querying non-existent elements, missing event listeners).
+- Common console warnings (e.g., deprecated APIs, improper async handling).
+- Logical bugs (e.g., infinite loops, incorrect event handling).
+- PWA-specific issues (e.g., missing service worker registration).
+Simulate execution step-by-step, assuming a modern browser context (window, document, etc.). For each issue:
+- Specify the error type (e.g., SyntaxError, ReferenceError).
+- Provide the line number (or approximate if unclear).
+- Explain the issue and suggest a fix.
+Output format:
+- If no issues: 'VALID_JS\n[JS]{code}[/JS]'
+- If issues: 'INVALID_JS\nErrors:\n- [Error Type]: [Description, line ~X, fix suggestion]\n[JS]{revised code}[/JS]'
+"""
+            logger.info("Performing JS-specific bug check...")
+            js_verification = call_openrouter(VERIFIER_MODEL, js_verifier_system, js_code)
+            
+            if "INVALID_JS" in js_verification.upper():
+                logger.info("JS code has issues; processing revisions.")
+                # Extract errors for reporting
+                error_section = re.search(r'Errors:\n(.*?)\n\[JS\]', js_verification, re.DOTALL | re.IGNORECASE)
+                if error_section:
+                    js_bug_report = error_section.group(1).strip().split('\n')
+                
+                # Extract revised JS
+                revised_js_match = re.search(r'\[JS\](.*?)\[/JS\]', js_verification, re.DOTALL | re.IGNORECASE)
+                if revised_js_match:
+                    revised_js = revised_js_match.group(1).strip()
+                    # Replace JS section in current_response
+                    current_response = re.sub(r'\[JS\].*?\[/JS\]', f'[JS]{revised_js}[/JS]', current_response, flags=re.DOTALL)
+                else:
+                    logger.warning("No revised JS found in verification; keeping original JS.")
+            else:
+                logger.info("JS code verified as valid.")
+
+        return jsonify({
+            "response": current_response,
+            "js_bug_report": js_bug_report if js_bug_report else ["No JavaScript errors detected"]
+        })
     except ValueError as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e), "js_bug_report": []}), 500
 
 def extract_revised_code(response_text):
     """Extract revised code from verifier response, similar to extract_code but combined."""
     patterns = [
-        rf"\[HTML\](.*?)\[\/HTML\].*?\[CSS\](.*?)\[\/CSS\].*?\[JS\](.*?)\[\/JS\]",
-        rf"```html\s*(.*?)\s*```.*```css\s*(.*?)\s*```.*```javascript\s*(.*?)\s*```",
+        r"\[HTML\](.*?)\[/HTML\].*?\[CSS\](.*?)\[/CSS\].*?\[JS\](.*?)\[/JS\]",
+        r"```html\s*(.*?)\s*```.*```css\s*(.*?)\s*```.*```javascript\s*(.*?)\s*```",
     ]
     for pattern in patterns:
         match = re.search(pattern, response_text, re.DOTALL | re.IGNORECASE)
         if match:
             return f"[HTML]{match.group(1).strip()}[/HTML] [CSS]{match.group(2).strip()}[/CSS] [JS]{match.group(3).strip()}[/JS]"
-    # Fallback: return original if no match
     return response_text
 
 def extract_code(response_text, file_type):
     """Extract code for a specific file type using multiple patterns"""
     patterns = [
-        rf"\[{file_type}\](.*?)\[\/{file_type}\]",
+        rf"\[{file_type}\](.*?)\[/{file_type}\]",
         rf"```(?:{file_type.lower()})\s*(.*?)```",
         rf"{file_type} code:(.*?)(?=\n\w+ code:|\Z)",
     ]
