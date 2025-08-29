@@ -8,13 +8,34 @@ document.getElementById("userInput").addEventListener("keypress", function(e) {
     }
 });
 
+// Format message for display
+function formatMessage(content, isUser = false) {
+    const icon = isUser ? 
+        '<div class="p-2 rounded-full bg-blue-500 text-white mr-3"><i class="fas fa-user"></i></div>' : 
+        '<div class="p-2 rounded-full bg-blue-500 text-white mr-3"><i class="fas fa-robot"></i></div>';
+    
+    const sender = isUser ? "You" : "Assistant";
+    
+    return `
+        <div class="message ${isUser ? 'user-message' : 'bot-message'} rounded-lg p-4 mb-4">
+            <div class="flex items-start">
+                ${icon}
+                <div>
+                    <strong>${sender}:</strong>
+                    <p class="mt-1">${content}</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 async function sendPrompt() {
     const userInput = document.getElementById("userInput").value.trim();
     if (!userInput) return;
 
     // Display user message
     const chatBox = document.getElementById("chatBox");
-    chatBox.innerHTML += `<div class="message user-message"><strong>You:</strong> ${userInput}</div>`;
+    chatBox.innerHTML += formatMessage(userInput, true);
     
     // Clear input
     document.getElementById("userInput").value = "";
@@ -36,10 +57,10 @@ async function sendPrompt() {
         const result = await response.json();
         
         if (result.error) {
-            chatBox.innerHTML += `<div class="message bot-message"><strong>Error:</strong> ${result.error}</div>`;
+            chatBox.innerHTML += formatMessage(`Error: ${result.error}`, false);
         } else {
             currentResponse = result.response;
-            chatBox.innerHTML += `<div class="message bot-message"><strong>PWA Generator:</strong> I've created a plan for your "${userInput}" PWA. Click "Generate Files" to create the application.</div>`;
+            chatBox.innerHTML += formatMessage(`I've created a plan for your "${userInput}" PWA. Click "Compile App" to create the application.`, false);
             
             // Show action buttons
             document.getElementById("actionButtons").style.display = "flex";
@@ -47,7 +68,7 @@ async function sendPrompt() {
         }
     } catch (error) {
         console.error("Error:", error);
-        chatBox.innerHTML += `<div class="message bot-message"><strong>Error:</strong> Failed to communicate with the server.</div>`;
+        chatBox.innerHTML += formatMessage("Failed to communicate with the server.", false);
     } finally {
         // Hide loading indicator
         document.getElementById("loadingIndicator").style.display = "none";
@@ -62,7 +83,7 @@ async function generateApp() {
     if (!currentResponse) return;
 
     const chatBox = document.getElementById("chatBox");
-    chatBox.innerHTML += `<div class="message bot-message"><strong>PWA Generator:</strong> Generating files...</div>`;
+    chatBox.innerHTML += formatMessage("Generating files...", false);
     
     // Show loading indicator
     document.getElementById("loadingIndicator").style.display = "flex";
@@ -84,8 +105,8 @@ async function generateApp() {
         const result = await response.json();
         
         if (result.status === "success") {
-            chatBox.innerHTML += `<div class="message bot-message"><strong>Success!</strong> Created files: ${result.files.join(", ")}</div>`;
-            chatBox.innerHTML += `<div class="message bot-message">You can now preview your app or get deployment instructions.</div>`;
+            chatBox.innerHTML += formatMessage(`Success! Created files: ${result.files.join(", ")}`, false);
+            chatBox.innerHTML += formatMessage("You can now preview your app or get deployment instructions.", false);
             
             // Update current app name
             currentAppName = result.app_name;
@@ -93,11 +114,11 @@ async function generateApp() {
             // Show action buttons again
             document.getElementById("actionButtons").style.display = "flex";
         } else {
-            chatBox.innerHTML += `<div class="message bot-message"><strong>Error:</strong> ${result.message}</div>`;
+            chatBox.innerHTML += formatMessage(`Error: ${result.message}`, false);
         }
     } catch (error) {
         console.error("Error:", error);
-        chatBox.innerHTML += `<div class="message bot-message"><strong>Error:</strong> Failed to generate files.</div>`;
+        chatBox.innerHTML += formatMessage("Failed to generate files.", false);
     } finally {
         // Hide loading indicator
         document.getElementById("loadingIndicator").style.display = "none";
@@ -130,13 +151,12 @@ async function deployApp() {
     if (!currentAppName) return;
     
     const chatBox = document.getElementById("chatBox");
-    chatBox.innerHTML += `
-        <div class="message bot-message">
-            <strong>Deployment Instructions:</strong><br>
-            1. Your app files are in the "generated/${currentAppName}" folder<br>
-            2. Upload this folder to any web hosting service (Netlify, Vercel, GitHub Pages, etc.)<br>
-            3. For full PWA functionality, ensure your server serves the manifest.json and service worker files correctly
-        </div>`;
+    chatBox.innerHTML += formatMessage(`
+        Deployment Instructions:<br>
+        1. Your app files are in the "generated/${currentAppName}" folder<br>
+        2. Upload this folder to any web hosting service (Netlify, Vercel, GitHub Pages, etc.)<br>
+        3. For full PWA functionality, ensure your server serves the manifest.json and service worker files correctly
+    `, false);
     
     // Scroll to bottom of chat
     chatBox.scrollTop = chatBox.scrollHeight;

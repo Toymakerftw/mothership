@@ -366,6 +366,20 @@ self.addEventListener('fetch', e => {
         logger.error(f"File creation failed: {str(e)}")
         return jsonify({"status": "error", "message": f"File creation failed: {str(e)}"}), 500
 
+@app.route("/delete_app/<app_name>", methods=["DELETE"])
+def delete_app(app_name):
+    try:
+        app_dir = os.path.join("generated", app_name)
+        if os.path.isdir(app_dir):
+            import shutil
+            shutil.rmtree(app_dir)
+            return jsonify({"success": True})
+        else:
+            return jsonify({"success": False, "error": "App not found"}), 404
+    except Exception as e:
+        logger.error(f"Error deleting app {app_name}: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 if __name__ == "__main__":
     os.makedirs("generated", exist_ok=True)
     app.run(debug=True, port=5000)
