@@ -41,7 +41,7 @@ def chat():
     )
     
     data = {
-        "model": "mistralai/mistral-7b-instruct",
+        "model": "qwen/qwen-2.5-coder-32b-instruct:free",
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"Create a PWA for: {prompt}"}
