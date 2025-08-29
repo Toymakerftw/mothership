@@ -5,6 +5,7 @@
   "main": "app.py",
   "scripts": {
     "build-css": "tailwindcss -i ./static/src/input.css -o ./static/styles.css",
+    "build-css-prod": "NODE_ENV=production tailwindcss -i ./static/src/input.css -o ./static/styles.css",
     "watch-css": "tailwindcss -i ./static/src/input.css -o ./static/styles.css --watch"
   },
   "keywords": [

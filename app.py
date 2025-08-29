@@ -7,8 +7,10 @@ import logging
 import base64
 import hashlib
 import time
+import sqlite3
 from io import BytesIO
 from cachetools import TTLCache
+from flask_compress import Compress
 
 from config import (
     OPENROUTER_API_KEY, OPENROUTER_API_URL,
@@ -21,12 +23,36 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+# Enable compression
+Compress(app)
 
 # Initialize caches with TTL (time-to-live)
 # Cache for optimized prompts (5 minutes TTL, max 100 entries)
 prompt_cache = TTLCache(maxsize=100, ttl=300)
 # Cache for generated code responses (10 minutes TTL, max 50 entries)
 code_cache = TTLCache(maxsize=50, ttl=600)
+
+# Database setup
+def init_db():
+    conn = sqlite3.connect('pwa_generator.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS apps
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  name TEXT UNIQUE NOT NULL,
+                  prompt TEXT,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS app_stats
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  app_id INTEGER,
+                  view_count INTEGER DEFAULT 0,
+                  generate_count INTEGER DEFAULT 0,
+                  FOREIGN KEY (app_id) REFERENCES apps (id))''')
+    conn.commit()
+    conn.close()
+
+# Initialize database on startup
+init_db()
 
 @app.route("/")
 def index():
@@ -36,19 +62,87 @@ def index():
 def list_apps():
     base_dir = "generated"
     os.makedirs(base_dir, exist_ok=True)
+    
+    # Pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    
+    # Ensure per_page is within reasonable limits
+    per_page = min(per_page, 50)
+    
     try:
+        # Get entries from database
+        conn = sqlite3.connect('pwa_generator.db')
+        c = conn.cursor()
+        
+        # Get total count
+        c.execute("SELECT COUNT(*) FROM apps")
+        total_entries = c.fetchone()[0]
+        
+        # Calculate pagination
+        total_pages = (total_entries + per_page - 1) // per_page  # Ceiling division
+        page = max(1, min(page, total_pages))  # Ensure page is within valid range
+        offset = (page - 1) * per_page
+        
+        # Get apps with pagination
+        c.execute("""
+            SELECT a.name, a.prompt, a.created_at, a.updated_at, s.view_count, s.generate_count
+            FROM apps a
+            LEFT JOIN app_stats s ON a.id = s.app_id
+            ORDER BY a.updated_at DESC
+            LIMIT ? OFFSET ?
+        """, (per_page, offset))
+        
+        db_entries = c.fetchall()
+        conn.close()
+        
+        # Enhance with file system information
         entries = []
-        for name in sorted(os.listdir(base_dir)):
+        for row in db_entries:
+            name, prompt, created_at, updated_at, view_count, generate_count = row
             path = os.path.join(base_dir, name)
             if os.path.isdir(path):
                 index_path = os.path.join(path, "index.html")
                 has_index = os.path.isfile(index_path)
                 entries.append({
                     "name": name,
+                    "prompt": prompt,
+                    "created_at": created_at,
+                    "updated_at": updated_at,
+                    "view_count": view_count or 0,
+                    "generate_count": generate_count or 0,
                     "has_index": has_index,
                     "preview_url": f"/generated/{name}/index.html" if has_index else None
                 })
-        return render_template("apps.html", apps=entries)
+        
+        # If no database entries, fall back to file system scanning
+        if not entries:
+            # Get all entries from file system
+            all_entries = []
+            for name in sorted(os.listdir(base_dir)):
+                path = os.path.join(base_dir, name)
+                if os.path.isdir(path):
+                    index_path = os.path.join(path, "index.html")
+                    has_index = os.path.isfile(index_path)
+                    all_entries.append({
+                        "name": name,
+                        "has_index": has_index,
+                        "preview_url": f"/generated/{name}/index.html" if has_index else None
+                    })
+            
+            total_entries = len(all_entries)
+            total_pages = (total_entries + per_page - 1) // per_page  # Ceiling division
+            page = max(1, min(page, total_pages))  # Ensure page is within valid range
+            start_idx = (page - 1) * per_page
+            end_idx = start_idx + per_page
+            entries = all_entries[start_idx:end_idx]
+        
+        return render_template("apps.html", 
+                             apps=entries,
+                             current_page=page,
+                             total_pages=total_pages,
+                             per_page=per_page,
+                             total_entries=total_entries)
     except Exception as e:
         logger.error(f"Error listing apps: {str(e)}")
         return render_template("apps.html", apps=[], error=str(e))
@@ -458,6 +552,18 @@ self.addEventListener('fetch', e => {
             f.write(sw_content)
         files_created.append("sw.js")
         
+        # Store app information in database
+        try:
+            conn = sqlite3.connect('pwa_generator.db')
+            c = conn.cursor()
+            c.execute("INSERT OR REPLACE INTO apps (name, prompt) VALUES (?, ?)", (app_name, prompt))
+            c.execute("INSERT OR IGNORE INTO app_stats (app_id, view_count, generate_count) VALUES ((SELECT id FROM apps WHERE name = ?), 0, 1)", (app_name,))
+            c.execute("UPDATE app_stats SET generate_count = generate_count + 1 WHERE app_id = (SELECT id FROM apps WHERE name = ?)", (app_name,))
+            conn.commit()
+            conn.close()
+        except Exception as db_error:
+            logger.error(f"Database error: {str(db_error)}")
+        
         return jsonify({
             "status": "success", 
             "files": files_created, 
@@ -476,6 +582,18 @@ def delete_app(app_name):
         if os.path.isdir(app_dir):
             import shutil
             shutil.rmtree(app_dir)
+            
+            # Also remove from database
+            try:
+                conn = sqlite3.connect('pwa_generator.db')
+                c = conn.cursor()
+                c.execute("DELETE FROM app_stats WHERE app_id = (SELECT id FROM apps WHERE name = ?)", (app_name,))
+                c.execute("DELETE FROM apps WHERE name = ?", (app_name,))
+                conn.commit()
+                conn.close()
+            except Exception as db_error:
+                logger.error(f"Database error when deleting app {app_name}: {str(db_error)}")
+            
             return jsonify({"success": True})
         else:
             return jsonify({"success": False, "error": "App not found"}), 404

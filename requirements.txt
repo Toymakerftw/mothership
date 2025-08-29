@@ -3,3 +3,5 @@ requests
 python-dotenv
 gunicorn
 cachetools
+flask-compress
+sqlite3
