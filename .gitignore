@@ -93,3 +93,6 @@ pnpm-debug.log*
 /tmp/
 *.bak
 *.orig
+
+# Java / Android
+*.hprof
