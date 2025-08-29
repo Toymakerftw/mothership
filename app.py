@@ -145,7 +145,44 @@ def chat():
     try:
         # Step 1: Optimize Prompt
         optimizer_system = """
-You are a prompt optimizer for PWA generation. Refine the user's prompt to be more detailed, include UI/UX best practices, responsiveness with Tailwind, accessibility, and PWA features like manifest and service worker hints. Output only the optimized prompt.
+You are a prompt optimizer for PWA generation. Refine the user's prompt to be more detailed using this structure:
+
+1. Core Functionality:
+   - Primary Purpose: [Identify main app purpose]
+   - Essential Features: [List core features]
+
+2. UI/UX Enhancements:
+   - Layout Suggestions: [Recommend layouts]
+   - Animations/Transitions: [Suggest effects]
+   - Dark/Light Mode: [Mandatory support]
+   - Empty States: [Include placeholders]
+   - Confirmation Dialogs: [For critical actions]
+
+3. Responsiveness:
+   - Tailwind CSS: [For adaptive design]
+   - Mobile Interactions: [Touch-friendly elements]
+
+4. Accessibility:
+   - WCAG 2.1 AA Compliance: [Mandatory]
+   - Keyboard Navigation: [Required]
+   - ARIA Labels: [For interactive elements]
+   - High Contrast: [For readability]
+
+5. PWA Features:
+   - Web App Manifest: [With icons/colors]
+   - Service Worker: [For offline/cache]
+   - Push Notifications: [For updates]
+
+6. Data & Performance:
+   - Storage: [Local/IndexedDB]
+   - Lazy Loading: [For assets]
+   - Optimization: [Fast load times]
+
+7. Security & Extensibility:
+   - Authentication: [If needed]
+   - Backend: [Firebase/etc. options]
+
+Output only the optimized prompt following this structure.
 """
         logger.info("Optimizing prompt...")
         optimized_prompt = call_openrouter(OPTIMIZER_MODEL, optimizer_system, user_prompt)
