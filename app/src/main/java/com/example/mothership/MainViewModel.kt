@@ -1,6 +1,7 @@
 package com.example.mothership
 
 import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mothership.api.MothershipApi
@@ -24,14 +25,21 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
         viewModelScope.launch {
             _uiState.value = MainUiState.Loading
             try {
+                // Start the foreground service to keep the app alive during generation
+                PwaGenerationService.startService(context, prompt)
+                
                 val apiKey = settingsRepository.getApiKey()
                 if (apiKey.isNullOrEmpty()) {
                     _uiState.value = MainUiState.Error("API key not set. Please go to Settings to add your OpenRouter API key.")
+                    // Notify service of completion with error
+                    notifyServiceCompletion(prompt, false, "API key not set")
                     return@launch
                 }
 
                 if (prompt.isBlank()) {
                     _uiState.value = MainUiState.Error("Please enter a description for your app.")
+                    // Notify service of completion with error
+                    notifyServiceCompletion(prompt, false, "Please enter a description for your app")
                     return@launch
                 }
 
@@ -81,6 +89,7 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
 
                 if (response.choices.isEmpty()) {
                     _uiState.value = MainUiState.Error("No response from AI. Please try again.")
+                    notifyServiceCompletion(prompt, false, "No response from AI")
                     return@launch
                 }
 
@@ -89,10 +98,24 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
                 savePwaFiles(prompt, pwaFiles)
 
                 _uiState.value = MainUiState.Success
+                // Notify service of successful completion
+                notifyServiceCompletion(prompt, true)
             } catch (e: Exception) {
                 _uiState.value = MainUiState.Error("Failed to generate app: ${e.message ?: "Unknown error"}. Please try again.")
+                // Notify service of completion with error
+                notifyServiceCompletion(prompt, false, e.message ?: "Unknown error")
             }
         }
+    }
+    
+    private fun notifyServiceCompletion(pwaName: String, success: Boolean, errorMessage: String? = null) {
+        val intent = Intent(context, PwaGenerationService::class.java).apply {
+            action = "NOTIFY_COMPLETION"
+            putExtra(PwaGenerationService.EXTRA_PWA_NAME, pwaName)
+            putExtra(PwaGenerationService.EXTRA_SUCCESS, success)
+            putExtra(PwaGenerationService.EXTRA_ERROR_MESSAGE, errorMessage)
+        }
+        context.startService(intent)
     }
 
     private fun savePwaFiles(pwaName: String, files: String) {
