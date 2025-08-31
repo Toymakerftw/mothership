@@ -1,6 +1,5 @@
 package com.example.mothership.ui
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,8 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,6 +45,9 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
     val uiState by mainViewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
+    // Check if we are generating a PWA
+    val isLoading = uiState is MainUiState.Loading
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -55,16 +55,14 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header with app title and icon
+        // Header
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 16.dp),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     imageVector = Icons.Default.Home,
                     contentDescription = "App Icon",
@@ -90,14 +88,11 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Main card with input and action
+        // Input card
         Card(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier
@@ -124,6 +119,7 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                     value = prompt,
                     onValueChange = { prompt = it },
                     label = { Text("Describe your PWA") },
+                    enabled = !isLoading, // disable input when loading
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 24.dp),
@@ -131,7 +127,7 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                 )
 
                 AnimatedButton(
-                    onClick = { 
+                    onClick = {
                         if (prompt.isNotBlank()) {
                             mainViewModel.generatePwa(prompt)
                         }
@@ -139,7 +135,7 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    enabled = prompt.isNotBlank()
+                    enabled = prompt.isNotBlank() && !isLoading // disable button when loading
                 ) {
                     Text(
                         text = "Generate PWA",
@@ -151,9 +147,7 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                 when (uiState) {
                     is MainUiState.Loading -> {
                         Spacer(modifier = Modifier.height(24.dp))
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Text(
                             text = "Generating your PWA...",
                             style = MaterialTheme.typography.bodyMedium,
