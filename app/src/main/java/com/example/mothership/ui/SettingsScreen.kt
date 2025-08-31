@@ -1,40 +1,24 @@
 package com.example.mothership.ui
 
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mothership.SettingsViewModel
@@ -44,6 +28,7 @@ import com.example.mothership.SettingsViewModel
 fun SettingsScreen(navController: NavController, settingsViewModel: SettingsViewModel) {
     val apiKey by settingsViewModel.apiKey.collectAsState()
     var newApiKey by remember { mutableStateOf(apiKey ?: "") }
+    var isPasswordVisible by remember { mutableStateOf(false) } // 👈 toggle state
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
@@ -93,7 +78,7 @@ fun SettingsScreen(navController: NavController, settingsViewModel: SettingsView
                     icon = Icons.Default.Lock,
                     title = "API Configuration"
                 )
-                
+
                 Text(
                     text = "To generate PWAs, you need to provide your OpenRouter API key. This key is stored locally on your device and is never sent to any server other than OpenRouter.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -105,15 +90,24 @@ fun SettingsScreen(navController: NavController, settingsViewModel: SettingsView
                     value = newApiKey,
                     onValueChange = { newApiKey = it },
                     label = { Text("OpenRouter API Key") },
-                    placeholder = { Text(if (apiKey.isNullOrEmpty()) "Enter your API key" else "Your API key is saved") },
+                    placeholder = { Text("Enter your API key") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
-                    shape = MaterialTheme.shapes.medium
+                    shape = MaterialTheme.shapes.medium,
+                    visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                            Icon(
+                                imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (isPasswordVisible) "Hide API key" else "Show API key"
+                            )
+                        }
+                    }
                 )
 
                 AnimatedButton(
-                    onClick = { 
+                    onClick = {
                         settingsViewModel.saveApiKey(newApiKey)
                         Toast.makeText(context, "API Key Saved", Toast.LENGTH_SHORT).show()
                     },
@@ -132,8 +126,7 @@ fun SettingsScreen(navController: NavController, settingsViewModel: SettingsView
 
         // Information Section
         Card(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
@@ -148,17 +141,17 @@ fun SettingsScreen(navController: NavController, settingsViewModel: SettingsView
                     icon = Icons.Default.Info,
                     title = "How It Works"
                 )
-                
+
                 InfoItem(
                     title = "1. Create Your PWA",
                     description = "Describe the app you want to create on the home screen. Our AI will generate the complete HTML, CSS, and JavaScript for your PWA."
                 )
-                
+
                 InfoItem(
                     title = "2. View & Install",
                     description = "View your generated PWA in our built-in browser or install it directly to your device as a standalone app."
                 )
-                
+
                 InfoItem(
                     title = "3. Share & Export",
                     description = "Share your PWA source code with others or export it as a ZIP file for further development."
