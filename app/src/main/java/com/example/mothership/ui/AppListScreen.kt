@@ -3,13 +3,16 @@ package com.example.mothership.ui
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +30,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.GetApp
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -42,12 +48,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.mothership.MainViewModel
 import com.example.mothership.PwaViewerActivity
@@ -69,64 +78,131 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+                    )
+                )
+            )
+            .padding(20.dp)
     ) {
-        Text(
-            text = "Generated PWAs",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        Text(
-            text = "Your collection of AI-generated Progressive Web Apps",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
-        if (pwas.isEmpty()) {
+        // Header
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = "No apps",
-                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f),
-                        modifier = Modifier.size(64.dp)
-                    )
-                    Text(
-                        text = "No PWAs generated yet",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                    Text(
-                        text = "Go to the home screen to create your first PWA!",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    AnimatedButton(
-                        onClick = { navController.navigate("main") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
+                Text(text = "🚀", fontSize = 24.sp)
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = "Your PWA Collection",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            
+            Text(
+                text = "${pwas.size} ${if (pwas.size == 1) "app" else "apps"} generated",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+
+        if (pwas.isEmpty()) {
+            // Empty state
+            Card(
+                modifier = Modifier.fillMaxSize(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
+                        Box(
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                        )
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "🌟",
+                                fontSize = 48.sp
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
                         Text(
-                            text = "Create Your First PWA",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            text = "Ready for Launch!",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
+                        
+                        Text(
+                            text = "You haven't created any PWAs yet. Start building your first app and watch the magic happen!",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(top = 12.dp, bottom = 32.dp),
+                            lineHeight = 22.sp
+                        )
+                        
+                        AnimatedButton(
+                            onClick = { navController.navigate("main") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(text = "🚀", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Create Your First PWA",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
         } else {
-            LazyColumn {
+            // PWA list
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 items(pwas) { (uuid, pwaName) ->
                     AppCard(
                         uuid = uuid,
@@ -139,6 +215,7 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
         }
     }
 }
+
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun AppCard(
@@ -150,11 +227,14 @@ fun AppCard(
     var expanded by remember { mutableStateOf(false) }
     val pwaDir = remember { File(context.getExternalFilesDir(null), uuid) }
     val hasIndexFile = remember(pwaDir) { File(pwaDir, "index.html").exists() }
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "expand_rotation"
+    )
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 16.dp)
             .combinedClickable(
                 onClick = {
                     if (hasIndexFile) {
@@ -171,83 +251,131 @@ fun AppCard(
                     expanded = !expanded
                 }
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
+            // Main content
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // App icon
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(56.dp)
                         .clip(CircleShape)
-                        .padding(8.dp),
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                                )
+                            )
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = "App Icon",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(32.dp)
+                    Text(
+                        text = "📱",
+                        fontSize = 24.sp
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
+                // App info
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
                         text = pwaName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                    Text(
-                        text = if (hasIndexFile) "Tap to open" else "Generated",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (hasIndexFile) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+                    
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (hasIndexFile) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outline
+                                )
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (hasIndexFile) "Ready to launch" else "Generating...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = if (hasIndexFile) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
                 }
+
+                // Expand indicator
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = "Expand",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .rotate(rotationAngle),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                )
             }
 
-            // More actions on long press
+            // Expanded actions
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically(),
                 exit = shrinkVertically()
             ) {
-                Column(
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp)
+                        .padding(horizontal = 24.dp, vertical = 0.dp)
+                        .padding(bottom = 24.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         ActionButton(
-                            icon = Icons.Default.Add,
+                            icon = Icons.Outlined.GetApp,
                             label = "Install",
-                            color = MaterialTheme.colorScheme.secondary
+                            color = MaterialTheme.colorScheme.secondary,
+                            enabled = hasIndexFile
                         ) {
                             val installer = com.example.mothership.PwaInstaller(context)
                             installer.install(uuid)
                         }
 
                         ActionButton(
-                            icon = Icons.Default.Share,
+                            icon = Icons.Outlined.Share,
                             label = "Share",
-                            color = MaterialTheme.colorScheme.tertiary
+                            color = MaterialTheme.colorScheme.tertiary,
+                            enabled = hasIndexFile
                         ) {
                             sharePwa(uuid, pwaName, pwaDir, context)
                         }
@@ -331,23 +459,31 @@ fun ActionButton(
         OutlinedButton(
             onClick = onClick,
             enabled = enabled,
-            modifier = Modifier.size(56.dp),
-            shape = CircleShape,
-            border = BorderStroke(2.dp, color),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+            modifier = Modifier.size(64.dp),
+            shape = RoundedCornerShape(20.dp),
+            border = BorderStroke(
+                width = 2.dp, 
+                color = if (enabled) color else color.copy(alpha = 0.3f)
+            ),
+            contentPadding = PaddingValues(0.dp),
+            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                containerColor = if (enabled) color.copy(alpha = 0.1f) else Color.Transparent
+            )
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
                 tint = if (enabled) color else color.copy(alpha = 0.5f),
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(28.dp)
             )
         }
+        
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall,
+            style = MaterialTheme.typography.labelMedium,
             color = if (enabled) color else color.copy(alpha = 0.5f),
-            modifier = Modifier.padding(top = 4.dp)
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 8.dp)
         )
     }
 }
