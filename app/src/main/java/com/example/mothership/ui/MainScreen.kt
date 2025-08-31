@@ -20,10 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -189,7 +187,7 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                     maxLines = 4
                 )
 
-                AnimatedButton(
+                LoadingButton(
                     onClick = {
                         if (prompt.isNotBlank()) {
                             mainViewModel.generatePwa(prompt)
@@ -198,41 +196,14 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    enabled = prompt.isNotBlank() && !isLoading,
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    if (!isLoading) {
-                        Icon(
-                            imageVector = Icons.Outlined.RocketLaunch,
-                            contentDescription = "Generate",
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text(
-                        text = if (isLoading) "Generating..." else "Launch PWA Generation",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                    enabled = prompt.isNotBlank(),
+                    isLoading = isLoading,
+                    shape = RoundedCornerShape(16.dp),
+                    normalText = "Launch PWA Generation"
+                )
 
-                // Loading and error states
+                // Error state only
                 when (uiState) {
-                    is MainUiState.Loading -> {
-                        Spacer(modifier = Modifier.height(28.dp))
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 3.dp,
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Text(
-                            text = "Creating your PWA...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 16.dp)
-                        )
-                    }
                     is MainUiState.Error -> {
                         Spacer(modifier = Modifier.height(20.dp))
                         Card(
