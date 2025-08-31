@@ -49,7 +49,7 @@ import com.example.mothership.MainViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
-    var prompt by remember { mutableStateOf("") }
+    val prompt by mainViewModel.prompt.collectAsState()
     val uiState by mainViewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
@@ -161,7 +161,7 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
 
                 OutlinedTextField(
                     value = prompt,
-                    onValueChange = { prompt = it },
+                    onValueChange = { mainViewModel.setPrompt(it) },
                     label = { 
                         Text(
                             "What app would you like to create?",

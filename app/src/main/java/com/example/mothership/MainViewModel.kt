@@ -15,11 +15,24 @@ import java.io.File
 
 class MainViewModel(private val mothershipApi: MothershipApi, private val settingsRepository: SettingsRepository, private val context: Context) : ViewModel() {
 
+
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Idle)
     val uiState = _uiState.asStateFlow()
 
     private val _pwas = MutableStateFlow<List<Pair<String, String>>>(emptyList())
     val pwas = _pwas.asStateFlow()
+
+    // Prompt state for main screen
+    private val _prompt = MutableStateFlow("")
+    val prompt = _prompt.asStateFlow()
+
+    fun setPrompt(value: String) {
+        _prompt.value = value
+    }
+
+    fun clearPrompt() {
+        _prompt.value = ""
+    }
 
     fun generatePwa(prompt: String) {
         viewModelScope.launch {
