@@ -1,4 +1,3 @@
-
 package com.example.mothership.ui.theme
 
 import android.app.Activity
@@ -17,15 +16,33 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = ElectricBlue,
+    secondary = ElectricPurple,
+    tertiary = BrightPink,
+    background = DeepNavy,
+    surface = MidnightBlue,
+    onPrimary = PureWhite,
+    onSecondary = PureWhite,
+    onTertiary = PureWhite,
+    onBackground = LightBlueGray,
+    onSurface = LightBlueGray,
+    error = ErrorRed,
+    onError = PureWhite
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = ElectricBlue,
+    secondary = ElectricPurple,
+    tertiary = BrightPink,
+    background = PureWhite,
+    surface = LightBlueGray,
+    onPrimary = PureWhite,
+    onSecondary = PureWhite,
+    onTertiary = PureWhite,
+    onBackground = DeepNavy,
+    onSurface = DeepNavy,
+    error = ErrorRed,
+    onError = PureWhite
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
