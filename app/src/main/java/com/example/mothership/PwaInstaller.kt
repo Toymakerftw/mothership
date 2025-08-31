@@ -1,4 +1,3 @@
-
 package com.example.mothership
 
 import android.content.Context
@@ -35,12 +34,29 @@ class PwaInstaller(private val context: Context) {
             val manifest = manifestFile.readText()
             val manifestJson = JSONObject(manifest)
             val shortName = manifestJson.optString("short_name", appName)
+            
+            // Try to get start URL from manifest, fallback to index.html
             val startUrl = manifestJson.optString("start_url", "index.html")
+            
+            // Ensure start URL is properly formatted
+            val normalizedStartUrl = if (startUrl.startsWith("/")) {
+                startUrl.substring(1)
+            } else {
+                startUrl
+            }
+            
+            // Check if the start file exists, fallback to index.html if not
+            val startFile = File(pwaDir, normalizedStartUrl)
+            val actualStartUrl = if (startFile.exists()) {
+                normalizedStartUrl
+            } else {
+                "index.html"
+            }
             
             // Create intent for the shortcut
             val intent = Intent(context, PwaViewerActivity::class.java).apply {
                 action = Intent.ACTION_VIEW
-                putExtra("pwaUrl", "file://${pwaDir.absolutePath}/$startUrl")
+                putExtra("pwaUrl", "file://${pwaDir.absolutePath}/$actualStartUrl")
                 putExtra("pwaName", appName)
                 putExtra("pwaId", uuid)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP

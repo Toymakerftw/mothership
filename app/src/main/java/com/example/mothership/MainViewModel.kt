@@ -1,4 +1,3 @@
-
 package com.example.mothership
 
 import android.content.Context
@@ -55,7 +54,7 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
                            - Register sw.js as service worker
                            - Be a complete, valid HTML document
                         
-                        3. The manifest.json must be a valid PWA manifest
+                        3. The manifest.json must be a valid PWA manifest with proper start_url
                         
                         4. The sw.js must be a basic but functional service worker
                         
@@ -135,19 +134,13 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
                 filesMap["index.html"] = response
             }
             
-            // Ensure we have required PWA files
+            // Ensure we have required PWA files with proper content
             if (!filesMap.containsKey("manifest.json")) {
-                filesMap["manifest.json"] = """
-                    {
-                      "name": "Generated PWA",
-                      "short_name": "PWA",
-                      "start_url": "index.html",
-                      "display": "standalone",
-                      "background_color": "#ffffff",
-                      "theme_color": "#000000",
-                      "icons": []
-                    }
-                """.trimIndent()
+                filesMap["manifest.json"] = createDefaultManifest()
+            } else {
+                // Validate and fix manifest if needed
+                val manifestContent = filesMap["manifest.json"] ?: "{}"
+                filesMap["manifest.json"] = fixManifest(manifestContent)
             }
             
             if (!filesMap.containsKey("sw.js")) {
@@ -162,6 +155,56 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
         } catch (e: Exception) {
             // Fallback to simple parsing
             parseSimpleResponse(response)
+        }
+    }
+
+    private fun createDefaultManifest(): String {
+        return """
+            {
+              "name": "Generated PWA",
+              "short_name": "PWA",
+              "start_url": "index.html",
+              "display": "standalone",
+              "background_color": "#ffffff",
+              "theme_color": "#000000",
+              "icons": []
+            }
+        """.trimIndent()
+    }
+
+    private fun fixManifest(manifestContent: String): String {
+        return try {
+            val manifestJson = org.json.JSONObject(manifestContent)
+            
+            // Ensure required fields are present
+            if (!manifestJson.has("name")) {
+                manifestJson.put("name", "Generated PWA")
+            }
+            
+            if (!manifestJson.has("short_name")) {
+                manifestJson.put("short_name", manifestJson.optString("name", "PWA"))
+            }
+            
+            if (!manifestJson.has("start_url")) {
+                manifestJson.put("start_url", "index.html")
+            }
+            
+            if (!manifestJson.has("display")) {
+                manifestJson.put("display", "standalone")
+            }
+            
+            if (!manifestJson.has("background_color")) {
+                manifestJson.put("background_color", "#ffffff")
+            }
+            
+            if (!manifestJson.has("theme_color")) {
+                manifestJson.put("theme_color", "#000000")
+            }
+            
+            manifestJson.toString(2)
+        } catch (e: Exception) {
+            // If we can't fix it, return a default manifest
+            createDefaultManifest()
         }
     }
 
@@ -204,17 +247,7 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
             </html>
         """.trimIndent()
         
-        filesMap["manifest.json"] = """
-            {
-              "name": "Generated PWA",
-              "short_name": "PWA",
-              "start_url": "index.html",
-              "display": "standalone",
-              "background_color": "#ffffff",
-              "theme_color": "#000000",
-              "icons": []
-            }
-        """.trimIndent()
+        filesMap["manifest.json"] = createDefaultManifest()
         
         filesMap["sw.js"] = """
             self.addEventListener('fetch', event => {
