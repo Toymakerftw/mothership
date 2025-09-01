@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mothership - From Idea to App, Instantly</title>
+
+    <meta name="description"
+        content="Mothership is an AI-powered Android app that lets you create, install, and manage Progressive Web Apps (PWAs) using natural language. No coding required. From idea to app — instantly." />
+    <meta name="keywords"
+        content="Mothership, AI app builder, PWA generator, no-code apps, Android apps, AI-powered app creation" />
+    <meta name="author" content="Mothership Team" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Mothership - From Idea to App, Instantly" />
+    <meta property="og:description"
+        content="Create, install, and manage Progressive Web Apps using natural language. AI-powered. No coding required." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://toymakerftw.github.io/mothership/" />
+    <meta property="og:image" content="https://raw.githubusercontent.com/Toymakerftw/mothership/master/images/promo.png" />
+    <meta property="og:site_name" content="Mothership" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Mothership - From Idea to App, Instantly" />
+    <meta name="twitter:description"
+        content="From idea to app in seconds. Build Progressive Web Apps with natural language, powered by AI." />
+    <meta name="twitter:image" content="https://raw.githubusercontent.com/Toymakerftw/mothership/master/images/promo.png" />
+    <meta name="twitter:site" content="@anandhramancv" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon" />
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        @keyframes phoneFloat {
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-10px) rotate(1deg);
+            }
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-10vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .gradient-text {
+            background: linear-gradient(45deg, #ffffff, #ff6b9d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(45deg, #ff6b9d, #c44569);
+        }
+
+        .gradient-bg:hover {
+            background: linear-gradient(45deg, #ff6b9d, #e83e8c);
+        }
+
+        .bg-space {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(255, 107, 157, 0.1);
+        }
+
+        .phone-mockup {
+            animation: phoneFloat 4s ease-in-out infinite;
+        }
+
+        .rocket {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .particle {
+            animation: particleFloat 15s linear infinite;
+        }
+
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Hide scrollbars for screenshots */
+        .screenshot-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .screenshot-scroll {
+            -ms-overflow-style: none;
+            /* IE/Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+    </style>
+</head>
+
+<body class="bg-space text-white font-['Inter'] overflow-x-hidden">
+    <!-- Header -->
+    <header
+        class="fixed top-0 w-full z-50 backdrop-blur-md bg-opacity-80 bg-[#0f0f23] border-b border-white border-opacity-10 transition-all duration-300">
+        <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2 text-2xl font-bold text-pink-400">
+                <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center rocket">🚀</div>
+                Mothership
+            </div>
+            <div class="hidden md:flex items-center gap-8">
+                <ul class="flex gap-6">
+                    <li><a href="#features" class="hover:text-pink-400 transition-colors duration-300">Features</a></li>
+                    <li><a href="#how-it-works" class="hover:text-pink-400 transition-colors duration-300">How it
+                            Works</a></li>
+                    <li><a href="https://github.com/Toymakerftw/mothership/releases"
+                            class="hover:text-pink-400 transition-colors duration-300">Download</a></li>
+                </ul>
+                <a href="https://github.com/Toymakerftw/mothership/releases"
+                    class="gradient-bg text-white px-6 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-pink-500/30 transition-all duration-300">Get
+                    Started</a>
+            </div>
+            <!-- Mobile Hamburger -->
+            <button id="mobile-menu-button" class="md:hidden text-2xl focus:outline-none">☰</button>
+        </nav>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu"
+            class="hidden md:hidden bg-[#0f0f23] border-t border-white border-opacity-10 flex flex-col items-center space-y-6 py-6">
+            <a href="#features" class="hover:text-pink-400 transition-colors duration-300">Features</a>
+            <a href="#how-it-works" class="hover:text-pink-400 transition-colors duration-300">How it Works</a>
+            <a href="https://github.com/Toymakerftw/mothership/releases"
+                class="hover:text-pink-400 transition-colors duration-300">Download</a>
+            <a href="https://github.com/Toymakerftw/mothership/releases"
+                class="gradient-bg text-white px-6 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-pink-500/30 transition-all duration-300">Get
+                Started</a>
+            <button id="close-menu" class="text-gray-400 hover:text-pink-400 text-xl mt-4">❌ Close</button>
+        </div>
+
+    </header>
+
+    <!-- Hero Section -->
+    <section class="min-h-screen flex items-center relative pt-20 pb-16 px-4">
+        <div class="absolute inset-0 w-full h-full overflow-hidden pointer-events-none" id="particles"></div>
+        <div class="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="text-center lg:text-left">
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-6 gradient-text">
+                    From Idea to App — Instantly
+                </h1>
+                <p class="text-xl text-gray-400 mb-8 max-w-lg mx-auto lg:mx-0">
+                    Create, install, and manage Progressive Web Apps using natural language. No coding required, just
+                    describe your idea and watch it come to life.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                    <a href="https://github.com/Toymakerftw/mothership/releases"
+                        class="gradient-bg justify-center text-white px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-2 hover:shadow-xl hover:shadow-pink-500/30 transition-all duration-300 transform hover:-translate-y-1">
+                        🚀 Download Now
+                    </a>
+                    <a href="#features"
+                        class="border-2 border-white border-opacity-20 text-white px-8 py-4 rounded-full font-semibold text-lg hover:border-pink-400 hover:text-pink-400 transition-all duration-300">
+                        Learn More
+                    </a>
+                </div>
+            </div>
+
+            <!-- Phone Mockup with Scrollable Screenshots -->
+            <div class="flex justify-center">
+                <div
+                    class="relative w-72 h-[550px] bg-gradient-to-br from-gray-800 to-gray-900 rounded-[40px] p-5 shadow-2xl phone-mockup">
+                    <div
+                        class="w-full h-full bg-gradient-to-br from-purple-900 to-purple-800 rounded-3xl overflow-hidden">
+                        <!-- Scrollable container -->
+                        <div
+                            class="h-full w-full overflow-y-scroll screenshot-scroll rounded-3xl snap-y snap-mandatory">
+                            <img src="images/0.jpg" class="w-full h-full object-cover snap-start">
+                            <img src="images/1.jpg" class="w-full h-full object-cover snap-start">
+                            <img src="images/2.jpg" class="w-full h-full object-cover snap-start">
+                            <img src="images/3.jpg" class="w-full h-full object-cover snap-start">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- End Phone Mockup -->
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-16 px-4 bg-white bg-opacity-5 backdrop-blur-sm">
+        <div class="container mx-auto text-center">
+            <h2 class="text-4xl font-bold mb-4 gradient-text">Powerful Features</h2>
+            <p class="text-xl text-gray-400 mb-16 max-w-3xl mx-auto">
+                Everything you need to create amazing Progressive Web Apps
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div
+                    class="fade-in bg-white bg-opacity-5 p-8 rounded-2xl border border-white border-opacity-10 backdrop-blur-sm transition-all duration-300">
+                    <div
+                        class="w-16 h-16 rounded-xl gradient-bg flex items-center justify-center text-2xl mx-auto mb-6">
+                        🤖</div>
+                    <h3 class="text-xl font-bold mb-4">AI-Powered Generation</h3>
+                    <p class="text-gray-400">
+                        Advanced LLMs understand your app description and generate complete, functional PWAs
+                        automatically.
+                    </p>
+                </div>
+                <div
+                    class="fade-in bg-white bg-opacity-5 p-8 rounded-2xl border border-white border-opacity-10 backdrop-blur-sm transition-all duration-300">
+                    <div
+                        class="w-16 h-16 rounded-xl gradient-bg flex items-center justify-center text-2xl mx-auto mb-6">
+                        ⚡</div>
+                    <h3 class="text-xl font-bold mb-4">Instant Creation</h3>
+                    <p class="text-gray-400">
+                        Go from idea to installable app in seconds. No waiting, no complex setup - just instant results.
+                    </p>
+                </div>
+                <div
+                    class="fade-in bg-white bg-opacity-5 p-8 rounded-2xl border border-white border-opacity-10 backdrop-blur-sm transition-all duration-300">
+                    <div
+                        class="w-16 h-16 rounded-xl gradient-bg flex items-center justify-center text-2xl mx-auto mb-6">
+                        📱</div>
+                    <h3 class="text-xl font-bold mb-4">Native App Experience</h3>
+                    <p class="text-gray-400">
+                        Generate PWAs that look and feel like native Android apps, complete with offline capabilities.
+                    </p>
+                </div>
+                <div
+                    class="fade-in bg-white bg-opacity-5 p-8 rounded-2xl border border-white border-opacity-10 backdrop-blur-sm transition-all duration-300">
+                    <div
+                        class="w-16 h-16 rounded-xl gradient-bg flex items-center justify-center text-2xl mx-auto mb-6">
+                        🎨</div>
+                    <h3 class="text-xl font-bold mb-4">Beautiful UI</h3>
+                    <p class="text-gray-400">
+                        Clean, modern interface with dark theme support and intuitive navigation for the best user
+                        experience.
+                    </p>
+                </div>
+                <div
+                    class="fade-in bg-white bg-opacity-5 p-8 rounded-2xl border border-white border-opacity-10 backdrop-blur-sm transition-all duration-300">
+                    <div
+                        class="w-16 h-16 rounded-xl gradient-bg flex items-center justify-center text-2xl mx-auto mb-6">
+                        🔧</div>
+                    <h3 class="text-xl font-bold mb-4">Easy Management</h3>
+                    <p class="text-gray-400">
+                        Install, update, and manage all your generated PWAs from one convenient location.
+                    </p>
+                </div>
+                <div
+                    class="fade-in bg-white bg-opacity-5 p-8 rounded-2xl border border-white border-opacity-10 backdrop-blur-sm transition-all duration-300">
+                    <div
+                        class="w-16 h-16 rounded-xl gradient-bg flex items-center justify-center text-2xl mx-auto mb-6">
+                        🚀</div>
+                    <h3 class="text-xl font-bold mb-4">No Code Required</h3>
+                    <p class="text-gray-400">
+                        Simply describe what you want in natural language - Mothership handles all the technical
+                        complexity.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How it Works -->
+    <section id="how-it-works" class="py-16 px-4">
+        <div class="container mx-auto text-center">
+            <h2 class="text-4xl font-bold mb-16 gradient-text">How It Works</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto">
+                <div class="fade-in">
+                    <div
+                        class="w-16 h-16 rounded-full gradient-bg flex items-center justify-center text-2xl font-bold mx-auto mb-6">
+                        1</div>
+                    <h3 class="text-xl font-bold mb-4">Describe Your Idea</h3>
+                    <p class="text-gray-400">
+                        Tell Mothership what kind of app you want to create using simple, natural language.
+                    </p>
+                </div>
+                <div class="fade-in">
+                    <div
+                        class="w-16 h-16 rounded-full gradient-bg flex items-center justify-center text-2xl font-bold mx-auto mb-6">
+                        2</div>
+                    <h3 class="text-xl font-bold mb-4">AI Generates Your App</h3>
+                    <p class="text-gray-400">
+                        Our advanced AI processes your description and creates a complete, functional PWA tailored to
+                        your needs.
+                    </p>
+                </div>
+                <div class="fade-in">
+                    <div
+                        class="w-16 h-16 rounded-full gradient-bg flex items-center justify-center text-2xl font-bold mx-auto mb-6">
+                        3</div>
+                    <h3 class="text-xl font-bold mb-4">Install & Enjoy</h3>
+                    <p class="text-gray-400">
+                        Your new PWA is ready to install on your device. Launch it directly from your home screen like
+                        any native app.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="download" class="py-16 px-4 bg-gradient-to-r from-pink-500/10 to-purple-500/10">
+        <div class="container mx-auto text-center max-w-3xl">
+            <h2 class="text-4xl font-bold mb-6">Ready to Launch Your Ideas?</h2>
+            <p class="text-xl text-gray-400 mb-8">
+                Join thousands of creators who are building amazing apps without writing a single line of code.
+            </p>
+            <a href="https://github.com/Toymakerftw/mothership/releases"
+                class="gradient-bg text-white px-12 py-5 rounded-full font-semibold text-xl inline-flex items-center gap-2 hover:shadow-xl hover:shadow-pink-500/30 transition-all duration-300 transform hover:-translate-y-1">
+                Download Mothership
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-4 bg-black bg-opacity-20 border-t border-white border-opacity-10">
+        <div class="container mx-auto text-center">
+            <div class="flex flex-wrap justify-center gap-6 mb-8">
+                <a href="#" class="text-gray-400 hover:text-pink-400 transition-colors duration-300">Privacy Policy</a>
+                <a href="#" class="text-gray-400 hover:text-pink-400 transition-colors duration-300">Terms of
+                    Service</a>
+                <a href="#" class="text-gray-400 hover:text-pink-400 transition-colors duration-300">Support</a>
+                <a href="#" class="text-gray-400 hover:text-pink-400 transition-colors duration-300">Contact</a>
+            </div>
+            <p class="text-gray-600">&copy; 2025 Mothership. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Particles
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 20;
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle absolute w-1 h-1 bg-pink-400/60 rounded-full';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                particlesContainer.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 100) {
+                header.classList.add('bg-opacity-95');
+                header.classList.remove('bg-opacity-80');
+            } else {
+                header.classList.remove('bg-opacity-95');
+                header.classList.add('bg-opacity-80');
+            }
+        });
+
+        // Intersection Observer
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const closeMenu = document.getElementById('close-menu');
+
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        closeMenu.addEventListener('click', () => {
+            mobileMenu.classList.add('hidden');
+        });
+
+        // Close menu when clicking a link
+        document.querySelectorAll('#mobile-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+    </script>
+</body>
+
+</html>
