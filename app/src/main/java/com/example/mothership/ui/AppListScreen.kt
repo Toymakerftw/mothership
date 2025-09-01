@@ -1,6 +1,8 @@
 package com.example.mothership.ui
 
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -26,11 +28,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Card
@@ -57,8 +57,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.navigation.NavController
 import com.example.mothership.MainViewModel
+import com.example.mothership.PwaInstaller
 import com.example.mothership.PwaViewerActivity
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -231,6 +234,9 @@ fun AppCard(
         targetValue = if (expanded) 180f else 0f,
         label = "expand_rotation"
     )
+    var isInstalled by remember(uuid) {
+        mutableStateOf(isShortcutInstalled(context, uuid))
+    }
 
     Card(
         modifier = Modifier
@@ -361,14 +367,30 @@ fun AppCard(
                             .padding(20.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        ActionButton(
-                            icon = Icons.Outlined.GetApp,
-                            label = "Install",
-                            color = MaterialTheme.colorScheme.secondary,
-                            enabled = hasIndexFile
-                        ) {
-                            val installer = com.example.mothership.PwaInstaller(context)
-                            installer.install(uuid)
+                        if (isInstalled) {
+                            ActionButton(
+                                icon = Icons.Outlined.Delete,
+                                label = "Uninstall",
+                                color = MaterialTheme.colorScheme.error,
+                                enabled = hasIndexFile
+                            ) {
+                                val installer = PwaInstaller(context)
+                                installer.uninstall(uuid)
+                                isInstalled = false
+                                Toast.makeText(context, "PWA uninstalled successfully.", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            ActionButton(
+                                icon = Icons.Outlined.GetApp,
+                                label = "Install",
+                                color = MaterialTheme.colorScheme.secondary,
+                                enabled = hasIndexFile
+                            ) {
+                                val installer = PwaInstaller(context)
+                                installer.install(uuid)
+                                isInstalled = true
+                                Toast.makeText(context, "PWA installed successfully.", Toast.LENGTH_SHORT).show()
+                            }
                         }
 
                         ActionButton(
@@ -392,6 +414,11 @@ fun AppCard(
             }
         }
     }
+}
+
+private fun isShortcutInstalled(context: Context, shortcutId: String): Boolean {
+    val shortcutManager = ShortcutManagerCompat.getDynamicShortcuts(context)
+    return shortcutManager.any { it.id == shortcutId }
 }
 
 private fun sharePwa(

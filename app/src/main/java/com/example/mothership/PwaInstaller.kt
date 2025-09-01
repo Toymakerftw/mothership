@@ -84,6 +84,13 @@ class PwaInstaller(private val context: Context) {
     
     fun uninstall(uuid: String) {
         try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ShortcutManagerCompat.disableShortcuts(
+                    context,
+                    listOf(uuid),
+                    "Shortcut disabled"
+                )
+            }
             // Remove shortcut from launcher
             ShortcutManagerCompat.removeDynamicShortcuts(context, listOf(uuid))
         } catch (e: Exception) {
