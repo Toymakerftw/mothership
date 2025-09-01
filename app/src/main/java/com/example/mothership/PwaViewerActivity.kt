@@ -3,7 +3,6 @@ package com.example.mothership
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -11,6 +10,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import java.io.File
+import java.net.URLDecoder
 
 class PwaViewerActivity : ComponentActivity() {
     private lateinit var webView: WebView
@@ -18,11 +19,34 @@ class PwaViewerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        val pwaUrl = intent.getStringExtra("pwaUrl")
+        var pwaUrl = intent.getStringExtra("pwaUrl")
         val pwaName = intent.getStringExtra("pwaName") ?: "PWA App"
         
         if (pwaUrl == null || !pwaUrl.startsWith("file://")) {
             Toast.makeText(this, "Invalid PWA URL", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+        
+        // Ensure the URL points to a file, not a directory
+        try {
+            // Decode the URL to handle any encoded characters
+            val decodedUrl = URLDecoder.decode(pwaUrl, "UTF-8")
+            // Remove "file://" prefix to get the file path
+            val filePath = decodedUrl.substring(7) // "file://".length = 7
+            val file = File(filePath)
+            
+            // If it's a directory, append "/index.html"
+            if (file.isDirectory) {
+                pwaUrl = if (pwaUrl.endsWith("/")) {
+                    "${pwaUrl}index.html"
+                } else {
+                    "${pwaUrl}/index.html"
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("PwaViewer", "Error processing PWA URL: ${e.message}")
+            Toast.makeText(this, "Error processing PWA URL", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
