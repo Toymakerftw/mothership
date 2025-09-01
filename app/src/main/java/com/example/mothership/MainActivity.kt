@@ -23,6 +23,8 @@ import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.result.contract.ActivityResultContracts
+import android.util.Log
+import androidx.activity.OnBackPressedCallback
 import com.example.mothership.ui.SplashScreen
 import com.example.mothership.ui.theme.MothershipTheme
 
@@ -76,6 +78,9 @@ class MainActivity : ComponentActivity() {
             registerReceiver(generationCompleteReceiver, filter)
         }
         
+        // Set up back navigation handling
+        setupBackNavigation()
+        
         setContent {
             MothershipTheme {
                 // A surface container using the 'background' color from the theme
@@ -86,6 +91,59 @@ class MainActivity : ComponentActivity() {
                     MothershipApp(mainViewModel, settingsViewModel)
                 }
             }
+        }
+    }
+    
+    // Modern back navigation implementation
+    private fun setupBackNavigation() {
+        // Handle back navigation based on Android version
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ (API 33+) uses the new predictive back gesture API
+            // This is handled via the manifest attribute android:enableOnBackInvokedCallback="true"
+            // No additional code needed here for basic implementation
+        } else {
+            // For older versions, we use the modern approach with OnBackPressedCallback
+            onBackPressedDispatcher.addCallback(
+                this,
+                object : OnBackPressedCallback(true) {
+                    override fun handleOnBackPressed() {
+                        handleBackNavigation()
+                    }
+                }
+            )
+        }
+    }
+    
+    // Common back navigation handling logic
+    private fun handleBackNavigation() {
+        // Add your custom back navigation logic here
+        // For now, we'll just finish the activity
+        finish()
+    }
+    
+    // Device-specific compatibility handling
+    private fun isOppoOrOnePlusDevice(): Boolean {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        return manufacturer.contains("oppo") || manufacturer.contains("oneplus") || 
+               manufacturer.contains("realme") || // Realme is a sub-brand of Oppo
+               Build.BRAND.lowercase().contains("oppo") || 
+               Build.BRAND.lowercase().contains("oneplus")
+    }
+    
+    // Safe method to perform operations that might not work on Oppo/OnePlus devices
+    private fun performSafeOperation(operation: () -> Unit) {
+        if (isOppoOrOnePlusDevice()) {
+            try {
+                // Attempt the operation but catch any exceptions
+                operation()
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Operation failed on Oppo/OnePlus device: ${e.message}")
+                // Gracefully handle the failure with an alternative approach
+                // For example, show a warning to the user or use a fallback method
+            }
+        } else {
+            // For non-Oppo/OnePlus devices, perform the operation normally
+            operation()
         }
     }
     
