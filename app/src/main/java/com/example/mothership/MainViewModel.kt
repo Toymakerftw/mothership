@@ -2,6 +2,7 @@ package com.example.mothership
 
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mothership.api.MothershipApi
@@ -98,15 +99,19 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
                     """.trimIndent()))
                 )
 
+                Log.d("MainViewModel", "Making API request with request: $request")
                 val response = mothershipApi.generatePwa("Bearer $apiKey", request)
-
+                Log.d("MainViewModel", "Received API response successfully")
+                
                 if (response.choices.isEmpty()) {
+                    Log.e("MainViewModel", "No response from AI or empty choices")
                     _uiState.value = MainUiState.Error("No response from AI. Please try again.")
                     notifyServiceCompletion(prompt, false, "No response from AI")
                     return@launch
                 }
 
                 val pwaFiles = response.choices.first().message.content
+                Log.d("MainViewModel", "Received PWA files content length: ${pwaFiles.length}")
 
                 savePwaFiles(prompt, pwaFiles)
 
@@ -114,6 +119,7 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
                 // Notify service of successful completion
                 notifyServiceCompletion(prompt, true)
             } catch (e: Exception) {
+                Log.e("MainViewModel", "Exception in generatePwa", e)
                 _uiState.value = MainUiState.Error("Failed to generate app: ${e.message ?: "Unknown error"}. Please try again.")
                 // Notify service of completion with error
                 notifyServiceCompletion(prompt, false, e.message ?: "Unknown error")
