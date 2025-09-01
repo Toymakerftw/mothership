@@ -18,3 +18,10 @@ Thumbs.db
 
 # Other
 *.log
+
+# Keystore files
+*.jks
+*.keystore
+
+# Signing properties
+signing.properties
