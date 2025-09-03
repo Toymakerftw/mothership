@@ -63,3 +63,6 @@
 # Keep the List interface and ArrayList implementation
 -keep class java.util.List { *; }
 -keep class java.util.ArrayList { *; }
+
+# Keep DemoKeyManager inner data classes for Gson serialization
+-keep class com.example.mothership.demo.DemoKeyManager$* { *; }
