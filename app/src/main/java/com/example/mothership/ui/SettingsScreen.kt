@@ -169,6 +169,36 @@ fun SettingsScreen(navController: NavController, settingsViewModel: SettingsView
                     fontWeight = FontWeight.Bold
                 )
             }
+            
+            if (newApiKey.isEmpty()) {
+                Text(
+                    text = "Don't have an API key? The app includes a free demo mode with 5 daily uses. Add your own key for unlimited access.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 16.dp),
+                    lineHeight = 18.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Demo Mode Card
+        SettingsCard(
+            icon = Icons.Filled.Info,
+            title = "Demo Mode",
+            subtitle = "Free trial with limited usage"
+        ) {
+            Text(
+                text = "Try Mothership with our free demo mode that includes 5 API calls per day. " +
+                        "No registration required - just start creating!\n\n" +
+                        "To unlock unlimited usage, add your own OpenRouter API key above. " +
+                        "It's free to get started at openrouter.ai.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                modifier = Modifier.padding(bottom = 16.dp),
+                lineHeight = 20.sp
+            )
         }
 
         Spacer(modifier = Modifier.height(20.dp))

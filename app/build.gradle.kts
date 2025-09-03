@@ -1,3 +1,5 @@
+import java.util.Properties
+import java.io.FileInputStream
 
 buildscript {
     repositories {
@@ -12,6 +14,12 @@ buildscript {
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+val properties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    properties.load(FileInputStream(localPropertiesFile))
 }
 
 android {
@@ -29,6 +37,10 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField("String", "DEMO_PSK", "\"${properties.getProperty("DEMO_PSK")}\"")
+        buildConfigField("String", "DEMO_APP_SECRET", "\"${properties.getProperty("DEMO_APP_SECRET")}\"")
+        buildConfigField("String", "DEMO_API_URL", "\"${properties.getProperty("DEMO_API_URL")}\"")
     }
 
     signingConfigs {
@@ -67,6 +79,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"

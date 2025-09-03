@@ -9,6 +9,7 @@ import com.example.mothership.api.MothershipApi
 import com.example.mothership.api.model.Message
 import com.example.mothership.api.model.OpenRouterRequest
 import com.example.mothership.data.SettingsRepository
+import com.example.mothership.demo.DemoKeyManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -16,6 +17,7 @@ import java.io.File
 
 class MainViewModel(private val mothershipApi: MothershipApi, private val settingsRepository: SettingsRepository, private val context: Context) : ViewModel() {
 
+    private val demoKeyManager = DemoKeyManager(context)
 
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Idle)
     val uiState = _uiState.asStateFlow()
@@ -42,7 +44,8 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
                 // Start the foreground service to keep the app alive during generation
                 PwaGenerationService.startService(context, prompt)
                 
-                val apiKey = settingsRepository.getApiKey()
+                // Get the API key - first try user key, then demo key
+                val apiKey = getApiKeyForRequest()
                 if (apiKey.isNullOrEmpty()) {
                     _uiState.value = MainUiState.Error("API key not set. Please go to Settings to add your OpenRouter API key.")
                     // Notify service of completion with error
@@ -103,6 +106,11 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
                 val response = mothershipApi.generatePwa("Bearer $apiKey", request)
                 Log.d("MainViewModel", "Received API response successfully")
                 
+                // Increment usage if we used a demo key
+                if (settingsRepository.getApiKey().isNullOrEmpty()) {
+                    demoKeyManager.incrementUsage()
+                }
+                
                 if (response.choices.isEmpty()) {
                     Log.e("MainViewModel", "No response from AI or empty choices")
                     _uiState.value = MainUiState.Error("No response from AI. Please try again.")
@@ -125,6 +133,53 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
                 notifyServiceCompletion(prompt, false, e.message ?: "Unknown error")
             }
         }
+    }
+    
+    /**
+     * Gets the appropriate API key for the request:
+     * 1. User-provided key (if exists)
+     * 2. Demo key (if available and under limit)
+     */
+    private suspend fun getApiKeyForRequest(): String? {
+        Log.d("MainViewModel", "Getting API key for request")
+        
+        // First, try the user-provided API key
+        val userApiKey = settingsRepository.getApiKey()
+        if (!userApiKey.isNullOrEmpty()) {
+            Log.d("MainViewModel", "Using user-provided API key")
+            return userApiKey
+        }
+        
+        Log.d("MainViewModel", "No user API key found, checking demo key")
+        
+        // If no user key, check if we can use demo key
+        if (!demoKeyManager.canUseDemoKey()) {
+            Log.d("MainViewModel", "Demo limit reached")
+            _uiState.value = MainUiState.Error("Demo limit reached (5 calls/day). Please add your own OpenRouter API key in Settings to continue using Mothership.")
+            return null
+        }
+        
+        Log.d("MainViewModel", "Demo limit not reached, fetching demo key")
+        
+        // Try to get existing demo key or fetch a new one
+        var demoApiKey = demoKeyManager.getDemoApiKey()
+        if (demoApiKey.isNullOrEmpty()) {
+            Log.d("MainViewModel", "No existing demo key found, registering device and fetching new one")
+            // Clear existing device ID to force fresh registration
+            demoKeyManager.clearDeviceId()
+            // Register device
+            demoKeyManager.registerDevice()
+            // Fetch a new demo API key
+            demoApiKey = demoKeyManager.fetchDemoApiKey()
+            if (demoApiKey.isNullOrEmpty()) {
+                Log.d("MainViewModel", "Failed to fetch demo API key")
+                _uiState.value = MainUiState.Error("Failed to fetch demo API key. Please add your own OpenRouter API key in Settings.")
+                return null
+            }
+        }
+        
+        Log.d("MainViewModel", "Using demo API key")
+        return demoApiKey
     }
     
     private fun notifyServiceCompletion(pwaName: String, success: Boolean, errorMessage: String? = null) {

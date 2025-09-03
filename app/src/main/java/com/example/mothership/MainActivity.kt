@@ -26,8 +26,11 @@ import android.os.Build
 import androidx.activity.result.contract.ActivityResultContracts
 import android.util.Log
 import androidx.activity.OnBackPressedCallback
+import androidx.lifecycle.lifecycleScope
+import com.example.mothership.demo.DemoKeyManager
 import com.example.mothership.ui.SplashScreen
 import com.example.mothership.ui.theme.MothershipTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -85,6 +88,9 @@ class MainActivity : ComponentActivity() {
         // Set up back navigation handling
         setupBackNavigation()
         
+        // Register device in background for demo key system
+        registerDeviceIfNeeded()
+        
         setContent {
             MothershipTheme {
                 // A surface container using the 'background' color from the theme
@@ -94,6 +100,19 @@ class MainActivity : ComponentActivity() {
                 ) {
                     MothershipApp(mainViewModel, settingsViewModel)
                 }
+            }
+        }
+    }
+    
+    /**
+     * Registers the device with the backend if not already registered
+     */
+    private fun registerDeviceIfNeeded() {
+        lifecycleScope.launch {
+            val demoKeyManager = DemoKeyManager(this@MainActivity)
+            // Only register if not already registered
+            if (demoKeyManager.getDeviceId() == null) {
+                demoKeyManager.registerDevice()
             }
         }
     }
