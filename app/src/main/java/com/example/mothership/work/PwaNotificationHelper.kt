@@ -2,11 +2,13 @@ package com.example.mothership.work
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.example.mothership.R
+import com.example.mothership.MainActivity
 
 class PwaNotificationHelper(private val context: Context) {
 
@@ -38,12 +40,24 @@ class PwaNotificationHelper(private val context: Context) {
     }
 
     fun showProgressNotification(pwaName: String) {
+        // Create intent to open the app when notification is tapped
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 
+            0, 
+            intent, 
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("Generating PWA")
             .setContentText("Generating $pwaName...")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setOngoing(true)
             .setProgress(0, 0, true) // Indeterminate progress
+            .setContentIntent(pendingIntent)
             .build()
 
         NotificationManagerCompat.from(context)
@@ -51,11 +65,25 @@ class PwaNotificationHelper(private val context: Context) {
     }
 
     fun showSuccessNotification(pwaName: String) {
+        // Create intent to open the app when notification is tapped
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            // Add extra to indicate we want to go to the app list
+            putExtra("navigate_to", "appList")
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 
+            0, 
+            intent, 
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("PWA Generation Complete")
             .setContentText("$pwaName has been generated successfully!")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
             .build()
 
         NotificationManagerCompat.from(context)
@@ -67,11 +95,23 @@ class PwaNotificationHelper(private val context: Context) {
     }
 
     fun showErrorNotification(pwaName: String, errorMessage: String) {
+        // Create intent to open the app when notification is tapped
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 
+            0, 
+            intent, 
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("PWA Generation Failed")
             .setContentText("Failed to generate $pwaName: $errorMessage")
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
             .build()
 
         NotificationManagerCompat.from(context)

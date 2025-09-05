@@ -78,6 +78,9 @@ class MainActivity : ComponentActivity() {
         
         super.onCreate(savedInstanceState)
         
+        // Handle navigation from notifications
+        handleNotificationNavigation(intent)
+        
         // Add lifecycle observer to handle app lifecycle events
         lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onPause(owner: LifecycleOwner) {
@@ -123,6 +126,20 @@ class MainActivity : ComponentActivity() {
                     MothershipApp(mainViewModel, settingsViewModel)
                 }
             }
+        }
+    }
+    
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        // Handle navigation from notifications when app is already running
+        intent?.let { handleNotificationNavigation(it) }
+    }
+    
+    private fun handleNotificationNavigation(intent: Intent) {
+        val navigateTo = intent.getStringExtra("navigate_to")
+        if (navigateTo == "appList") {
+            // We'll handle this in the Compose navigation
+            Log.d("MainActivity", "Received navigation request to appList")
         }
     }
     
