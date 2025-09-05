@@ -40,9 +40,9 @@ class PwaNotificationHelper(private val context: Context) {
     }
 
     fun showProgressNotification(pwaName: String) {
-        // Create intent to open the app when notification is tapped
+        // Create intent to bring existing app instance to foreground
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
             context, 
@@ -65,9 +65,9 @@ class PwaNotificationHelper(private val context: Context) {
     }
 
     fun showSuccessNotification(pwaName: String) {
-        // Create intent to open the app when notification is tapped
+        // Create intent to bring existing app instance to foreground and navigate to app list
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             // Add extra to indicate we want to go to the app list
             putExtra("navigate_to", "appList")
         }
@@ -95,9 +95,9 @@ class PwaNotificationHelper(private val context: Context) {
     }
 
     fun showErrorNotification(pwaName: String, errorMessage: String) {
-        // Create intent to open the app when notification is tapped
+        // Create intent to bring existing app instance to foreground
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val pendingIntent = PendingIntent.getActivity(
             context, 
