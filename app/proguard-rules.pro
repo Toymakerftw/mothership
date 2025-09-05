@@ -66,3 +66,19 @@
 
 # Keep DemoKeyManager inner data classes for Gson serialization
 -keep class com.example.mothership.demo.DemoKeyManager$* { *; }
+
+# Memory optimization rules
+-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
+-optimizationpasses 5
+-allowaccessmodification
+
+# Keep memory-sensitive classes
+-keep class com.example.mothership.** { *; }
+
+# Reduce information kept for debugging to reduce memory usage
+-dontskipnonpubliclibraryclasses
+-dontskipnonpubliclibraryclassmembers
+
+# Keep ViewModel and related classes for proper memory management
+-keep class androidx.lifecycle.ViewModel { *; }
+-keep class androidx.lifecycle.AndroidViewModel { *; }

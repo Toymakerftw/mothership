@@ -13,7 +13,10 @@ import com.example.mothership.demo.DemoKeyManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.lang.System
 
 class MainViewModel(private val mothershipApi: MothershipApi, private val settingsRepository: SettingsRepository, private val context: Context) : ViewModel() {
 
@@ -60,47 +63,50 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
                     return@launch
                 }
 
-                val request = OpenRouterRequest(
-                    model = "deepseek/deepseek-chat-v3.1:free",
-                    messages = listOf(Message(role = "user", content = """
-                        Create a complete Progressive Web App (PWA) based on this description: $prompt
-                        
-                        Requirements:
-                        1. Return ONLY valid JSON with a "files" object containing:
-                           - "index.html": Complete HTML file with proper structure
-                           - "manifest.json": Valid PWA manifest file
-                           - "sw.js": Basic service worker
-                           - "app.js": JavaScript file for functionality
-                           - "styles.css": CSS styling file
-                        
-                        2. The index.html must:
-                           - Reference manifest.json in the head
-                           - Reference app.js and styles.css
-                           - Register sw.js as service worker
-                           - Be a complete, valid HTML document
-                        
-                        3. The manifest.json must be a valid PWA manifest with proper start_url
-                        
-                        4. The sw.js must be a basic but functional service worker
-                        
-                        5. The app.js should contain the main functionality described
-                        
-                        6. The styles.css should contain all necessary styling
-                        
-                        Return ONLY the JSON object with the files, nothing else.
-                        
-                        Example format:
-                        {
-                          "files": {
-                            "index.html": "<!DOCTYPE html>...",
-                            "manifest.json": "{...}",
-                            "sw.js": "...",
-                            "app.js": "...",
-                            "styles.css": "..."
-                          }
-                        }
-                    """.trimIndent()))
-                )
+                // Move heavy operations to background thread
+                val request = withContext(Dispatchers.IO) {
+                    OpenRouterRequest(
+                        model = "deepseek/deepseek-chat-v3.1:free",
+                        messages = listOf(Message(role = "user", content = """
+                            Create a complete Progressive Web App (PWA) based on this description: $prompt
+                            
+                            Requirements:
+                            1. Return ONLY valid JSON with a "files" object containing:
+                               - "index.html": Complete HTML file with proper structure
+                               - "manifest.json": Valid PWA manifest file
+                               - "sw.js": Basic service worker
+                               - "app.js": JavaScript file for functionality
+                               - "styles.css": CSS styling file
+                            
+                            2. The index.html must:
+                               - Reference manifest.json in the head
+                               - Reference app.js and styles.css
+                               - Register sw.js as service worker
+                               - Be a complete, valid HTML document
+                            
+                            3. The manifest.json must be a valid PWA manifest with proper start_url
+                            
+                            4. The sw.js must be a basic but functional service worker
+                            
+                            5. The app.js should contain the main functionality described
+                            
+                            6. The styles.css should contain all necessary styling
+                            
+                            Return ONLY the JSON object with the files, nothing else.
+                            
+                            Example format:
+                            {
+                              "files": {
+                                "index.html": "<!DOCTYPE html>...",
+                                "manifest.json": "{...}",
+                                "sw.js": "...",
+                                "app.js": "...",
+                                "styles.css": "..."
+                              }
+                            }
+                        """.trimIndent()))
+                    )
+                }
 
                 Log.d("MainViewModel", "Making API request with request: $request")
                 val response = mothershipApi.generatePwa("Bearer $apiKey", request)
@@ -121,9 +127,14 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
                 val pwaFiles = response.choices.first().message.content
                 Log.d("MainViewModel", "Received PWA files content length: ${pwaFiles.length}")
 
-                savePwaFiles(prompt, pwaFiles)
+                // Perform file operations in background thread
+                withContext(Dispatchers.IO) {
+                    savePwaFiles(prompt, pwaFiles)
+                }
 
                 _uiState.value = MainUiState.Success
+                // Trigger garbage collection to reduce memory pressure
+                System.gc()
                 // Notify service of successful completion
                 notifyServiceCompletion(prompt, true)
             } catch (e: Exception) {
@@ -209,9 +220,20 @@ class MainViewModel(private val mothershipApi: MothershipApi, private val settin
             parseSimpleResponse(files)
         }
 
-        filesMap.forEach { (fileName, content) ->
-            val file = File(pwaDir, fileName)
-            file.writeText(content)
+        // Write files with reduced memory pressure and minimal UI updates
+        filesMap.entries.chunked(3).forEach { chunk ->
+            chunk.forEach { (fileName, content) ->
+                val file = File(pwaDir, fileName)
+                file.writeText(content)
+            }
+            // Small delay between file operations to reduce memory pressure and CPU usage
+            try {
+                Thread.sleep(50) // Increased delay to reduce CPU usage
+            } catch (e: InterruptedException) {
+                // Handle interruption gracefully
+                Thread.currentThread().interrupt()
+                return
+            }
         }
     }
 

@@ -45,7 +45,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
             scale.animateTo(
                 targetValue = 1f,
                 animationSpec = tween(
-                    durationMillis = 800,
+                    durationMillis = 1200,
                     easing = FastOutSlowInEasing
                 )
             )
@@ -55,26 +55,26 @@ fun SplashScreen(onTimeout: () -> Unit) {
             alpha.animateTo(
                 targetValue = 1f,
                 animationSpec = tween(
-                    durationMillis = 1200,
+                    durationMillis = 1800,
                     easing = FastOutSlowInEasing
                 )
             )
         }
         
         // Start pulse animation after initial scale
-        delay(500)
+        delay(800)
         launch {
             pulseScale.animateTo(
                 targetValue = 1.1f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(800),
+                    animation = tween(2000),
                     repeatMode = RepeatMode.Reverse
                 )
             )
         }
         
-        // Wait total of 2.5 seconds then call onTimeout
-        delay(2000)
+        // Wait total of 3.5 seconds then call onTimeout
+        delay(3500)
         onTimeout()
     }
     
@@ -101,7 +101,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
             // Rocket logo with pulse animation
             Box(
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(80.dp)
                     .scale(pulseScale.value)
                     .clip(CircleShape)
                     .background(
@@ -111,28 +111,28 @@ fun SplashScreen(onTimeout: () -> Unit) {
             ) {
                 Text(
                     text = "🚀",
-                    fontSize = 48.sp,
+                    fontSize = 36.sp,
                     textAlign = TextAlign.Center
                 )
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             Text(
                 text = "Mothership",
-                fontSize = 42.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                letterSpacing = 1.2.sp
+                letterSpacing = 1.sp
             )
             
             Text(
                 text = "Generate PWAs with AI",
-                fontSize = 16.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                letterSpacing = 0.5.sp,
-                modifier = Modifier.padding(top = 8.dp)
+                letterSpacing = 0.3.sp,
+                modifier = Modifier.padding(top = 6.dp)
             )
         }
     }

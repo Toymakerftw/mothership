@@ -18,7 +18,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import android.content.pm.PackageManager
@@ -31,6 +30,8 @@ import com.example.mothership.demo.DemoKeyManager
 import com.example.mothership.ui.SplashScreen
 import com.example.mothership.ui.theme.MothershipTheme
 import kotlinx.coroutines.launch
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 
 class MainActivity : ComponentActivity() {
 
@@ -43,12 +44,15 @@ class MainActivity : ComponentActivity() {
             val success = intent.getBooleanExtra(PwaGenerationService.EXTRA_SUCCESS, false)
             val errorMessage = intent.getStringExtra(PwaGenerationService.EXTRA_ERROR_MESSAGE)
             
-            if (success) {
-                Toast.makeText(this@MainActivity, "$pwaName has been generated successfully!", Toast.LENGTH_LONG).show()
-                // Refresh the PWA list
-                mainViewModel.getPwas()
-            } else {
-                Toast.makeText(this@MainActivity, "Failed to generate $pwaName: ${errorMessage ?: "Unknown error"}", Toast.LENGTH_LONG).show()
+            // Only show toast and update UI if app is in foreground
+            if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+                if (success) {
+                    Toast.makeText(this@MainActivity, "$pwaName has been generated successfully!", Toast.LENGTH_LONG).show()
+                    // Refresh the PWA list
+                    mainViewModel.getPwas()
+                } else {
+                    Toast.makeText(this@MainActivity, "Failed to generate $pwaName: ${errorMessage ?: "Unknown error"}", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -65,9 +69,22 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Handle the splash screen transition
-        val splashScreen = installSplashScreen()
+        installSplashScreen()
         
         super.onCreate(savedInstanceState)
+        
+        // Add lifecycle observer to handle app lifecycle events
+        lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onPause(owner: LifecycleOwner) {
+                // App is going to background, pause any ongoing operations if needed
+                Log.d("MainActivity", "App is going to background")
+            }
+            
+            override fun onResume(owner: LifecycleOwner) {
+                // App is coming to foreground, resume operations if needed
+                Log.d("MainActivity", "App is coming to foreground")
+            }
+        })
         
         // Request notification permission on Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -144,30 +161,10 @@ class MainActivity : ComponentActivity() {
         finish()
     }
     
-    // Device-specific compatibility handling
-    private fun isOppoOrOnePlusDevice(): Boolean {
-        val manufacturer = Build.MANUFACTURER.lowercase()
-        return manufacturer.contains("oppo") || manufacturer.contains("oneplus") || 
-               manufacturer.contains("realme") || // Realme is a sub-brand of Oppo
-               Build.BRAND.lowercase().contains("oppo") || 
-               Build.BRAND.lowercase().contains("oneplus")
-    }
-    
-    // Safe method to perform operations that might not work on Oppo/OnePlus devices
-    private fun performSafeOperation(operation: () -> Unit) {
-        if (isOppoOrOnePlusDevice()) {
-            try {
-                // Attempt the operation but catch any exceptions
-                operation()
-            } catch (e: Exception) {
-                Log.e("MainActivity", "Operation failed on Oppo/OnePlus device: ${e.message}")
-                // Gracefully handle the failure with an alternative approach
-                // For example, show a warning to the user or use a fallback method
-            }
-        } else {
-            // For non-Oppo/OnePlus devices, perform the operation normally
-            operation()
-        }
+    override fun onResume() {
+        super.onResume()
+        // Refresh PWA list when app comes to foreground
+        mainViewModel.getPwas()
     }
     
     override fun onDestroy() {

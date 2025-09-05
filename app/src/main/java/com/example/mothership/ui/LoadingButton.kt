@@ -35,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,45 +47,32 @@ fun LoadingButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     isLoading: Boolean = false,
-    shape: Shape = RoundedCornerShape(16.dp),
+    shape: Shape = RoundedCornerShape(12.dp),
     normalText: String = "Launch PWA Generation"
 ) {
     var isPressed by remember { mutableStateOf(false) }
     var currentMessageIndex by remember { mutableStateOf(0) }
     
+    // Simplified animation - removed shadow animation which is resource intensive
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1.0f,
-        animationSpec = tween(100),
+        targetValue = if (isPressed) 0.98f else 1.0f,
+        animationSpec = tween(200),
         label = "button_scale"
     )
-    
-    val elevation by animateFloatAsState(
-        targetValue = if (isPressed) 4.dp.value else 8.dp.value,
-        animationSpec = tween(100),
-        label = "button_elevation"
-    )
 
-    // Witty loading messages that cycle every 2.5 seconds
+    // Simplified loading messages that cycle less frequently
     val loadingMessages = listOf(
-        "🧠 AI neurons firing...",
-        "⚡ Coding at light speed...",
-        "🎨 Designing your masterpiece...",
+        "🚀 Generating your PWA...",
         "🔧 Assembling components...",
         "✨ Adding some magic...",
-        "🚀 Preparing for launch...",
-        "💎 Polishing the details...",
-        "🎯 Almost there...",
-        "🌟 Final touches...",
-        "🔮 Manifesting your vision...",
-        "⚙️ Fine-tuning algorithms...",
-        "🎪 Creating digital circus..."
+        "🎯 Almost there..."
     )
 
-    // Cycle through messages when loading
+    // Cycle through messages less frequently (every 5 seconds instead of 2.5)
     LaunchedEffect(isLoading) {
         if (isLoading) {
             while (true) {
-                delay(2500)
+                delay(5000) // Increased delay to reduce UI updates
                 currentMessageIndex = (currentMessageIndex + 1) % loadingMessages.size
             }
         } else {
@@ -94,13 +80,13 @@ fun LoadingButton(
         }
     }
 
-    // Infinite progress animation
+    // Simplified progress animation with longer duration
     val infiniteTransition = rememberInfiniteTransition(label = "progress")
     val progressAnimation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
+            animation = tween(6000, easing = LinearEasing), // Much slower animation
             repeatMode = RepeatMode.Restart
         ),
         label = "progress"
@@ -109,12 +95,6 @@ fun LoadingButton(
     Box(
         modifier = modifier
             .scale(scale)
-            .shadow(
-                elevation = elevation.dp,
-                shape = shape,
-                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-            )
     ) {
         Button(
             onClick = onClick,
@@ -122,79 +102,78 @@ fun LoadingButton(
             shape = shape,
             colors = ButtonDefaults.buttonColors(
                 containerColor = if (isLoading) 
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
+                    MaterialTheme.colorScheme.primaryContainer
                 else 
                     MaterialTheme.colorScheme.primary,
                 contentColor = if (isLoading)
-                    MaterialTheme.colorScheme.primary
+                    MaterialTheme.colorScheme.onPrimaryContainer
                 else
                     MaterialTheme.colorScheme.onPrimary,
-                disabledContainerColor = MaterialTheme.colorScheme.surface,
-                disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
             ),
             contentPadding = PaddingValues(0.dp),
             elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 0.dp,
-                pressedElevation = 0.dp,
+                defaultElevation = if (isLoading) 2.dp else 4.dp,
+                pressedElevation = 2.dp,
                 disabledElevation = 0.dp
             ),
             modifier = Modifier.fillMaxWidth()
         ) {
             if (isLoading) {
-                // Loading state with integrated progress
+                // Simplified loading state
                 Box(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Background progress bar
+                    // Background progress bar with slower animation
                     LinearProgressIndicator(
                         progress = progressAnimation,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(56.dp)
+                            .height(48.dp)
                             .clip(shape),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                        trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.primaryContainer
                     )
                     
-                    // Content overlay
+                    // Simplified content overlay
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "🚀",
-                            fontSize = 20.sp,
-                            modifier = Modifier.scale(1.2f)
+                            text = "",
+                            fontSize = 16.sp
                         )
                         
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         
                         Text(
                             text = loadingMessages[currentMessageIndex],
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
             } else {
                 // Normal state
                 Row(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.RocketLaunch,
                         contentDescription = "Generate",
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = normalText,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
