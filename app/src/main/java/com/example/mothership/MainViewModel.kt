@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.lang.System
+import java.util.UUID
+import androidx.work.WorkInfo
 
 class MainViewModel(
     private val mothershipApi: MothershipApi,
@@ -32,6 +34,9 @@ class MainViewModel(
     // Prompt state for main screen
     private val _prompt = MutableStateFlow("")
     val prompt = _prompt.asStateFlow()
+
+    // Track the current work ID for PWA generation
+    private var currentWorkId: UUID? = null
 
     fun setPrompt(value: String) {
         _prompt.value = value
@@ -58,15 +63,41 @@ class MainViewModel(
                 }
 
                 // Enqueue the work using WorkManager
-                pwaWorkManager.enqueuePwaGeneration(prompt, prompt)
+                val workId = pwaWorkManager.enqueuePwaGeneration(prompt, prompt)
+                currentWorkId = workId
 
                 // Trigger garbage collection to reduce memory pressure
                 System.gc()
                 
-                _uiState.value = MainUiState.Success
+                // Observe the work state to update UI accordingly
+                observeWorkState(workId)
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Exception in generatePwa", e)
                 _uiState.value = MainUiState.Error("Failed to generate app: ${e.message ?: "Unknown error"}. Please try again.")
+            }
+        }
+    }
+    
+    private fun observeWorkState(workId: UUID) {
+        viewModelScope.launch {
+            pwaWorkManager.getWorkState(workId).collect { state ->
+                when (state) {
+                    WorkInfo.State.SUCCEEDED -> {
+                        _uiState.value = MainUiState.Success
+                        currentWorkId = null
+                    }
+                    WorkInfo.State.FAILED -> {
+                        _uiState.value = MainUiState.Error("Failed to generate PWA. Please try again.")
+                        currentWorkId = null
+                    }
+                    WorkInfo.State.CANCELLED -> {
+                        _uiState.value = MainUiState.Error("PWA generation was cancelled.")
+                        currentWorkId = null
+                    }
+                    else -> {
+                        // Keep in loading state for RUNNING, ENQUEUED, etc.
+                    }
+                }
             }
         }
     }

@@ -11,11 +11,12 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 
 class PwaWorkManager(private val context: Context) {
 
-    fun enqueuePwaGeneration(prompt: String, pwaName: String = "PWA"): String {
-        val workId = "pwa_generation_${System.currentTimeMillis()}"
+    fun enqueuePwaGeneration(prompt: String, pwaName: String = "PWA"): UUID {
+        val workId = UUID.randomUUID().toString()
 
         val inputData = workDataOf(
             PwaGenerationWorker.KEY_PROMPT to prompt,
@@ -29,6 +30,7 @@ class PwaWorkManager(private val context: Context) {
 
         // Create work request with retry policy
         val workRequest = OneTimeWorkRequestBuilder<PwaGenerationWorker>()
+            .setId(UUID.fromString(workId))
             .setInputData(inputData)
             .setConstraints(constraints)
             .keepResultsForAtLeast(java.time.Duration.ofMinutes(30)) // Keep results for 30 minutes
@@ -39,24 +41,24 @@ class PwaWorkManager(private val context: Context) {
             .beginUniqueWork(workId, ExistingWorkPolicy.KEEP, workRequest)
             .enqueue()
 
-        return workId
+        return UUID.fromString(workId)
     }
 
-    fun getWorkInfo(workId: String): Flow<WorkInfo?> {
+    fun getWorkInfo(workId: UUID): Flow<WorkInfo?> {
         return WorkManager.getInstance(context)
-            .getWorkInfoByIdFlow(java.util.UUID.fromString(workId))
+            .getWorkInfoByIdFlow(workId)
     }
 
-    fun getWorkState(workId: String): Flow<WorkInfo.State?> {
+    fun getWorkState(workId: UUID): Flow<WorkInfo.State?> {
         return getWorkInfo(workId).map { it?.state }
     }
 
-    fun getWorkOutputData(workId: String): Flow<Data?> {
+    fun getWorkOutputData(workId: UUID): Flow<Data?> {
         return getWorkInfo(workId).map { it?.outputData }
     }
 
-    fun cancelWork(workId: String) {
-        WorkManager.getInstance(context).cancelWorkById(java.util.UUID.fromString(workId))
+    fun cancelWork(workId: UUID) {
+        WorkManager.getInstance(context).cancelWorkById(workId)
     }
 
     companion object {
