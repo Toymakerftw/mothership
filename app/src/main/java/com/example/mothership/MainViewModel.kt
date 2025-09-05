@@ -84,6 +84,10 @@ class MainViewModel(
                 when (state) {
                     WorkInfo.State.SUCCEEDED -> {
                         _uiState.value = MainUiState.Success
+                        // Clear the prompt after successful generation
+                        _prompt.value = ""
+                        // Refresh the PWA list
+                        getPwas()
                         currentWorkId = null
                     }
                     WorkInfo.State.FAILED -> {
@@ -200,6 +204,8 @@ class MainViewModel(
 sealed class MainUiState {
     object Idle : MainUiState()
     object Loading : MainUiState()
-    object Success : MainUiState()
+    object Success : MainUiState() {
+        val message: String = "PWA generated successfully!"
+    }
     data class Error(val message: String) : MainUiState()
 }
