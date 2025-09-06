@@ -18,7 +18,8 @@ class PwaHttpServerService : Service() {
         const val EXTRA_PORT = "port"
     }
 
-    private var httpServer: PwaHttpServer? = null
+    // Map to store multiple server instances by port
+    private val serverMap = mutableMapOf<Int, PwaHttpServer>()
 
     override fun onCreate() {
         super.onCreate()
@@ -44,7 +45,8 @@ class PwaHttpServerService : Service() {
                 }
             }
             ACTION_STOP_SERVER -> {
-                stopHttpServer()
+                val port = intent.getIntExtra(EXTRA_PORT, 8080)
+                stopHttpServer(port)
             }
             else -> {
                 Log.w(TAG, "Unknown action: ${intent.action}")
@@ -60,13 +62,15 @@ class PwaHttpServerService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        stopHttpServer()
+        // Stop all servers when service is destroyed
+        stopAllServers()
         Log.d(TAG, "PWA HTTP Server Service destroyed")
     }
 
     private fun startHttpServer(pwaUuid: String, port: Int) {
         try {
-            stopHttpServer() // Stop any existing server
+            // Stop any existing server on this port
+            serverMap[port]?.stop()
             
             val pwaDir = File(getExternalFilesDir(null), pwaUuid)
             if (!pwaDir.exists() || !pwaDir.isDirectory) {
@@ -74,21 +78,38 @@ class PwaHttpServerService : Service() {
                 return
             }
 
-            httpServer = PwaHttpServer(port, pwaDir)
-            httpServer?.start() // Start without daemon thread
+            val httpServer = PwaHttpServer(port, pwaDir)
+            httpServer.start()
+            serverMap[port] = httpServer
             Log.d(TAG, "HTTP server started on port $port for PWA $pwaUuid")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start HTTP server", e)
+            Log.e(TAG, "Failed to start HTTP server on port $port", e)
         }
     }
 
-    private fun stopHttpServer() {
+    private fun stopHttpServer(port: Int) {
         try {
-            httpServer?.stop()
-            httpServer = null
-            Log.d(TAG, "HTTP server stopped")
+            serverMap[port]?.stop()
+            serverMap.remove(port)
+            Log.d(TAG, "HTTP server stopped on port $port")
         } catch (e: Exception) {
-            Log.e(TAG, "Error stopping HTTP server", e)
+            Log.e(TAG, "Error stopping HTTP server on port $port", e)
+        }
+    }
+    
+    private fun stopAllServers() {
+        try {
+            serverMap.values.forEach { server ->
+                try {
+                    server.stop()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error stopping server", e)
+                }
+            }
+            serverMap.clear()
+            Log.d(TAG, "All HTTP servers stopped")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping all HTTP servers", e)
         }
     }
 

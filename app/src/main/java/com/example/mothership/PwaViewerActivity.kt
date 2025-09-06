@@ -23,13 +23,14 @@ import kotlin.concurrent.thread
 class PwaViewerActivity : ComponentActivity() {
     companion object {
         private const val TAG = "PwaViewer"
-        private const val SERVER_PORT = 8080
+        private const val SERVER_PORT_BASE = 8080
+        private const val SERVER_PORT_RANGE = 1000 // Ports 8080-9079
         private const val SERVER_START_DELAY = 1000L // 1 second delay to allow server to start
-        private const val SERVER_PING_DELAY = 2000L // 2 seconds to check if server is responding
     }
     
     private lateinit var webView: WebView
     private var pwaUuid: String? = null
+    private var serverPort: Int = SERVER_PORT_BASE
     private val handler = Handler(Looper.getMainLooper())
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -129,11 +130,14 @@ class PwaViewerActivity : ComponentActivity() {
         }
         
         try {
+            // Generate a unique port based on the PWA UUID to avoid conflicts
+            serverPort = generateUniquePort(pwaUuid!!)
+            
             // Start the HTTP server service
             val serverIntent = Intent(this, PwaHttpServerService::class.java).apply {
                 action = PwaHttpServerService.ACTION_START_SERVER
                 putExtra(PwaHttpServerService.EXTRA_PWA_UUID, pwaUuid)
-                putExtra(PwaHttpServerService.EXTRA_PORT, SERVER_PORT)
+                putExtra(PwaHttpServerService.EXTRA_PORT, serverPort)
             }
             startService(serverIntent)
             
@@ -149,10 +153,19 @@ class PwaViewerActivity : ComponentActivity() {
         }
     }
     
+    private fun generateUniquePort(uuid: String): Int {
+        // Generate a deterministic port based on the UUID to ensure consistency
+        // but still be unique for different PWAs
+        val hash = uuid.hashCode()
+        // Ensure the port is within our range and >= 0
+        val portOffset = Math.abs(hash) % SERVER_PORT_RANGE
+        return SERVER_PORT_BASE + portOffset
+    }
+    
     private fun checkServerAndLoadPwa() {
         thread {
             try {
-                val url = URL("http://localhost:$SERVER_PORT/")
+                val url = URL("http://localhost:$serverPort/")
                 val connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 5000 // 5 seconds
@@ -164,7 +177,7 @@ class PwaViewerActivity : ComponentActivity() {
                 if (responseCode == 200) {
                     // Server is responding, load the PWA
                     handler.post {
-                        val serverUrl = "http://localhost:$SERVER_PORT/"
+                        val serverUrl = "http://localhost:$serverPort/"
                         Log.d(TAG, "Loading PWA from local server: $serverUrl")
                         webView.loadUrl(serverUrl)
                     }
@@ -199,6 +212,7 @@ class PwaViewerActivity : ComponentActivity() {
         try {
             val serverIntent = Intent(this, PwaHttpServerService::class.java).apply {
                 action = PwaHttpServerService.ACTION_STOP_SERVER
+                putExtra(PwaHttpServerService.EXTRA_PORT, serverPort)
             }
             startService(serverIntent)
         } catch (e: Exception) {
