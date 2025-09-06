@@ -173,11 +173,11 @@ class PwaGenerationWorker(
         Log.d("PwaGenerationWorker", "Rewritten prompt: ${rewrittenPrompt.take(100)}...")
         Log.d("PwaGenerationWorker", "Prompt rewriting successful: ${rewrittenPrompt != prompt}")
 
-        // Step 2: Generate PWA using the rewritten prompt with deepseek model
+        // Step 2: Generate PWA using the rewritten prompt with moonshotai/kimi-dev-72b:free model
         Log.d("PwaGenerationWorker", "Step 2: Generating PWA using deepseek model with rewritten prompt")
         val request = withContext(Dispatchers.IO) {
             OpenRouterRequest(
-                model = "deepseek/deepseek-chat-v3.1:free",
+                model = "moonshotai/kimi-dev-72b:free",
                 messages = listOf(
                     Message(
                         role = "system",

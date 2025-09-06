@@ -9,6 +9,7 @@ import com.example.mothership.data.SettingsRepository
 import com.example.mothership.demo.DemoKeyManager
 import com.example.mothership.work.PwaWorkManager
 import com.example.mothership.work.PwaGenerationWorker
+import com.example.mothership.work.PwaReworkWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -119,6 +120,65 @@ class MainViewModel(
         }
     }
     
+    fun reworkPwa(uuid: String, pwaName: String, prompt: String) {
+        viewModelScope.launch {
+            _uiState.value = MainUiState.Loading
+            try {
+                // Get the API key - first try user key, then demo key
+                val apiKey = getApiKeyForRequest()
+                if (apiKey.isNullOrEmpty()) {
+                    _uiState.value = MainUiState.Error("API key not set. Please go to Settings to add your OpenRouter API key.")
+                    return@launch
+                }
+
+                if (prompt.isBlank()) {
+                    _uiState.value = MainUiState.Error("Please enter a description for reworking your app.")
+                    return@launch
+                }
+
+                // Enqueue the rework using WorkManager
+                val workId = pwaWorkManager.enqueuePwaRework(prompt, uuid, pwaName)
+                currentWorkId = workId
+
+                // Trigger garbage collection to reduce memory pressure
+                System.gc()
+                
+                // Observe the work state to update UI accordingly
+                observeReworkState(workId)
+            } catch (e: Exception) {
+                Log.e("MainViewModel", "Exception in reworkPwa", e)
+                val errorState = when {
+                    e.message?.contains("API key", ignoreCase = true) == true -> 
+                        MainUiState.Error(
+                            "API key issue: ${e.message}. Please check your settings.",
+                            ErrorType.API_KEY,
+                            canRetry = false
+                        )
+                    e.message?.contains("network", ignoreCase = true) == true || 
+                    e.message?.contains("connection", ignoreCase = true) == true ->
+                        MainUiState.Error(
+                            "Network error: ${e.message}. Please check your internet connection and try again.",
+                            ErrorType.NETWORK,
+                            canRetry = true
+                        )
+                    e.message?.contains("demo", ignoreCase = true) == true ->
+                        MainUiState.Error(
+                            "Demo limit reached: ${e.message}. Please add your own API key in Settings.",
+                            ErrorType.DEMO_LIMIT,
+                            canRetry = false
+                        )
+                    else ->
+                        MainUiState.Error(
+                            "Failed to rework app: ${e.message ?: "Unknown error"}. Please try again.",
+                            ErrorType.UNKNOWN,
+                            canRetry = true
+                        )
+                }
+                _uiState.value = errorState
+            }
+        }
+    }
+    
     private fun observeWorkState(workId: UUID) {
         viewModelScope.launch {
             pwaWorkManager.getWorkState(workId).collect { state ->
@@ -154,6 +214,54 @@ class MainViewModel(
                     WorkInfo.State.CANCELLED -> {
                         _uiState.value = MainUiState.Error(
                             "PWA generation was cancelled. This might be due to network issues or app being backgrounded.",
+                            ErrorType.NETWORK,
+                            canRetry = true
+                        )
+                        currentWorkId = null
+                    }
+                    else -> {
+                        // Keep in loading state for RUNNING, ENQUEUED, etc.
+                    }
+                }
+            }
+        }
+    }
+    
+    private fun observeReworkState(workId: UUID) {
+        viewModelScope.launch {
+            pwaWorkManager.getWorkState(workId).collect { state ->
+                when (state) {
+                    WorkInfo.State.SUCCEEDED -> {
+                        _uiState.value = MainUiState.Success
+                        // Clear the prompt after successful rework
+                        _prompt.value = ""
+                        // Refresh the PWA list
+                        getPwas()
+                        currentWorkId = null
+                    }
+                    WorkInfo.State.FAILED -> {
+                        // Get detailed error information from WorkManager
+                        val workInfo = pwaWorkManager.getWorkInfo(workId).first()
+                        val errorMessage = workInfo?.outputData?.getString(PwaReworkWorker.KEY_ERROR_MESSAGE)
+                            ?: "Failed to rework PWA. Please check your network connection and try again."
+                        
+                        val errorState = when {
+                            errorMessage.contains("API key", ignoreCase = true) ->
+                                MainUiState.Error(errorMessage, ErrorType.API_KEY, canRetry = false)
+                            errorMessage.contains("network", ignoreCase = true) || 
+                            errorMessage.contains("connection", ignoreCase = true) ->
+                                MainUiState.Error(errorMessage, ErrorType.NETWORK, canRetry = true)
+                            errorMessage.contains("demo", ignoreCase = true) ->
+                                MainUiState.Error(errorMessage, ErrorType.DEMO_LIMIT, canRetry = false)
+                            else ->
+                                MainUiState.Error(errorMessage, ErrorType.WORK_MANAGER, canRetry = true)
+                        }
+                        _uiState.value = errorState
+                        currentWorkId = null
+                    }
+                    WorkInfo.State.CANCELLED -> {
+                        _uiState.value = MainUiState.Error(
+                            "PWA rework was cancelled. This might be due to network issues or app being backgrounded.",
                             ErrorType.NETWORK,
                             canRetry = true
                         )

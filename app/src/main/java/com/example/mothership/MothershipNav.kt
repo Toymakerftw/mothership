@@ -11,9 +11,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.mothership.ui.AppListScreen
 import com.example.mothership.ui.BottomNavigationBar
 import com.example.mothership.ui.MainScreen
+import com.example.mothership.ui.ReworkScreen
 import com.example.mothership.ui.SettingsScreen
 
 @Composable
@@ -49,6 +51,22 @@ fun NavigationHost(
     NavHost(navController = navController, startDestination = "main") {
         composable("main") { MainScreen(navController = navController, mainViewModel = mainViewModel) }
         composable("appList") { AppListScreen(navController = navController, mainViewModel = mainViewModel) }
+        composable(
+            "rework/{pwaUuid}/{pwaName}",
+            arguments = listOf(
+                navArgument("pwaUuid") { defaultValue = "" },
+                navArgument("pwaName") { defaultValue = "" }
+            )
+        ) { backStackEntry ->
+            val pwaUuid = backStackEntry.arguments?.getString("pwaUuid") ?: ""
+            val pwaName = backStackEntry.arguments?.getString("pwaName") ?: ""
+            ReworkScreen(
+                navController = navController,
+                mainViewModel = mainViewModel,
+                pwaUuid = pwaUuid,
+                pwaName = pwaName
+            )
+        }
         composable("settings") { SettingsScreen(navController = navController, settingsViewModel = settingsViewModel) }
     }
 }

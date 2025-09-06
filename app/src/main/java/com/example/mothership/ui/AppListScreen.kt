@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.GetApp
@@ -210,7 +211,8 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
                     AppCard(
                         uuid = uuid,
                         pwaName = pwaName,
-                        mainViewModel = mainViewModel
+                        mainViewModel = mainViewModel,
+                        navController = navController
                     )
                 }
                 item { Spacer(modifier = Modifier.height(80.dp)) } // Space for bottom nav
@@ -224,7 +226,8 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
 fun AppCard(
     uuid: String,
     pwaName: String,
-    mainViewModel: MainViewModel
+    mainViewModel: MainViewModel,
+    navController: NavController
 ) {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
@@ -400,6 +403,16 @@ fun AppCard(
                             enabled = hasIndexFile
                         ) {
                             sharePwa(uuid, pwaName, pwaDir, context)
+                        }
+
+                        ActionButton(
+                            icon = Icons.Default.Edit,
+                            label = "Rework",
+                            color = MaterialTheme.colorScheme.primary,
+                            enabled = hasIndexFile
+                        ) {
+                            // Navigate to rework screen with PWA UUID and name
+                            navController.navigate("rework/$uuid/$pwaName")
                         }
 
                         ActionButton(

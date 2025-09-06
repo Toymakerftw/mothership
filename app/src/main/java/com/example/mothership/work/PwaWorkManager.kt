@@ -50,6 +50,42 @@ class PwaWorkManager(private val context: Context) {
         return UUID.fromString(workId)
     }
 
+    fun enqueuePwaRework(prompt: String, pwaUuid: String, pwaName: String = "PWA"): UUID {
+        val workId = UUID.randomUUID().toString()
+
+        val inputData = workDataOf(
+            PwaReworkWorker.KEY_PROMPT to prompt,
+            PwaReworkWorker.KEY_PWA_UUID to pwaUuid,
+            PwaReworkWorker.KEY_PWA_NAME to pwaName
+        )
+
+        // Define constraints - require network connectivity and battery not low
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(true)
+            .build()
+
+        // Create work request with retry policy and better handling
+        val workRequest = OneTimeWorkRequestBuilder<PwaReworkWorker>()
+            .setId(UUID.fromString(workId))
+            .setInputData(inputData)
+            .setConstraints(constraints)
+            .setBackoffCriteria(
+                androidx.work.BackoffPolicy.EXPONENTIAL,
+                30,
+                java.util.concurrent.TimeUnit.SECONDS
+            )
+            .keepResultsForAtLeast(java.time.Duration.ofMinutes(30)) // Keep results for 30 minutes
+            .build()
+
+        // Enqueue the work
+        WorkManager.getInstance(context)
+            .beginUniqueWork(workId, ExistingWorkPolicy.KEEP, workRequest)
+            .enqueue()
+
+        return UUID.fromString(workId)
+    }
+
     fun getWorkInfo(workId: UUID): Flow<WorkInfo?> {
         return WorkManager.getInstance(context)
             .getWorkInfoByIdFlow(workId)
