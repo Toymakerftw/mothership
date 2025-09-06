@@ -1,6 +1,7 @@
 package com.example.mothership.work
 
 import android.content.Context
+import android.os.PowerManager
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -10,6 +11,7 @@ import com.example.mothership.api.model.Message
 import com.example.mothership.api.model.OpenRouterRequest
 import com.example.mothership.data.SettingsRepository
 import com.example.mothership.demo.DemoKeyManager
+import com.example.mothership.service.PromptRewriteService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -31,8 +33,49 @@ class PwaGenerationWorker(
     }
 
     private val notificationHelper = PwaNotificationHelper(context)
+    private var wakeLock: PowerManager.WakeLock? = null
 
     override suspend fun doWork(): Result {
+        // Acquire wake lock to prevent device from sleeping during network operations
+        acquireWakeLock()
+        
+        return try {
+            performWork()
+        } finally {
+            // Always release wake lock
+            releaseWakeLock()
+        }
+    }
+
+    private fun acquireWakeLock() {
+        try {
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "Mothership::PwaGenerationWorker"
+            ).apply {
+                acquire(10 * 60 * 1000L) // 10 minutes timeout
+            }
+            Log.d("PwaGenerationWorker", "Wake lock acquired")
+        } catch (e: Exception) {
+            Log.e("PwaGenerationWorker", "Failed to acquire wake lock", e)
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            wakeLock?.let {
+                if (it.isHeld) {
+                    it.release()
+                    Log.d("PwaGenerationWorker", "Wake lock released")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("PwaGenerationWorker", "Failed to release wake lock", e)
+        }
+    }
+
+    private suspend fun performWork(): Result {
         val prompt = inputData.getString(KEY_PROMPT) ?: return Result.failure(
             workDataOf(KEY_ERROR_MESSAGE to "No prompt provided")
         )
@@ -57,22 +100,28 @@ class PwaGenerationWorker(
                 lastException = e
                 Log.w("PwaGenerationWorker", "SocketException on attempt $attempt: ${e.message}")
                 if (attempt < MAX_RETRIES) {
-                    // Wait before retrying (exponential backoff)
-                    kotlinx.coroutines.delay((1000 * attempt).toLong())
+                    // Wait before retrying (exponential backoff with longer delays for network issues)
+                    val delayMs = (2000 * attempt).toLong() // 2s, 4s, 6s
+                    Log.d("PwaGenerationWorker", "Waiting ${delayMs}ms before retry $attempt")
+                    kotlinx.coroutines.delay(delayMs)
                 }
             } catch (e: UnknownHostException) {
                 lastException = e
                 Log.w("PwaGenerationWorker", "UnknownHostException on attempt $attempt: ${e.message}")
                 if (attempt < MAX_RETRIES) {
-                    // Wait before retrying (exponential backoff)
-                    kotlinx.coroutines.delay((1000 * attempt).toLong())
+                    // Wait before retrying (exponential backoff with longer delays for network issues)
+                    val delayMs = (2000 * attempt).toLong() // 2s, 4s, 6s
+                    Log.d("PwaGenerationWorker", "Waiting ${delayMs}ms before retry $attempt")
+                    kotlinx.coroutines.delay(delayMs)
                 }
             } catch (e: SSLException) {
                 lastException = e
                 Log.w("PwaGenerationWorker", "SSLException on attempt $attempt: ${e.message}")
                 if (attempt < MAX_RETRIES) {
-                    // Wait before retrying (exponential backoff)
-                    kotlinx.coroutines.delay((1000 * attempt).toLong())
+                    // Wait before retrying (exponential backoff with longer delays for network issues)
+                    val delayMs = (2000 * attempt).toLong() // 2s, 4s, 6s
+                    Log.d("PwaGenerationWorker", "Waiting ${delayMs}ms before retry $attempt")
+                    kotlinx.coroutines.delay(delayMs)
                 }
             } catch (e: Exception) {
                 // For other exceptions, don't retry
@@ -112,14 +161,77 @@ class PwaGenerationWorker(
             )
         }
 
-        // Create the API request
+        // Get the API instance
+        val mothershipApp = context.applicationContext as com.example.mothership.MothershipApp
+        val mothershipApi = mothershipApp.mothershipApi
+        val promptRewriteService = PromptRewriteService(mothershipApi)
+
+        // Step 1: Rewrite the prompt using mistralai model
+        Log.d("PwaGenerationWorker", "Step 1: Rewriting prompt using mistralai model")
+        val rewrittenPrompt = promptRewriteService.rewritePrompt(prompt, apiKey)
+        Log.d("PwaGenerationWorker", "Original prompt: ${prompt.take(100)}...")
+        Log.d("PwaGenerationWorker", "Rewritten prompt: ${rewrittenPrompt.take(100)}...")
+        Log.d("PwaGenerationWorker", "Prompt rewriting successful: ${rewrittenPrompt != prompt}")
+
+        // Step 2: Generate PWA using the rewritten prompt with deepseek model
+        Log.d("PwaGenerationWorker", "Step 2: Generating PWA using deepseek model with rewritten prompt")
         val request = withContext(Dispatchers.IO) {
             OpenRouterRequest(
                 model = "deepseek/deepseek-chat-v3.1:free",
                 messages = listOf(
                     Message(
-                        role = "user", content = """
-                        Create a complete Progressive Web App (PWA) based on this description: $prompt
+                        role = "system",
+                        content = """
+                        You are an expert UI/UX and Front-End Developer.  
+                        You create website in a way a designer would, using ONLY HTML, CSS and Javascript.  
+                        Try to create the best UI possible. Important: Make the website responsive by using TailwindCSS. Use it as much as you can, if you can't use it, use custom css (make sure to import tailwind with <script  
+                         src="https://cdn.tailwindcss.com"></script> in the head).  
+                        Also try to elaborate as much as you can, to create something unique, with a great design.  
+                        If you want to use ICONS import Feather Icons (Make sure to add <script src="https://unpkg.com/feather-icons"></script> and <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js">  
+                         </script> in the head., and <script>feather.replace();</script> in the body. Ex : <i data-feather="user"></i>).  
+                        For scroll animations you can use: AOS.com (Make sure to add <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet"> and <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>  
+                         and <script>AOS.init();</script>).  
+                        For interactive animations you can use: Vanta.js (Make sure to add <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"></script> and <script>VANTA.GLOBE({...</script> in the  
+                         body.).  
+                        You can create multiple pages website at once (following the format rules below) or a Single Page Application. If the user doesn't ask for a specific version, you have to determine the best version for    
+                         the user, depending on the request. (Try to avoid the Single Page Application if the user asks for multiple pages.)  
+                        No need to explain what you did. Just return the expected result. AVOID Chinese characters in the code if not asked by the user.  
+                        Return the results in a ```html
+                        ``` markdown. Format the results like:  
+                        1. Start with <<<<<<< START_TITLE .  
+                        2. Add the name of the page without special character, such as spaces or punctuation, using the .html format only, right after the start tag.  
+                        3. Close the start tag with the  >>>>>>> END_TITLE.  
+                        4. Start the HTML response with the triple backticks, like ```html.  
+                        5. Insert the following html there.  
+                        6. Close with the triple backticks, like
+                        ```.  
+                        7. Retry if another pages.  
+                        Example Code:  
+                        <<<<<<< START_TITLE index.html >>>>>>> END_TITLE  
+                        1 <!DOCTYPE html>  
+                        2 <html lang="en">  
+                        3 <head>  
+                        4     <meta charset="UTF-8">  
+                        5     <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+                        6     <title>Index</title>  
+                        7     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">  
+                        8     <script src="https://cdn.tailwindcss.com"></script>  
+                        9     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">  
+                       10     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>  
+                       11     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>  
+                       12     <script src="https://cdn.jsdelivr.net/npm/animejs/lib/anime.iife.min.js"></script>  
+                       13     <script src="https://unpkg.com/feather-icons"></script>  
+                       14 </head>  
+                       15 <body>  
+                       16     <h1>Hello World</h1>  
+                       17     <script>AOS.init();</script>  
+                       18     <script>const { animate } = anime;</script>  
+                       19     <script>feather.replace();</script>  
+                       20 </body>  
+                       21 </html>  
+                        IMPORTANT: The first file should be always named index.html.
+
+                        Create a complete Progressive Web App (PWA) based on this description: $rewrittenPrompt
                         
                         Requirements:
                         1. Return ONLY valid JSON with a "files" object containing:
@@ -155,17 +267,17 @@ class PwaGenerationWorker(
                             "styles.css": "..."
                           }
                         }
-                    """.trimIndent()
+                        """.trimIndent()
+                    ),
+                    Message(
+                        role = "user", 
+                        content = rewrittenPrompt
                     )
                 )
             )
         }
 
-        // Get the API instance
-        val mothershipApp = context.applicationContext as com.example.mothership.MothershipApp
-        val mothershipApi = mothershipApp.mothershipApi
-
-        Log.d("PwaGenerationWorker", "Making API request with request: $request")
+        Log.d("PwaGenerationWorker", "Making API request with rewritten prompt")
         val response = mothershipApi.generatePwa("Bearer $apiKey", request)
         Log.d("PwaGenerationWorker", "Received API response successfully")
 
@@ -187,11 +299,11 @@ class PwaGenerationWorker(
         // Save the files
         savePwaFiles(pwaName, pwaFiles)
 
-        // Return success with the generated files
+        // Return success without the large files content (WorkManager has 10KB limit)
         return Result.success(
             workDataOf(
-                KEY_PWA_NAME to pwaName,
-                KEY_RESULT_FILES to pwaFiles
+                KEY_PWA_NAME to pwaName
+                // Removed KEY_RESULT_FILES to avoid WorkManager data limit exceeded
             )
         )
     }
@@ -280,22 +392,32 @@ class PwaGenerationWorker(
 
     private fun parseJsonResponse(response: String): Map<String, String> {
         return try {
+            Log.d("PwaGenerationWorker", "Attempting to parse JSON response...")
+            
+            // First, try to extract JSON from the response if it's embedded in other text
+            val jsonString = extractJsonFromResponse(response)
+            Log.d("PwaGenerationWorker", "Extracted JSON string length: ${jsonString.length}")
+            
             // Try to parse as JSON object with files structure
-            val json = org.json.JSONObject(response)
+            val json = org.json.JSONObject(jsonString)
             val filesMap = mutableMapOf<String, String>()
 
             if (json.has("files")) {
                 val filesJson = json.getJSONObject("files")
+                Log.d("PwaGenerationWorker", "Found 'files' object with ${filesJson.length()} files")
                 filesJson.keys().forEach { key ->
                     filesMap[key] = filesJson.getString(key)
+                    Log.d("PwaGenerationWorker", "Extracted file: $key (${filesMap[key]?.length ?: 0} chars)")
                 }
             } else {
+                Log.w("PwaGenerationWorker", "No 'files' object found in JSON, treating as index.html")
                 // If no files object, treat the whole response as index.html
                 filesMap["index.html"] = response
             }
 
             // Ensure we have required PWA files with proper content
             if (!filesMap.containsKey("manifest.json")) {
+                Log.d("PwaGenerationWorker", "Adding default manifest.json")
                 filesMap["manifest.json"] = createDefaultManifest()
             } else {
                 // Validate and fix manifest if needed
@@ -304,6 +426,7 @@ class PwaGenerationWorker(
             }
 
             if (!filesMap.containsKey("sw.js")) {
+                Log.d("PwaGenerationWorker", "Adding default service worker")
                 filesMap["sw.js"] = """
                     self.addEventListener('fetch', event => {
                         // Simple service worker
@@ -311,11 +434,38 @@ class PwaGenerationWorker(
                 """.trimIndent()
             }
 
+            Log.d("PwaGenerationWorker", "Successfully parsed ${filesMap.size} files from JSON")
             filesMap
         } catch (e: Exception) {
+            Log.e("PwaGenerationWorker", "JSON parsing failed: ${e.message}", e)
             // Fallback to simple parsing
             parseSimpleResponse(response)
         }
+    }
+
+    private fun extractJsonFromResponse(response: String): String {
+        // First, try to find JSON in code blocks (```json ... ```)
+        val jsonCodeBlockRegex = "```json\\s*([\\s\\S]*?)\\s*```".toRegex()
+        val jsonCodeBlockMatch = jsonCodeBlockRegex.find(response)
+        if (jsonCodeBlockMatch != null) {
+            val extracted = jsonCodeBlockMatch.groupValues[1].trim()
+            Log.d("PwaGenerationWorker", "Extracted JSON from code block (${extracted.length} chars)")
+            return extracted
+        }
+        
+        // Look for JSON object markers
+        val jsonStart = response.indexOf('{')
+        val jsonEnd = response.lastIndexOf('}')
+        
+        if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
+            val extracted = response.substring(jsonStart, jsonEnd + 1)
+            Log.d("PwaGenerationWorker", "Extracted JSON from position $jsonStart to $jsonEnd (${extracted.length} chars)")
+            return extracted
+        }
+        
+        // If no JSON markers found, return the original response
+        Log.d("PwaGenerationWorker", "No JSON markers found, using full response")
+        return response
     }
 
     private fun createDefaultManifest(): String {
@@ -369,10 +519,31 @@ class PwaGenerationWorker(
     }
 
     private fun parseSimpleResponse(response: String): Map<String, String> {
-        // Simple parsing: try to extract HTML, CSS, JS if possible
+        Log.d("PwaGenerationWorker", "Using simple parsing fallback")
         val filesMap = mutableMapOf<String, String>()
 
-        // Create a proper HTML structure
+        // First, try to extract JSON from the response if it's embedded in HTML
+        val jsonString = extractJsonFromResponse(response)
+        if (jsonString != response) {
+            Log.d("PwaGenerationWorker", "Found embedded JSON in response, attempting to parse...")
+            try {
+                val json = org.json.JSONObject(jsonString)
+                if (json.has("files")) {
+                    val filesJson = json.getJSONObject("files")
+                    filesJson.keys().forEach { key ->
+                        filesMap[key] = filesJson.getString(key)
+                        Log.d("PwaGenerationWorker", "Extracted file from embedded JSON: $key")
+                    }
+                    Log.d("PwaGenerationWorker", "Successfully parsed embedded JSON with ${filesMap.size} files")
+                    return filesMap
+                }
+            } catch (e: Exception) {
+                Log.w("PwaGenerationWorker", "Failed to parse embedded JSON: ${e.message}")
+            }
+        }
+
+        // If no JSON found or parsing failed, create a proper HTML structure
+        Log.d("PwaGenerationWorker", "Creating fallback HTML structure")
         filesMap["index.html"] = """
             <!DOCTYPE html>
             <html lang="en">

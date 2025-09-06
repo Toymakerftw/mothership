@@ -23,16 +23,22 @@ class PwaWorkManager(private val context: Context) {
             PwaGenerationWorker.KEY_PWA_NAME to pwaName
         )
 
-        // Define constraints - require network connectivity
+        // Define constraints - require network connectivity and battery not low
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(true)
             .build()
 
-        // Create work request with retry policy
+        // Create work request with retry policy and better handling
         val workRequest = OneTimeWorkRequestBuilder<PwaGenerationWorker>()
             .setId(UUID.fromString(workId))
             .setInputData(inputData)
             .setConstraints(constraints)
+            .setBackoffCriteria(
+                androidx.work.BackoffPolicy.EXPONENTIAL,
+                30,
+                java.util.concurrent.TimeUnit.SECONDS
+            )
             .keepResultsForAtLeast(java.time.Duration.ofMinutes(30)) // Keep results for 30 minutes
             .build()
 
