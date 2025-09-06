@@ -21,6 +21,9 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -197,13 +200,13 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    enabled = prompt.isNotBlank(),
+                    enabled = prompt.isNotBlank() && !isLoading,
                     isLoading = isLoading,
                     shape = RoundedCornerShape(16.dp),
                     normalText = "Launch PWA Generation"
                 )
 
-                // Error state only
+                // Error state with retry functionality
                 when (uiState) {
                     is MainUiState.Error -> {
                         Spacer(modifier = Modifier.height(20.dp))
@@ -214,13 +217,65 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                             ),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text(
-                                text = (uiState as MainUiState.Error).message,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyMedium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(16.dp)
-                            )
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(bottom = 12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "Error",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Generation Failed",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                
+                                Text(
+                                    text = (uiState as MainUiState.Error).message,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                )
+                                
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    if ((uiState as MainUiState.Error).canRetry) {
+                                        OutlinedButton(
+                                            onClick = { mainViewModel.retryGeneration() },
+                                            enabled = prompt.isNotBlank(),
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text("Retry")
+                                        }
+                                    } else {
+                                        OutlinedButton(
+                                            onClick = { navController.navigate("settings") },
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text("Settings")
+                                        }
+                                    }
+                                    
+                                    TextButton(
+                                        onClick = { mainViewModel.clearError() },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Dismiss")
+                                    }
+                                }
+                            }
                         }
                     }
                     is MainUiState.Success -> {

@@ -11,6 +11,7 @@ import com.example.mothership.work.PwaWorkManager
 import com.example.mothership.work.PwaGenerationWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.lang.System
 import java.util.UUID
@@ -46,6 +47,19 @@ class MainViewModel(
         _prompt.value = ""
     }
 
+    fun retryGeneration() {
+        val currentPrompt = _prompt.value
+        if (currentPrompt.isNotBlank()) {
+            generatePwa(currentPrompt)
+        }
+    }
+
+    fun clearError() {
+        if (_uiState.value is MainUiState.Error) {
+            _uiState.value = MainUiState.Idle
+        }
+    }
+
     fun generatePwa(prompt: String) {
         viewModelScope.launch {
             _uiState.value = MainUiState.Loading
@@ -73,7 +87,34 @@ class MainViewModel(
                 observeWorkState(workId)
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Exception in generatePwa", e)
-                _uiState.value = MainUiState.Error("Failed to generate app: ${e.message ?: "Unknown error"}. Please try again.")
+                val errorState = when {
+                    e.message?.contains("API key", ignoreCase = true) == true -> 
+                        MainUiState.Error(
+                            "API key issue: ${e.message}. Please check your settings.",
+                            ErrorType.API_KEY,
+                            canRetry = false
+                        )
+                    e.message?.contains("network", ignoreCase = true) == true || 
+                    e.message?.contains("connection", ignoreCase = true) == true ->
+                        MainUiState.Error(
+                            "Network error: ${e.message}. Please check your internet connection and try again.",
+                            ErrorType.NETWORK,
+                            canRetry = true
+                        )
+                    e.message?.contains("demo", ignoreCase = true) == true ->
+                        MainUiState.Error(
+                            "Demo limit reached: ${e.message}. Please add your own API key in Settings.",
+                            ErrorType.DEMO_LIMIT,
+                            canRetry = false
+                        )
+                    else ->
+                        MainUiState.Error(
+                            "Failed to generate app: ${e.message ?: "Unknown error"}. Please try again.",
+                            ErrorType.UNKNOWN,
+                            canRetry = true
+                        )
+                }
+                _uiState.value = errorState
             }
         }
     }
@@ -91,11 +132,31 @@ class MainViewModel(
                         currentWorkId = null
                     }
                     WorkInfo.State.FAILED -> {
-                        _uiState.value = MainUiState.Error("Failed to generate PWA. Please try again.")
+                        // Get detailed error information from WorkManager
+                        val workInfo = pwaWorkManager.getWorkInfo(workId).first()
+                        val errorMessage = workInfo?.outputData?.getString(PwaGenerationWorker.KEY_ERROR_MESSAGE)
+                            ?: "Failed to generate PWA. Please check your network connection and try again."
+                        
+                        val errorState = when {
+                            errorMessage.contains("API key", ignoreCase = true) ->
+                                MainUiState.Error(errorMessage, ErrorType.API_KEY, canRetry = false)
+                            errorMessage.contains("network", ignoreCase = true) || 
+                            errorMessage.contains("connection", ignoreCase = true) ->
+                                MainUiState.Error(errorMessage, ErrorType.NETWORK, canRetry = true)
+                            errorMessage.contains("demo", ignoreCase = true) ->
+                                MainUiState.Error(errorMessage, ErrorType.DEMO_LIMIT, canRetry = false)
+                            else ->
+                                MainUiState.Error(errorMessage, ErrorType.WORK_MANAGER, canRetry = true)
+                        }
+                        _uiState.value = errorState
                         currentWorkId = null
                     }
                     WorkInfo.State.CANCELLED -> {
-                        _uiState.value = MainUiState.Error("PWA generation was cancelled.")
+                        _uiState.value = MainUiState.Error(
+                            "PWA generation was cancelled. This might be due to network issues or app being backgrounded.",
+                            ErrorType.NETWORK,
+                            canRetry = true
+                        )
                         currentWorkId = null
                     }
                     else -> {
@@ -207,5 +268,17 @@ sealed class MainUiState {
     object Success : MainUiState() {
         val message: String = "PWA generated successfully!"
     }
-    data class Error(val message: String) : MainUiState()
+    data class Error(
+        val message: String,
+        val errorType: ErrorType = ErrorType.UNKNOWN,
+        val canRetry: Boolean = true
+    ) : MainUiState()
+}
+
+enum class ErrorType {
+    NETWORK,
+    API_KEY,
+    DEMO_LIMIT,
+    WORK_MANAGER,
+    UNKNOWN
 }
