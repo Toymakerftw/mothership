@@ -143,6 +143,11 @@ class PwaGenerationWorker(
         )
     }
 
+    private fun getSystemPrompt(prompt: String): String {
+        val promptBuilder = com.example.mothership.service.JsonPromptBuilder()
+        return promptBuilder.buildPwaGenerationPrompt(prompt)
+    }
+
     private suspend fun performPwaGeneration(prompt: String, pwaName: String): Result {
         // Get the API key - first try user key, then demo key
         val settingsRepository = SettingsRepository(context)
@@ -173,105 +178,15 @@ class PwaGenerationWorker(
         Log.d("PwaGenerationWorker", "Rewritten prompt: ${rewrittenPrompt.take(100)}...")
         Log.d("PwaGenerationWorker", "Prompt rewriting successful: ${rewrittenPrompt != prompt}")
 
-        // Step 2: Generate PWA using the rewritten prompt with moonshotai/kimi-dev-72b:free model
-        Log.d("PwaGenerationWorker", "Step 2: Generating PWA using deepseek model with rewritten prompt")
+        // Step 2: Generate PWA using the rewritten prompt with deepseek/deepseek-chat-v3.1:free model
+        Log.d("PwaGenerationWorker", "Step 2: Generating PWA using qwen/qwen-2.5-coder-32b-instruct:free model with rewritten prompt")
         val request = withContext(Dispatchers.IO) {
             OpenRouterRequest(
-                model = "moonshotai/kimi-dev-72b:free",
+                model = "qwen/qwen-2.5-coder-32b-instruct:free",
                 messages = listOf(
                     Message(
                         role = "system",
-                        content = """
-                        You are an expert UI/UX and Front-End Developer.  
-                        You create website in a way a designer would, using ONLY HTML, CSS and Javascript.  
-                        Try to create the best UI possible. Important: Make the website responsive by using TailwindCSS. Use it as much as you can, if you can't use it, use custom css (make sure to import tailwind with <script  
-                         src="https://cdn.tailwindcss.com"></script> in the head).  
-                        Also try to elaborate as much as you can, to create something unique, with a great design.  
-                        If you want to use ICONS import Feather Icons (Make sure to add <script src="https://unpkg.com/feather-icons"></script> and <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js">  
-                         </script> in the head., and <script>feather.replace();</script> in the body. Ex : <i data-feather="user"></i>).  
-                        For scroll animations you can use: AOS.com (Make sure to add <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet"> and <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>  
-                         and <script>AOS.init();</script>).  
-                        For interactive animations you can use: Vanta.js (Make sure to add <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js"></script> and <script>VANTA.GLOBE({...</script> in the  
-                         body.).  
-                        You can create multiple pages website at once (following the format rules below) or a Single Page Application. If the user doesn't ask for a specific version, you have to determine the best version for    
-                         the user, depending on the request. (Try to avoid the Single Page Application if the user asks for multiple pages.)  
-                        No need to explain what you did. Just return the expected result. AVOID Chinese characters in the code if not asked by the user.  
-                        Return the results in a ```html
-                        ``` markdown. Format the results like:  
-                        1. Start with <<<<<<< START_TITLE .  
-                        2. Add the name of the page without special character, such as spaces or punctuation, using the .html format only, right after the start tag.  
-                        3. Close the start tag with the  >>>>>>> END_TITLE.  
-                        4. Start the HTML response with the triple backticks, like ```html.  
-                        5. Insert the following html there.  
-                        6. Close with the triple backticks, like
-                        ```.  
-                        7. Retry if another pages.  
-                        Example Code:  
-                        <<<<<<< START_TITLE index.html >>>>>>> END_TITLE  
-                        1 <!DOCTYPE html>  
-                        2 <html lang="en">  
-                        3 <head>  
-                        4     <meta charset="UTF-8">  
-                        5     <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-                        6     <title>Index</title>  
-                        7     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">  
-                        8     <script src="https://cdn.tailwindcss.com"></script>  
-                        9     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">  
-                       10     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>  
-                       11     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>  
-                       12     <script src="https://cdn.jsdelivr.net/npm/animejs/lib/anime.iife.min.js"></script>  
-                       13     <script src="https://unpkg.com/feather-icons"></script>  
-                       14 </head>  
-                       15 <body>  
-                       16     <h1>Hello World</h1>  
-                       17     <script>AOS.init();</script>  
-                       18     <script>const { animate } = anime;</script>  
-                       19     <script>feather.replace();</script>  
-                       20 </body>  
-                       21 </html>  
-                        IMPORTANT: The first file should be always named index.html.
-
-                        Create a complete Progressive Web App (PWA) based on this description: $rewrittenPrompt
-                        
-                        Requirements:
-                        1. Return ONLY valid JSON with a "files" object containing:
-                           - "index.html": Complete HTML file with proper structure
-                           - "manifest.json": Valid PWA manifest file
-                           - "sw.js": Basic service worker
-                           - "app.js": JavaScript file for functionality
-                           - "styles.css": CSS styling file
-                        
-                        2. The index.html must:
-                           - Reference manifest.json in the head
-                           - Reference app.js and styles.css
-                           - Register sw.js as service worker
-                           - Be a complete, valid HTML document
-                        
-                        3. The manifest.json must be a valid PWA manifest with proper start_url
-                        
-                        4. The sw.js must be a basic but functional service worker
-                        
-                        5. The app.js should contain the main functionality described
-                        
-                        6. The styles.css should contain all necessary styling
-                        
-                        Return ONLY the JSON object with the files, nothing else.
-                        
-                        Example format:
-                        {
-                          "files": {
-                            "index.html": "<!DOCTYPE html>...",
-                            "manifest.json": "{...}",
-                            "sw.js": "...",
-                            "app.js": "...",
-                            "styles.css": "..."
-                          }
-                        }
-                        """.trimIndent()
-                    ),
-                    Message(
-                        role = "user", 
-                        content = rewrittenPrompt
+                        content = getSystemPrompt(rewrittenPrompt)
                     )
                 )
             )
@@ -445,26 +360,65 @@ class PwaGenerationWorker(
 
     private fun extractJsonFromResponse(response: String): String {
         // First, try to find JSON in code blocks (```json ... ```)
-        val jsonCodeBlockRegex = "```json\\s*([\\s\\S]*?)\\s*```".toRegex()
+        val jsonCodeBlockRegex = "```json\\\\s*([\\\\s\\\\S]*?)\\\\s*```".toRegex()
         val jsonCodeBlockMatch = jsonCodeBlockRegex.find(response)
         if (jsonCodeBlockMatch != null) {
             val extracted = jsonCodeBlockMatch.groupValues[1].trim()
             Log.d("PwaGenerationWorker", "Extracted JSON from code block (${extracted.length} chars)")
-            return extracted
+            try {
+                org.json.JSONObject(extracted)
+                return extracted
+            } catch (e: org.json.JSONException) {
+                Log.w("PwaGenerationWorker", "Extracted content from code block is not valid JSON.")
+            }
         }
-        
-        // Look for JSON object markers
-        val jsonStart = response.indexOf('{')
-        val jsonEnd = response.lastIndexOf('}')
-        
-        if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
-            val extracted = response.substring(jsonStart, jsonEnd + 1)
-            Log.d("PwaGenerationWorker", "Extracted JSON from position $jsonStart to $jsonEnd (${extracted.length} chars)")
-            return extracted
+
+        val startIndex = response.indexOf('{')
+        if (startIndex == -1) {
+            return response // No json found
         }
-        
-        // If no JSON markers found, return the original response
-        Log.d("PwaGenerationWorker", "No JSON markers found, using full response")
+
+        var openBraces = 0
+        var inString = false
+        var endIndex = -1
+
+        for (i in startIndex until response.length) {
+            val char = response[i]
+
+            if (char == '"' && (i == 0 || response[i - 1] != '\\')) {
+                inString = !inString
+            }
+
+            if (!inString) {
+                when (char) {
+                    '{' -> openBraces++
+                    '}' -> openBraces--
+                }
+            }
+
+            if (openBraces == 0) {
+                endIndex = i
+                break
+            }
+        }
+
+        if (endIndex != -1) {
+            val potentialJson = response.substring(startIndex, endIndex + 1)
+            try {
+                org.json.JSONObject(potentialJson)
+                Log.d("PwaGenerationWorker", "Extracted valid JSON object.")
+                return potentialJson
+            } catch (e: org.json.JSONException) {
+                Log.w("PwaGenerationWorker", "Could not parse extracted text as JSON, falling back to old method.")
+            }
+        }
+
+        // Fallback to original implementation
+        val fallbackEndIndex = response.lastIndexOf('}')
+        if (fallbackEndIndex > startIndex) {
+            return response.substring(startIndex, fallbackEndIndex + 1)
+        }
+
         return response
     }
 

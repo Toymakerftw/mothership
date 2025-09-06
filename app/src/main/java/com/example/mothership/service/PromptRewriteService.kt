@@ -4,6 +4,7 @@ import android.util.Log
 import com.example.mothership.api.MothershipApi
 import com.example.mothership.api.model.Message
 import com.example.mothership.api.model.PromptRewriteRequest
+import com.example.mothership.service.JsonPromptBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -13,17 +14,7 @@ class PromptRewriteService(private val mothershipApi: MothershipApi) {
         private const val TAG = "PromptRewriteService"
         
         // Rewriting prompt as specified in the documentation
-        private val REWRITING_PROMPT = """
-            You are a helpful assistant that rewrites prompts to make them better. All the prompts will be about creating a website or app.  
-            Try to make the prompt more detailed and specific to create a good UI/UX Design and good code.  
-            Format the result by following this format:  
-            >>>>>>> START PROMPT >>>>>>  
-            new prompt here  
-            >>>>>>> END PROMPT >>>>>>  
-            If you don't rewrite the prompt, return the original prompt.  
-            Make sure to return the prompt in the same language as the prompt you are given. Also IMPORTANT: Make sure to keep the original intent of the prompt. Improve it it needed, but don't change the    
-            original intent.
-        """.trimIndent()
+        private val REWRITING_PROMPT = JsonPromptBuilder().buildPromptRewritePrompt()
     }
 
     /**
@@ -85,27 +76,45 @@ class PromptRewriteService(private val mothershipApi: MothershipApi) {
         return try {
             val startMarker = ">>>>>>> START PROMPT >>>>>>"
             val endMarker = ">>>>>>> END PROMPT >>>>>>"
-            
-            val startIndex = response.indexOf(startMarker)
-            val endIndex = response.indexOf(endMarker)
-            
-            if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+            val codeBlockMarker = "```"
+
+            // Prioritize markers for extraction
+            val markerStartIndex = response.indexOf(startMarker)
+            val markerEndIndex = response.indexOf(endMarker)
+
+            if (markerStartIndex != -1 && markerEndIndex != -1 && markerEndIndex > markerStartIndex) {
                 val extractedPrompt = response.substring(
-                    startIndex + startMarker.length,
-                    endIndex
+                    markerStartIndex + startMarker.length,
+                    markerEndIndex
                 ).trim()
-                
                 if (extractedPrompt.isNotEmpty()) {
-                    Log.d(TAG, "Successfully extracted rewritten prompt")
-                    extractedPrompt
-                } else {
-                    Log.w(TAG, "Extracted prompt is empty, using original")
-                    originalPrompt
+                    Log.d(TAG, "Successfully extracted rewritten prompt using markers")
+                    return extractedPrompt
                 }
-            } else {
-                Log.w(TAG, "Could not find prompt markers in response, using original")
-                originalPrompt
             }
+
+            // Fallback to code blocks if markers are not found or extraction fails
+            val codeBlockStartIndex = response.indexOf(codeBlockMarker)
+            if (codeBlockStartIndex != -1) {
+                val codeBlockEndIndex = response.indexOf(
+                    codeBlockMarker,
+                    startIndex = codeBlockStartIndex + codeBlockMarker.length
+                )
+                if (codeBlockEndIndex != -1) {
+                    val extractedPrompt = response.substring(
+                        codeBlockStartIndex + codeBlockMarker.length,
+                        codeBlockEndIndex
+                    ).trim()
+                    if (extractedPrompt.isNotEmpty()) {
+                        Log.d(TAG, "Successfully extracted rewritten prompt using code blocks")
+                        return extractedPrompt
+                    }
+                }
+            }
+
+            // If all extraction methods fail, return the original prompt
+            Log.w(TAG, "Could not find markers or code blocks in response, using original")
+            originalPrompt
         } catch (e: Exception) {
             Log.e(TAG, "Error extracting rewritten prompt", e)
             originalPrompt

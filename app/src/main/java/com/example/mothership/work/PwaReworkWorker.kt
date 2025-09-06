@@ -32,6 +32,7 @@ class PwaReworkWorker(
         const val KEY_ERROR_MESSAGE = "error_message"
         const val MAX_RETRIES = 3
         private const val TAG = "PwaReworkWorker"
+        private const val WAKE_LOCK_TIMEOUT = 10 * 60 * 1000L // 10 minutes
     }
 
     private val notificationHelper = PwaNotificationHelper(context)
@@ -39,8 +40,46 @@ class PwaReworkWorker(
 
     override suspend fun doWork(): Result {
         acquireWakeLock()
-        return try {
-            performWork()
+        try {
+            val prompt = inputData.getString(KEY_PROMPT) ?: return Result.failure(
+                workDataOf(KEY_ERROR_MESSAGE to "No rework prompt provided")
+            )
+            val pwaUuid = inputData.getString(KEY_PWA_UUID) ?: return Result.failure(
+                workDataOf(KEY_ERROR_MESSAGE to "No PWA UUID provided")
+            )
+            val pwaName = inputData.getString(KEY_PWA_NAME) ?: "PWA"
+
+            notificationHelper.showProgressNotification("Reworking $pwaName")
+
+            var lastException: Exception? = null
+            for (attempt in 1..MAX_RETRIES) {
+                try {
+                    val result = performPwaRework(prompt, pwaUuid, pwaName)
+                    notificationHelper.cancelProgressNotification()
+                    if (result is Result.Success) {
+                        notificationHelper.showSuccessNotification("Reworked $pwaName")
+                    }
+                    return result
+                } catch (e: SocketException) {
+                    lastException = e
+                    handleRetry(e, attempt)
+                } catch (e: UnknownHostException) {
+                    lastException = e
+                    handleRetry(e, attempt)
+                } catch (e: SSLException) {
+                    lastException = e
+                    handleRetry(e, attempt)
+                } catch (e: Exception) {
+                    lastException = e
+                    Log.e(TAG, "Non-retryable exception on attempt $attempt", e)
+                    break
+                }
+            }
+
+            notificationHelper.cancelProgressNotification()
+            val errorMessage = "Failed to rework app after $MAX_RETRIES attempts: ${lastException?.message ?: "Unknown error"}. Please check your network connection and try again."
+            notificationHelper.showErrorNotification("Reworking $pwaName", errorMessage)
+            return Result.failure(workDataOf(KEY_ERROR_MESSAGE to errorMessage))
         } finally {
             releaseWakeLock()
         }
@@ -53,7 +92,7 @@ class PwaReworkWorker(
                 PowerManager.PARTIAL_WAKE_LOCK,
                 "Mothership::PwaReworkWorker"
             ).apply {
-                acquire(10 * 60 * 1000L) // 10 minutes timeout
+                acquire(WAKE_LOCK_TIMEOUT)
             }
             Log.d(TAG, "Wake lock acquired")
         } catch (e: Exception) {
@@ -72,48 +111,6 @@ class PwaReworkWorker(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to release wake lock", e)
         }
-    }
-
-    private suspend fun performWork(): Result {
-        val prompt = inputData.getString(KEY_PROMPT) ?: return Result.failure(
-            workDataOf(KEY_ERROR_MESSAGE to "No rework prompt provided")
-        )
-        val pwaUuid = inputData.getString(KEY_PWA_UUID) ?: return Result.failure(
-            workDataOf(KEY_ERROR_MESSAGE to "No PWA UUID provided")
-        )
-        val pwaName = inputData.getString(KEY_PWA_NAME) ?: "PWA"
-
-        notificationHelper.showProgressNotification("Reworking $pwaName")
-
-        var lastException: Exception? = null
-        for (attempt in 1..MAX_RETRIES) {
-            try {
-                val result = performPwaRework(prompt, pwaUuid, pwaName)
-                notificationHelper.cancelProgressNotification()
-                if (result is Result.Success) {
-                    notificationHelper.showSuccessNotification("Reworked $pwaName")
-                }
-                return result
-            } catch (e: SocketException) {
-                lastException = e
-                handleRetry(e, attempt)
-            } catch (e: UnknownHostException) {
-                lastException = e
-                handleRetry(e, attempt)
-            } catch (e: SSLException) {
-                lastException = e
-                handleRetry(e, attempt)
-            } catch (e: Exception) {
-                lastException = e
-                Log.e(TAG, "Non-retryable exception on attempt $attempt", e)
-                break
-            }
-        }
-
-        notificationHelper.cancelProgressNotification()
-        val errorMessage = "Failed to rework app after $MAX_RETRIES attempts: ${lastException?.message ?: "Unknown error"}. Please check your network connection and try again."
-        notificationHelper.showErrorNotification("Reworking $pwaName", errorMessage)
-        return Result.failure(workDataOf(KEY_ERROR_MESSAGE to errorMessage))
     }
 
     private suspend fun handleRetry(e: Exception, attempt: Int) {
@@ -140,7 +137,17 @@ class PwaReworkWorker(
             return Result.failure(workDataOf(KEY_ERROR_MESSAGE to "PWA directory not found or empty."))
         }
 
-        val reworkPrompt = buildReworkPrompt(prompt, existingFiles)
+        val reworkPrompt = buildString {
+            append("You are an expert UI/UX and Front-End Developer modifying an existing Progressive Web App (PWA).\n")
+            append("The user wants to apply the following changes: '$prompt'\n\n")
+            append("Here are the existing PWA files:\n")
+            existingFiles.forEach { (fileName, content) ->
+                append("---" to fileName)
+                append(content.take(2000)) // Limit content to avoid token limits
+                append("\n\n")
+            }
+            append("Please provide the complete, updated PWA files in a single JSON object.")
+        }
         val request = createOpenRouterRequest(reworkPrompt)
 
         return try {
@@ -182,50 +189,20 @@ class PwaReworkWorker(
         } ?: emptyMap()
     }
 
-    private fun buildReworkPrompt(userPrompt: String, existingFiles: Map<String, String>): String {
-        return buildString {
-            append("You are an expert UI/UX and Front-End Developer modifying an existing Progressive Web App (PWA).\n")
-            append("The user wants to apply the following changes: '$userPrompt'\n\n")
-            append("Here are the existing PWA files:\n")
-            existingFiles.forEach { (fileName, content) ->
-                append("---" to fileName)
-                append(content.take(2000)) // Limit content to avoid token limits
-                append("\n\n")
-            }
-            append("Please provide the complete, updated PWA files in a single JSON object.")
-        }
-    }
-
     private suspend fun createOpenRouterRequest(reworkPrompt: String): OpenRouterRequest {
         return withContext(Dispatchers.IO) {
             OpenRouterRequest(
-                model = "moonshotai/kimi-dev-72b:free",
+                model = "qwen/qwen-2.5-coder-32b-instruct:free",
                 messages = listOf(
-                    Message(role = "system", content = getReworkSystemPrompt()),
-                    Message(role = "user", content = reworkPrompt)
+                    Message(role = "system", content = getSystemPrompt(reworkPrompt))
                 )
             )
         }
     }
 
-    private fun getReworkSystemPrompt(): String {
-        return """
-            You are an expert UI/UX and Front-End Developer. Your task is to modify an existing Progressive Web App (PWA) based on the user's request.
-            You will be provided with the user's request and the content of the existing PWA files.
-            Your response must be a single JSON object containing all the PWA files, including the modified ones and any new ones.
-            The JSON object must have a "files" key, which is an object where the keys are the filenames and the values are the file contents.
-            For example:
-            {
-              "files": {
-                "index.html": "<!DOCTYPE html>...",
-                "styles.css": "body { ... }",
-                "app.js": "console.log('hello');",
-                "manifest.json": "{...}",
-                "sw.js": "..."
-              }
-            }
-            Ensure that the generated PWA is complete and functional.
-        """.trimIndent()
+    private fun getSystemPrompt(prompt: String): String {
+        val promptBuilder = com.example.mothership.service.JsonPromptBuilder()
+        return promptBuilder.buildPwaReworkPrompt(prompt)
     }
 
     private suspend fun getApiKeyForRequest(
@@ -253,7 +230,7 @@ class PwaReworkWorker(
             pwaDir.mkdirs()
         }
 
-        val appInfo = """{"name": "$pwaName", "uuid": "$pwaUuid"} """
+        val appInfo = """{"name": "$pwaName", "uuid": "$pwaUuid"} """.trimIndent()
         File(pwaDir, "app_info.json").writeText(appInfo)
 
         val filesMap = parsePwaFiles(filesContent)
@@ -276,17 +253,66 @@ class PwaReworkWorker(
     }
 
     private fun extractJsonFromResponse(response: String): String {
-                val jsonCodeBlockRegex = """```json\s*([\s\S]*?)\s*```""".toRegex()
-        val match = jsonCodeBlockRegex.find(response)
-        if (match != null) {
-            return match.groupValues[1].trim()
+        // First, try to find JSON in code blocks (```json ... ```)
+        val jsonCodeBlockRegex = "```json\\s*([\\s\\S]*?)\\s*```".toRegex()
+        val jsonCodeBlockMatch = jsonCodeBlockRegex.find(response)
+        if (jsonCodeBlockMatch != null) {
+            val extracted = jsonCodeBlockMatch.groupValues[1].trim()
+            try {
+                JSONObject(extracted)
+                Log.d(TAG, "Extracted valid JSON from code block.")
+                return extracted
+            } catch (e: org.json.JSONException) {
+                Log.w(TAG, "Extracted content from code block is not valid JSON.")
+            }
         }
 
-        val start = response.indexOf('{')
-        val end = response.lastIndexOf('}')
-        if (start != -1 && end != -1 && end > start) {
-            return response.substring(start, end + 1)
+        val startIndex = response.indexOf('{')
+        if (startIndex == -1) {
+            return response // No json found
         }
+
+        var openBraces = 0
+        var inString = false
+        var endIndex = -1
+
+        for (i in startIndex until response.length) {
+            val char = response[i]
+
+            if (char == '"' && (i == 0 || response[i - 1] != '\\')) {
+                inString = !inString
+            }
+
+            if (!inString) {
+                when (char) {
+                    '{' -> openBraces++
+                    '}' -> openBraces--
+                }
+            }
+
+            if (openBraces == 0) {
+                endIndex = i
+                break
+            }
+        }
+
+        if (endIndex != -1) {
+            val potentialJson = response.substring(startIndex, endIndex + 1)
+            try {
+                JSONObject(potentialJson)
+                Log.d(TAG, "Extracted valid JSON object.")
+                return potentialJson
+            } catch (e: org.json.JSONException) {
+                Log.w(TAG, "Could not parse extracted text as JSON, falling back to old method.")
+            }
+        }
+
+        // Fallback to original implementation
+        val fallbackEndIndex = response.lastIndexOf('}')
+        if (fallbackEndIndex > startIndex) {
+            return response.substring(startIndex, fallbackEndIndex + 1)
+        }
+
         return response
     }
 }
