@@ -82,3 +82,16 @@
 # Keep ViewModel and related classes for proper memory management
 -keep class androidx.lifecycle.ViewModel { *; }
 -keep class androidx.lifecycle.AndroidViewModel { *; }
+
+# NanoHTTPD rules
+-keep class fi.iki.elonen.NanoHTTPD { *; }
+-keep class fi.iki.elonen.NanoHTTPD** { *; }
+-keep class org.nanohttpd.** { *; }
+
+# Keep PWA HTTP server service
+-keep class com.example.mothership.PwaHttpServerService { *; }
+-keep class com.example.mothership.PwaHttpServerService$PwaHttpServer { *; }
+
+# Keep file I/O classes used by the HTTP server
+-keep class java.io.FileInputStream { *; }
+-keep class java.io.File { *; }
