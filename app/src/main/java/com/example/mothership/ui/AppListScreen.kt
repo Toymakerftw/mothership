@@ -34,12 +34,16 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -108,16 +112,16 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
             ) {
                 Text(text = "🚀", fontSize = 24.sp)
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Text(
                 text = "Your PWA Collection",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.primary
             )
-            
+
             Text(
                 text = "${pwas.size} ${if (pwas.size == 1) "app" else "apps"} generated",
                 style = MaterialTheme.typography.bodyMedium,
@@ -165,16 +169,16 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
                                 fontSize = 48.sp
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.height(24.dp))
-                        
+
                         Text(
                             text = "Ready for Launch!",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        
+
                         Text(
                             text = "You haven't created any PWAs yet. Start building your first app and watch the magic happen!",
                             style = MaterialTheme.typography.bodyLarge,
@@ -183,13 +187,16 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
                             modifier = Modifier.padding(top = 12.dp, bottom = 32.dp),
                             lineHeight = 22.sp
                         )
-                        
-                        AnimatedButton(
+
+                        Button(
                             onClick = { navController.navigate("main") },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(56.dp),
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
                         ) {
                             Text(text = "🚀", fontSize = 20.sp)
                             Spacer(modifier = Modifier.width(8.dp))
@@ -311,7 +318,7 @@ fun AppCard(
                         overflow = TextOverflow.Ellipsis,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 4.dp)
@@ -364,63 +371,155 @@ fun AppCard(
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(20.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        if (isInstalled) {
-                            ActionButton(
-                                icon = Icons.Outlined.Delete,
-                                label = "Uninstall",
-                                color = MaterialTheme.colorScheme.error,
-                                enabled = hasIndexFile
-                            ) {
-                                val installer = PwaInstaller(context)
-                                installer.uninstall(uuid)
-                                isInstalled = false
-                                Toast.makeText(context, "PWA uninstalled successfully.", Toast.LENGTH_SHORT).show()
+                        // Primary actions row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Install/Uninstall button
+                            if (isInstalled) {
+                                FilledTonalButton(
+                                    onClick = {
+                                        val installer = PwaInstaller(context)
+                                        installer.uninstall(uuid)
+                                        isInstalled = false
+                                        Toast.makeText(context, "PWA uninstalled successfully.", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = hasIndexFile,
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Delete,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Uninstall",
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            } else {
+                                FilledTonalButton(
+                                    onClick = {
+                                        val installer = PwaInstaller(context)
+                                        installer.install(uuid)
+                                        isInstalled = true
+                                        Toast.makeText(context, "PWA installed successfully.", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = hasIndexFile,
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.GetApp,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Install",
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
                             }
-                        } else {
-                            ActionButton(
-                                icon = Icons.Outlined.GetApp,
-                                label = "Install",
-                                color = MaterialTheme.colorScheme.secondary,
-                                enabled = hasIndexFile
+
+                            // Share button
+                            OutlinedButton(
+                                onClick = {
+                                    sharePwa(uuid, pwaName, pwaDir, context)
+                                },
+                                modifier = Modifier.weight(1f),
+                                enabled = hasIndexFile,
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.tertiary
+                                ),
+                                border = BorderStroke(
+                                    1.5.dp,
+                                    if (hasIndexFile) MaterialTheme.colorScheme.tertiary
+                                    else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                val installer = PwaInstaller(context)
-                                installer.install(uuid)
-                                isInstalled = true
-                                Toast.makeText(context, "PWA installed successfully.", Toast.LENGTH_SHORT).show()
+                                Icon(
+                                    imageVector = Icons.Outlined.Share,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Share",
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
                         }
 
-                        ActionButton(
-                            icon = Icons.Outlined.Share,
-                            label = "Share",
-                            color = MaterialTheme.colorScheme.tertiary,
-                            enabled = hasIndexFile
+                        // Secondary actions row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            sharePwa(uuid, pwaName, pwaDir, context)
-                        }
+                            // Rework button
+                            Button(
+                                onClick = {
+                                    navController.navigate("rework/$uuid/$pwaName")
+                                },
+                                modifier = Modifier.weight(1f),
+                                enabled = hasIndexFile,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Rework",
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
 
-                        ActionButton(
-                            icon = Icons.Default.Edit,
-                            label = "Rework",
-                            color = MaterialTheme.colorScheme.primary,
-                            enabled = hasIndexFile
-                        ) {
-                            // Navigate to rework screen with PWA UUID and name
-                            navController.navigate("rework/$uuid/$pwaName")
-                        }
-
-                        ActionButton(
-                            icon = Icons.Default.Delete,
-                            label = "Delete",
-                            color = MaterialTheme.colorScheme.error
-                        ) {
-                            mainViewModel.deletePwa(uuid)
+                            // Delete button
+                            TextButton(
+                                onClick = {
+                                    mainViewModel.deletePwa(uuid)
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Delete",
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }
@@ -481,49 +580,5 @@ private fun sharePwa(
                 Toast.makeText(context, "Failed to create ZIP: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
-    }
-}
-
-@Composable
-fun ActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    color: Color,
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        OutlinedButton(
-            onClick = onClick,
-            enabled = enabled,
-            modifier = Modifier.size(64.dp),
-            shape = RoundedCornerShape(20.dp),
-            border = BorderStroke(
-                width = 2.dp, 
-                color = if (enabled) color else color.copy(alpha = 0.3f)
-            ),
-            contentPadding = PaddingValues(0.dp),
-            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                containerColor = if (enabled) color.copy(alpha = 0.1f) else Color.Transparent
-            )
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = if (enabled) color else color.copy(alpha = 0.5f),
-                modifier = Modifier.size(28.dp)
-            )
-        }
-        
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (enabled) color else color.copy(alpha = 0.5f),
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(top = 8.dp)
-        )
     }
 }
