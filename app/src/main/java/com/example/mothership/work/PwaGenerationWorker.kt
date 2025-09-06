@@ -518,6 +518,7 @@ class PwaGenerationWorker(
                 <title>Generated PWA</title>
                 <link rel="manifest" href="manifest.json">
                 <link rel="stylesheet" href="styles.css">
+                <link rel="icon" href="favicon.ico" type="image/x-icon">
             </head>
             <body>
                 <div id="app">
