@@ -303,6 +303,17 @@ class PwaGenerationWorker(
                 return
             }
         }
+        
+        // Copy favicon.ico to the PWA directory
+        try {
+            val faviconAsset = context.assets.open("favicon.ico")
+            val faviconFile = File(pwaDir, "favicon.ico")
+            faviconAsset.copyTo(faviconFile.outputStream())
+            faviconAsset.close()
+            Log.d("PwaGenerationWorker", "Copied favicon.ico to PWA directory")
+        } catch (e: Exception) {
+            Log.w("PwaGenerationWorker", "Failed to copy favicon.ico to PWA directory", e)
+        }
     }
 
     private fun parseJsonResponse(response: String): Map<String, String> {

@@ -238,6 +238,17 @@ class PwaReworkWorker(
         filesMap.forEach { (fileName, content) ->
             File(pwaDir, fileName).writeText(content)
         }
+        
+        // Copy favicon.ico to the PWA directory
+        try {
+            val faviconAsset = context.assets.open("favicon.ico")
+            val faviconFile = File(pwaDir, "favicon.ico")
+            faviconAsset.copyTo(faviconFile.outputStream())
+            faviconAsset.close()
+            Log.d(TAG, "Copied favicon.ico to PWA directory")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to copy favicon.ico to PWA directory", e)
+        }
     }
 
     private fun parsePwaFiles(response: String): Map<String, String> {
