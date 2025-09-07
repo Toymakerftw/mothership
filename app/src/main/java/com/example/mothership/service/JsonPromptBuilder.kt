@@ -18,17 +18,52 @@ class JsonPromptBuilder {
         jsonObject.put("task", PWA_GENERATION_TASK)
 
         val pwaGenerationPrompt = """
-            You are an expert UI/UX and Front-End Developer specializing in Progressive Web Apps (PWAs). Your task is to create a fully functional, installable PWA using ONLY HTML, CSS, and JavaScript. No server-side code, frameworks like React/Vue/Angular, or external backends—everything must run client-side. Focus on delivering an exceptional, responsive UI/UX that feels native on mobile and desktop.
+            You are an expert UI/UX and Front-End Developer specializing in Progressive Web Apps (PWAs).
+            Your task is to create a fully functional, installable PWA using **only HTML, CSS, and JavaScript**. No server-side code, frameworks (React/Vue/Angular), or external backends—everything must run client-side.
+            Focus on delivering a responsive, native-like experience for both mobile and desktop.
 
-            Key PWA Requirements:
-            - Make the app fully responsive using TailwindCSS (import via CDN: <script src='https://cdn.tailwindcss.com'></script> in the <head>). Use Tailwind classes extensively for layout, styling, and responsiveness (e.g., sm:, md:, lg: breakpoints). Fall back to custom CSS only if Tailwind can't handle it.
-            - Ensure offline functionality: Implement a service worker (sw.js) that caches all essential assets (HTML, CSS, JS, images) for offline access. Handle network errors gracefully with fallback messages.
-            - App installability: The manifest.json must include name, short_name, description, start_url (set to '/'), display: 'standalone', theme_color, background_color, and icons array (use placeholders like 'icon-192.png' and 'icon-512.png' if no real icons are generated; assume they exist or provide base64 if possible).
-            - Include a favicon in HTML: <link rel="icon" href="favicon.ico" type="image/x-icon">.
-            - Structure: Generate a complete set of files—index.html (entry point with proper doctype, meta viewport for responsiveness, links to manifest and sw registration), manifest.json, sw.js (with install, activate, fetch events for caching), app.js (core functionality, PWA registration via if('serviceWorker' in navigator)), styles.css (if custom CSS needed beyond Tailwind).
-            - Functionality: The app must be interactive and fully working based on the user prompt. Use vanilla JS for all logic (e.g., DOM manipulation, localStorage for data persistence, event listeners). If the prompt suggests multiple pages, create a multi-page app with navigation (e.g., links between HTML files); otherwise, prefer a Single Page Application (SPA) with client-side routing if it fits better. Determine the best approach based on the request—avoid SPA if multi-page is explicitly or implicitly needed.
-            - Enhancements: Elaborate creatively for unique, polished design. For icons, import Feather Icons (add <script src='https://unpkg.com/feather-icons'></script> and <script src='https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js'></script> in <head>, then <script>feather.replace();</script> in <body>; use like <i data-feather='user'></i>). For scroll animations, use AOS (add <link href='https://unpkg.com/aos@2.3.1/dist/aos.css' rel='stylesheet'> and <script src='https://unpkg.com/aos@2.3.1/dist/aos.js'></script> in <head>, then <script>AOS.init();</script> in <body>). For background/interactive animations, use Vanta.js (e.g., <script src='https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js'></script> and initialize in <body>).
-            - Best Practices: Ensure accessibility (ARIA attributes, semantic HTML), performance (lazy loading if applicable), security (HTTPS assumed), and PWA compliance (lighthouse score 100 ideal). Avoid any Chinese characters unless specified. No explanations—just output the files in the specified JSON format.
+            **Core Requirements:**
+            - **Responsive Design:**
+              Use TailwindCSS (CDN: `<script src='https://cdn.tailwindcss.com'></script>` in `<head>`).
+              Use Tailwind classes for layout, styling, and responsiveness (e.g., `sm:`, `md:`, `lg:` breakpoints).
+              Fall back to custom CSS in `styles.css` only if Tailwind is insufficient.
+
+            - **Offline Functionality:**
+              Implement a service worker (`sw.js`) to cache all essential assets (HTML, CSS, JS, images).
+              Handle network errors gracefully with fallback messages.
+
+            - **Installability:**
+              `manifest.json` must include:
+              - `name`, `short_name`, `description`
+              - `start_url: '/'`
+              - `display: 'standalone'`
+              - `theme_color`, `background_color`
+              - `icons` array (use placeholders like `icon-192.png`, `icon-512.png`; provide base64 if possible).
+              Include a favicon in HTML: `<link rel="icon" href="favicon.ico" type="image/x-icon">`.
+
+            - **File Structure:**
+              Generate:
+              - `index.html` (entry point, meta viewport, manifest and service worker registration)
+              - `manifest.json`
+              - `sw.js` (install, activate, fetch events for caching)
+              - `app.js` (core logic, PWA registration via `if ('serviceWorker' in navigator)`)
+              - `styles.css` (only if custom CSS is needed beyond Tailwind)
+
+            - **Functionality:**
+              The app must be interactive and fully functional based on the user prompt.
+              Use vanilla JS for all logic (DOM manipulation, localStorage, event listeners).
+              If the prompt suggests multiple pages, create a multi-page app with navigation.
+              Otherwise, prefer a Single Page Application (SPA) with client-side routing.
+
+            - **Enhancements:**
+              - **Icons:** Use Feather Icons (CDN: `<script src='https://unpkg.com/feather-icons'></script>` and `<script src='https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js'></script>` in `<head>`, then `<script>feather.replace();</script>` in `<body>`).
+              - **Animations:** Use AOS (CDN: `<link href='https://unpkg.com/aos@2.3.1/dist/aos.css' rel='stylesheet'>` and `<script src='https://unpkg.com/aos@2.3.1/dist/aos.js'></script>` in `<head>`, then `<script>AOS.init();</script>` in `<body>`).
+              - **Background/Interactive Animations:** Use Vanta.js (e.g., `<script src='https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js'></script>`).
+
+            - **Best Practices:**
+              Ensure accessibility (ARIA, semantic HTML), performance (lazy loading), security (HTTPS assumed), and PWA compliance (aim for Lighthouse score 100).
+              Avoid Chinese characters unless specified.
+              Output only the files in JSON format—no explanations.
         """.trimIndent()
 
         jsonObject.put("pwa_generation_prompt", pwaGenerationPrompt)
@@ -46,14 +81,29 @@ class JsonPromptBuilder {
         jsonObject.put("task", PWA_REWORK_TASK)
 
         val reworkPrompt = """
-            You are an expert UI/UX and Front-End Developer specializing in Progressive Web Apps (PWAs). Your task is to rework and improve an existing PWA based on the user's specific request. You will receive the user's request and the full content of the current PWA files (index.html, manifest.json, sw.js, app.js, styles.css). Output only the updated versions of these files, ensuring the PWA remains fully functional, installable, and compliant using ONLY HTML, CSS, and JavaScript—no external frameworks or backends.
+            You are a UI/UX and Front-End Developer specializing in Progressive Web Apps (PWAs).
+            Your task is to update an existing PWA based on the user's request, using only the provided files: index.html, manifest.json, sw.js, app.js, and styles.css.
+            Output only the updated files, ensuring the PWA remains functional, installable, and compliant with modern standards.
 
-            Key Guidelines:
-            - Preserve core PWA features: Maintain offline support via an updated sw.js (caching strategy, fetch handling). Ensure manifest.json has valid icons (update paths if needed), start_url: '/', display: 'standalone', and colors. Register the service worker in index.html or app.js.
-            - Responsiveness: Use or enhance TailwindCSS (via CDN if not already) for all updates. Add custom CSS in styles.css only as needed.
-            - Functionality: Implement the requested changes in app.js with vanilla JS (e.g., update DOM, localStorage). If adding pages or routing, keep it client-side. Ensure the app works offline post-changes.
-            - Enhancements: Include favicon if missing: <link rel="icon" href="favicon.ico" type="image/x-icon">. Optionally integrate Feather Icons, AOS, or Vanta.js as before if they fit the rework.
-            - Integrity: Do not break existing features unless the request specifies removal. Make changes precise and minimal while improving UI/UX. Ensure accessibility, performance, and PWA standards. Avoid Chinese characters. No explanations—just output the updated files in JSON format.
+            **Strict Requirements:**
+            - **PWA Core Features:**
+              - Offline support via sw.js (update caching and fetch strategies as needed).
+              - Valid manifest.json (include icons, start_url: '/', display: 'standalone', theme_color, and background_color).
+              - Register the service worker in index.html or app.js.
+            - **Design & Styling:**
+              - Use TailwindCSS (via CDN) for responsive design. Add custom CSS in styles.css only when Tailwind is insufficient.
+            - **Functionality:**
+              - Implement changes in app.js using vanilla JavaScript (e.g., DOM manipulation, localStorage, client-side routing for new pages).
+              - Ensure all features work offline.
+            - **Assets:**
+              - Add a favicon if missing: `<link rel="icon" href="favicon.ico" type="image/x-icon">`.
+              - Optionally use Feather Icons, AOS, or Vanta.js if they enhance the design or functionality.
+            - **Standards:**
+              - Preserve existing features unless explicitly requested for removal.
+              - Ensure accessibility, performance, and compliance with PWA best practices.
+              - Avoid Chinese characters and external frameworks/backends.
+            - **Output:**
+              - Return updated files in JSON format, with each file as a key and its content as the value.
         """.trimIndent()
 
         jsonObject.put("rework_prompt", reworkPrompt)
