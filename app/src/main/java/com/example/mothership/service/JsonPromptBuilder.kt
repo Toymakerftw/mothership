@@ -59,7 +59,8 @@ class JsonPromptBuilder {
             - **Enhancements:**
               - **Icons:** Use Feather Icons (CDN: `<script src='https://unpkg.com/feather-icons'></script>` and `<script src='https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js'></script>` in `<head>`, then `<script>feather.replace();</script>` in `<body>`).
               - **Animations:** Use AOS (CDN: `<link href='https://unpkg.com/aos@2.3.1/dist/aos.css' rel='stylesheet'>` and `<script src='https://unpkg.com/aos@2.3.1/dist/aos.js'></script>` in `<head>`, then `<script>AOS.init();</script>` in `<body>`).
-              - **Background/Interactive Animations:** Use Vanta.js (e.g., `<script src='https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.globe.min.js'></script>`).
+              - **Background/Interactive Animations:** Use Vanta Globe LOCALLY via `<script src='vanta.globe.min.js'></script>` (do NOT use an external CDN).
+              Ensure Vanta Globe is cached in `sw.js` for offline usage.
 
             - **Best Practices:**
               Ensure accessibility (ARIA, semantic HTML), performance (lazy loading), security (HTTPS assumed), and PWA compliance (aim for Lighthouse score 100).
@@ -99,6 +100,7 @@ class JsonPromptBuilder {
             - **Assets:**
               - Add a favicon if missing: `<link rel="icon" href="favicon.ico" type="image/x-icon">`.
               - Ensure `tailwind.min.js` is referenced in index.html and cached in sw.js for offline usage.
+              - If using Vanta background animations, reference Vanta Globe LOCALLY via `<script src='vanta.globe.min.js'></script>` and cache it in sw.js (no CDN).
               - Optionally use Feather Icons, AOS, or Vanta.js if they enhance the design or functionality.
             - **Standards:**
               - Preserve existing features unless explicitly requested for removal.

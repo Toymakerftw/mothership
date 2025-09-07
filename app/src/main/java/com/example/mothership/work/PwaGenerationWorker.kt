@@ -284,6 +284,17 @@ class PwaGenerationWorker(
         } catch (e: Exception) {
             Log.w("PwaGenerationWorker", "Failed to copy tailwind.min.js to PWA directory", e)
         }
+
+        // Copy Vanta Globe locally so PWAs can load it without CDN
+        try {
+            val vantaAsset = context.assets.open("vanta.globe.min.js")
+            val vantaFile = File(pwaDir, "vanta.globe.min.js")
+            vantaAsset.copyTo(vantaFile.outputStream())
+            vantaAsset.close()
+            Log.d("PwaGenerationWorker", "Copied vanta.globe.min.js to PWA directory")
+        } catch (e: Exception) {
+            Log.w("PwaGenerationWorker", "Failed to copy vanta.globe.min.js to PWA directory", e)
+        }
     }
 
     private fun parseJsonResponse(response: String): Map<String, String> {
@@ -325,7 +336,8 @@ class PwaGenerationWorker(
                       '/app.js',
                       '/manifest.json',
                       '/favicon.ico',
-                      '/tailwind.min.js'
+                      '/tailwind.min.js',
+                      '/vanta.globe.min.js'
                     ];
 
                     self.addEventListener('install', event => {
@@ -463,6 +475,7 @@ class PwaGenerationWorker(
                 <title>Generated PWA</title>
                 <link rel="manifest" href="manifest.json">
                 <script src="tailwind.min.js"></script>
+                <script src="vanta.globe.min.js"></script>
                 <link rel="stylesheet" href="styles.css">
                 <link rel="icon" href="favicon.ico" type="image/x-icon">
             </head>
@@ -499,7 +512,8 @@ class PwaGenerationWorker(
               '/app.js',
               '/manifest.json',
               '/favicon.ico',
-              '/tailwind.min.js'
+              '/tailwind.min.js',
+              '/vanta.globe.min.js'
             ];
 
             self.addEventListener('install', event => {
