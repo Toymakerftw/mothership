@@ -315,6 +315,17 @@ class PwaGenerationWorker(
         } catch (e: Exception) {
             Log.w("PwaGenerationWorker", "Failed to copy aos.css to PWA directory", e)
         }
+
+        // Copy Feather Icons locally so PWAs can load it without CDN
+        try {
+            val featherAsset = context.assets.open("feather.min.js")
+            val featherFile = File(pwaDir, "feather.min.js")
+            featherAsset.copyTo(featherFile.outputStream())
+            featherAsset.close()
+            Log.d("PwaGenerationWorker", "Copied feather.min.js to PWA directory")
+        } catch (e: Exception) {
+            Log.w("PwaGenerationWorker", "Failed to copy feather.min.js to PWA directory", e)
+        }
     }
 
     private fun parseJsonResponse(response: String): Map<String, String> {
@@ -359,7 +370,8 @@ class PwaGenerationWorker(
                       '/tailwind.min.js',
                       '/vanta.globe.min.js',
                       '/aos.js',
-                      '/aos.css'
+                      '/aos.css',
+                      '/feather.min.js'
                     ];
 
                     self.addEventListener('install', event => {
@@ -497,6 +509,7 @@ class PwaGenerationWorker(
                 <title>Generated PWA</title>
                 <link rel="manifest" href="manifest.json">
                 <script src="tailwind.min.js"></script>
+                <script src="feather.min.js"></script>
                 <link rel="stylesheet" href="aos.css">
                 <link rel="stylesheet" href="styles.css">
                 <link rel="icon" href="favicon.ico" type="image/x-icon">
@@ -508,6 +521,7 @@ class PwaGenerationWorker(
                 </div>
                 <script src="app.js"></script>
                 <script src="aos.js"></script>
+                <script>try{feather.replace();}catch(e){console.log('Feather init skipped');}</script>
                 <script>try{AOS.init();}catch(e){console.log('AOS init skipped');}</script>
                 <script>
                     if ('serviceWorker' in navigator) {
@@ -539,7 +553,8 @@ class PwaGenerationWorker(
               '/tailwind.min.js',
               '/vanta.globe.min.js',
               '/aos.js',
-              '/aos.css'
+              '/aos.css',
+              '/feather.min.js'
             ];
 
             self.addEventListener('install', event => {

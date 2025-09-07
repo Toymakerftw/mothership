@@ -57,7 +57,7 @@ class JsonPromptBuilder {
               Otherwise, prefer a Single Page Application (SPA) with client-side routing.
 
             - **Enhancements:**
-              - **Icons:** Use Feather Icons (CDN: `<script src='https://unpkg.com/feather-icons'></script>` and `<script src='https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js'></script>` in `<head>`, then `<script>feather.replace();</script>` in `<body>`).
+              - **Icons:** Use Feather Icons LOCALLY via `<script src='feather.min.js'></script>` in `<head>`, then initialize with `<script>feather.replace();</script>` in `<body>` (do NOT use an external CDN). Ensure `feather.min.js` is cached in `sw.js` for offline usage.
               - **Animations:** Use AOS LOCALLY via `<link href='aos.css' rel='stylesheet'>` and `<script src='aos.js'></script>` in `<head>`, then initialize with `<script>AOS.init();</script>` in `<body>` (do NOT use an external CDN). Ensure both files are cached in `sw.js`.
               - **Background/Interactive Animations:** Use Vanta Globe LOCALLY via `<script src='vanta.globe.min.js'></script>` (do NOT use an external CDN).
               Ensure Vanta Globe is cached in `sw.js` for offline usage.
@@ -100,6 +100,7 @@ class JsonPromptBuilder {
             - **Assets:**
               - Add a favicon if missing: `<link rel=\"icon\" href=\"favicon.ico\" type=\"image/x-icon\">`.
               - Ensure `tailwind.min.js` is referenced in index.html and cached in sw.js for offline usage.
+              - Use Feather Icons LOCALLY via `<script src='feather.min.js'></script>` and call `feather.replace();`; cache in sw.js.
               - Use AOS LOCALLY via `<link href='aos.css' rel='stylesheet'>` and `<script src='aos.js'></script>`, and cache both in sw.js (no CDN). Initialize AOS in the page.
               - If using Vanta background animations, reference Vanta Globe LOCALLY via `<script src='vanta.globe.min.js'></script>` and cache it in sw.js (no CDN).
               - Optionally use Feather Icons, AOS, or Vanta.js if they enhance the design or functionality.

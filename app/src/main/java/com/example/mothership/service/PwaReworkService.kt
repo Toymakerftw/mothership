@@ -81,6 +81,7 @@ class PwaReworkService(private val context: Context) {
         promptBuilder.append(" IMPORTANT: Use TailwindCSS LOCALLY by referencing <script src='tailwind.min.js'></script> in index.html (do NOT use external CDNs). Ensure tailwind.min.js is cached by sw.js for offline use.\n")
         promptBuilder.append(" If using Vanta background animations, reference Vanta Globe LOCALLY via <script src='vanta.globe.min.js'></script> and ensure it is cached by sw.js (no CDN).\n")
         promptBuilder.append(" Use AOS LOCALLY via <link href='aos.css' rel='stylesheet'> and <script src='aos.js'></script>; initialize with <script>AOS.init();</script>. Ensure both files are cached by sw.js (no CDN).\n")
+        promptBuilder.append(" Use Feather Icons LOCALLY via <script src='feather.min.js'></script> and initialize with <script>feather.replace();</script>. Ensure it is cached by sw.js (no CDN).\n")
 
         val messages = listOf(Message(role = "system", content = promptBuilder.toString()))
         val request = OpenRouterRequest(
@@ -306,6 +307,19 @@ class PwaReworkService(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to ensure aos.css in PWA directory", e)
+        }
+
+        // Ensure local Feather Icons asset exists alongside updated files
+        try {
+            val featherFile = File(pwaFolder, "feather.min.js")
+            if (!featherFile.exists()) {
+                val featherAsset = context.assets.open("feather.min.js")
+                featherAsset.copyTo(featherFile.outputStream())
+                featherAsset.close()
+                Log.d(TAG, "Copied feather.min.js to PWA directory after rework")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to ensure feather.min.js in PWA directory", e)
         }
     }
 
