@@ -23,11 +23,11 @@ if (localPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.mothership"
+    namespace = "com.toymakerftw.mothership"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.mothership"
+        applicationId = "com.toymakerftw.mothership"
         minSdk = 24
         targetSdk = 34
         versionCode = 2

@@ -25,24 +25,24 @@
 -keep class * implements com.google.gson.JsonDeserializer
 
 # Keep the API model classes and their members
--keep class com.example.mothership.api.model.** { *; }
--keepclassmembers class com.example.mothership.api.model.** { *; }
+-keep class com.toymakerftw.mothership.api.model.** { *; }
+-keepclassmembers class com.toymakerftw.mothership.api.model.** { *; }
 
 # Keep the MothershipApi interface and its methods
--keep class com.example.mothership.api.MothershipApi { *; }
--keepclassmembers class com.example.mothership.api.MothershipApi { *; }
+-keep class com.toymakerftw.mothership.api.MothershipApi { *; }
+-keepclassmembers class com.toymakerftw.mothership.api.MothershipApi { *; }
 
 # Keep generic type information
 -keepattributes Signature
 -keepattributes *Annotation*
 
 # Keep the MainViewModel and related classes
--keep class com.example.mothership.MainViewModel { *; }
--keep class com.example.mothership.MainUiState { *; }
--keep class com.example.mothership.MainUiState$* { *; }
+-keep class com.toymakerftw.mothership.MainViewModel { *; }
+-keep class com.toymakerftw.mothership.MainUiState { *; }
+-keep class com.toymakerftw.mothership.MainUiState$* { *; }
 
 # Keep Application class
--keep class com.example.mothership.MothershipApp { *; }
+-keep class com.toymakerftw.mothership.MothershipApp { *; }
 
 # Keep Kotlin specific classes
 -keep class kotlin.Metadata { *; }
@@ -65,7 +65,7 @@
 -keep class java.util.ArrayList { *; }
 
 # Keep DemoKeyManager inner data classes for Gson serialization
--keep class com.example.mothership.demo.DemoKeyManager$* { *; }
+-keep class com.toymakerftw.mothership.demo.DemoKeyManager$* { *; }
 
 # Memory optimization rules
 -optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
@@ -73,7 +73,7 @@
 -allowaccessmodification
 
 # Keep memory-sensitive classes
--keep class com.example.mothership.** { *; }
+-keep class com.toymakerftw.mothership.** { *; }
 
 # Reduce information kept for debugging to reduce memory usage
 -dontskipnonpubliclibraryclasses
@@ -89,8 +89,8 @@
 -keep class org.nanohttpd.** { *; }
 
 # Keep PWA HTTP server service
--keep class com.example.mothership.PwaHttpServerService { *; }
--keep class com.example.mothership.PwaHttpServerService$PwaHttpServer { *; }
+-keep class com.toymakerftw.mothership.PwaHttpServerService { *; }
+-keep class com.toymakerftw.mothership.PwaHttpServerService$PwaHttpServer { *; }
 
 # Keep file I/O classes used by the HTTP server
 -keep class java.io.FileInputStream { *; }
