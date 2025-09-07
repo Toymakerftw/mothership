@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.view.View
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -34,6 +33,8 @@ class PwaViewerActivity : ComponentActivity() {
     private var pwaUuid: String? = null
     private var serverPort: Int = SERVER_PORT_BASE
     private val handler = Handler(Looper.getMainLooper())
+    private var orbRetryCount = 0
+    private val MAX_ORB_RETRIES = 2 // Allow only 2 retries
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,8 +104,33 @@ class PwaViewerActivity : ComponentActivity() {
                 super.onReceivedError(view, request, error)
                 Log.e(TAG, "Web error: ${error?.description}")
                 if (error?.description?.contains("ERR_BLOCKED_BY_ORB") == true) {
-                    Log.w(TAG, "ORB error detected, reloading...")
-                    handler.postDelayed({ view?.reload() }, RELOAD_DELAY)
+                    orbRetryCount++
+                    if (orbRetryCount <= MAX_ORB_RETRIES) {
+                        Log.w(TAG, "ORB error detected, retrying... (Attempt $orbRetryCount)")
+                        handler.postDelayed({ view?.reload() }, RELOAD_DELAY)
+                    } else {
+                        Log.e(TAG, "Max ORB retries reached. Showing fallback page.")
+                        handler.post {
+                            // Load a local fallback page or show an error message
+                            val fallbackHtml = """
+                                <html>
+                                    <head>
+                                        <title>PWA Load Error</title>
+                                        <style>
+                                            body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+                                            .error { color: red; }
+                                        </style>
+                                    </head>
+                                    <body>
+                                        <h1>PWA Load Error</h1>
+                                        <p class="error">Failed to load the PWA due to network restrictions.</p>
+                                        <p>Please disable battery saver or data saver mode and try again.</p>
+                                    </body>
+                                </html>
+                            """.trimIndent()
+                            webView.loadData(fallbackHtml, "text/html", "UTF-8")
+                        }
+                    }
                 } else {
                     Toast.makeText(this@PwaViewerActivity, "Error loading PWA: ${error?.description}", Toast.LENGTH_LONG).show()
                 }
