@@ -3,11 +3,13 @@ package com.toymakerftw.mothership
 import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.util.TypedValue
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -99,6 +101,13 @@ class PwaViewerActivity : ComponentActivity() {
         // Initialize WebView but don't set it as content view yet
         webView = WebView(this)
         val webSettings = webView.settings
+        
+        // Get screen density for responsive scaling
+        val density = resources.displayMetrics.density
+        val screenWidthDp = resources.configuration.screenWidthDp
+        val isTablet = screenWidthDp > 600
+        
+        // Configure WebView for responsive behavior
         webSettings.javaScriptEnabled = true
         webSettings.domStorageEnabled = true
         webSettings.allowFileAccess = true
@@ -110,6 +119,22 @@ class PwaViewerActivity : ComponentActivity() {
         webSettings.displayZoomControls = false
         webSettings.databaseEnabled = true
         webSettings.cacheMode = WebSettings.LOAD_NO_CACHE
+        
+        // Set responsive viewport and scaling
+        webSettings.layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL
+        webSettings.defaultFontSize = if (isTablet) 18 else 16
+        webSettings.defaultFixedFontSize = if (isTablet) 18 else 16
+        webSettings.minimumFontSize = if (isTablet) 14 else 12
+        webSettings.minimumLogicalFontSize = if (isTablet) 14 else 12
+        
+        // Set initial scale based on screen size
+        val initialScale = when {
+            screenWidthDp > 1200 -> 200 // Large tablets
+            screenWidthDp > 900 -> 150  // Medium tablets
+            screenWidthDp > 600 -> 125  // Small tablets
+            else -> 100                 // Phones
+        }
+        webView.setInitialScale(initialScale)
 
         title = pwaName
 
@@ -123,6 +148,40 @@ class PwaViewerActivity : ComponentActivity() {
                 super.onPageFinished(view, url)
                 Log.d(TAG, "Page loaded: $url")
                 view?.scrollTo(0, 1)
+                
+                // Inject responsive CSS for better scaling
+                view?.evaluateJavascript(
+                    """
+                    (function() {
+                        // Add viewport meta tag if not present
+                        var metaViewport = document.querySelector('meta[name="viewport"]');
+                        if (!metaViewport) {
+                            metaViewport = document.createElement('meta');
+                            metaViewport.name = 'viewport';
+                            metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+                            document.head.appendChild(metaViewport);
+                        } else {
+                            metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+                        }
+                        
+                        // Add responsive CSS
+                        var style = document.createElement('style');
+                        style.textContent = `
+                            body {
+                                font-size: ${if (isTablet) "1.2em" else "1em"} !important;
+                                line-height: 1.6 !important;
+                            }
+                            @media screen and (min-width: 768px) {
+                                body {
+                                    font-size: ${if (isTablet) "1.4em" else "1.2em"} !important;
+                                }
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    })();
+                    """.trimIndent(),
+                    null
+                )
             }
 
             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
@@ -144,10 +203,21 @@ class PwaViewerActivity : ComponentActivity() {
                             val fallbackHtml = """
                                 <html>
                                     <head>
+                                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
                                         <title>PWA Load Error</title>
                                         <style>
-                                            body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+                                            body { 
+                                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                                                text-align: center; 
+                                                padding: 20px; 
+                                                max-width: 600px; 
+                                                margin: 0 auto;
+                                                line-height: 1.6;
+                                            }
                                             .error { color: red; }
+                                            @media screen and (min-width: 768px) {
+                                                body { padding: 40px; }
+                                            }
                                         </style>
                                     </head>
                                     <body>
@@ -249,6 +319,26 @@ class PwaViewerActivity : ComponentActivity() {
         } catch (e: Exception) {
             Log.w(TAG, "Failed to unregister receiver", e)
         }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Handle orientation changes for responsive layout
+        webView.evaluateJavascript(
+            """
+            (function() {
+                // Notify the page of orientation change
+                window.dispatchEvent(new Event('orientationchange'));
+                
+                // Adjust viewport if needed
+                var metaViewport = document.querySelector('meta[name="viewport"]');
+                if (metaViewport) {
+                    metaViewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes';
+                }
+            })();
+            """.trimIndent(),
+            null
+        )
     }
 
     private fun stopHttpServer() {

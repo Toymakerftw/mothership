@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -64,6 +65,23 @@ fun ReworkScreen(
     val prompt by mainViewModel.prompt.collectAsState()
     val uiState by mainViewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
+    
+    // Get screen configuration for responsive sizing
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp
+    val isTablet = screenWidth > 600
+    
+    // Calculate responsive sizes
+    val padding = if (isTablet) 40.dp else 20.dp
+    val headerPadding = if (isTablet) 48.dp else 32.dp
+    val logoSize = if (isTablet) 100.dp else 80.dp
+    val logoIconSize = if (isTablet) 56.dp else 40.dp
+    val cardPadding = if (isTablet) 36.dp else 28.dp
+    val textFieldHeight = if (isTablet) 160.dp else 120.dp
+    val buttonHeight = if (isTablet) 64.dp else 56.dp
+    val cardCornerRadius = if (isTablet) 32.dp else 24.dp
+    val quickActionCornerRadius = if (isTablet) 24.dp else 20.dp
+    val quickActionButtonHeight = if (isTablet) 80.dp else 72.dp
 
     val isLoading = uiState is MainUiState.Loading
 
@@ -79,7 +97,7 @@ fun ReworkScreen(
                 )
             )
             .verticalScroll(scrollState)
-            .padding(20.dp),
+            .padding(padding),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
@@ -87,17 +105,17 @@ fun ReworkScreen(
             horizontalArrangement = Arrangement.Start
         ) {
             IconButton(onClick = { navController.navigate("appList") }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", modifier = Modifier.size(if (isTablet) 32.dp else 24.dp))
             }
         }
         // Header with rocket logo
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(vertical = 32.dp)
+            modifier = Modifier.padding(vertical = headerPadding)
         ) {
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(logoSize)
                     .clip(CircleShape)
                     .background(
                         Brush.radialGradient(
@@ -113,15 +131,15 @@ fun ReworkScreen(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Rework",
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(logoIconSize)
                 )
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 16.dp))
             
             Text(
                 text = "Rework $pwaName",
-                style = MaterialTheme.typography.headlineLarge,
+                style = if (isTablet) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.primary,
                 letterSpacing = 1.sp
@@ -129,10 +147,10 @@ fun ReworkScreen(
             
             Text(
                 text = "Modify your existing Progressive Web App",
-                style = MaterialTheme.typography.titleMedium,
+                style = if (isTablet) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
                 fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = if (isTablet) 8.dp else 4.dp)
             )
         }
 
@@ -140,9 +158,9 @@ fun ReworkScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-            shape = RoundedCornerShape(24.dp),
+                .padding(bottom = if (isTablet) 36.dp else 24.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = if (isTablet) 16.dp else 12.dp),
+            shape = RoundedCornerShape(cardCornerRadius),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             )
@@ -150,23 +168,23 @@ fun ReworkScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(28.dp),
+                    .padding(cardPadding),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 20.dp)
+                    modifier = Modifier.padding(bottom = if (isTablet) 30.dp else 20.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.AutoAwesome,
                         contentDescription = "Rework",
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(if (isTablet) 36.dp else 28.dp)
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(if (isTablet) 16.dp else 12.dp))
                     Text(
                         text = "Modify Your PWA",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = if (isTablet) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -174,11 +192,11 @@ fun ReworkScreen(
 
                 Text(
                     text = "Describe what changes you'd like to make to your existing app. The AI will modify the existing code based on your instructions.",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = if (isTablet) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    modifier = Modifier.padding(bottom = 28.dp),
-                    lineHeight = 24.sp
+                    modifier = Modifier.padding(bottom = if (isTablet) 36.dp else 28.dp),
+                    lineHeight = if (isTablet) 28.sp else 24.sp
                 )
 
                 OutlinedTextField(
@@ -187,21 +205,23 @@ fun ReworkScreen(
                     label = { 
                         Text(
                             "What changes would you like to make?",
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            fontSize = if (isTablet) 18.sp else 16.sp
                         ) 
                     },
                     placeholder = { 
                         Text(
                             "e.g., Add a dark mode toggle, or change the color scheme...",
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                            fontSize = if (isTablet) 16.sp else 14.sp
                         ) 
                     },
                     enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp)
-                        .padding(bottom = 24.dp),
-                    shape = RoundedCornerShape(16.dp),
+                        .height(textFieldHeight)
+                        .padding(bottom = if (isTablet) 32.dp else 24.dp),
+                    shape = RoundedCornerShape(if (isTablet) 20.dp else 16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
@@ -217,43 +237,44 @@ fun ReworkScreen(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(buttonHeight),
                     enabled = prompt.isNotBlank() && !isLoading,
                     isLoading = isLoading,
-                    shape = RoundedCornerShape(16.dp),
-                    normalText = "Apply Changes to PWA"
+                    shape = RoundedCornerShape(if (isTablet) 20.dp else 16.dp),
+                    normalText = "Apply Changes to PWA",
+                    fontSize = if (isTablet) 18.sp else 16.sp
                 )
 
                 // Error state with retry functionality
                 when (uiState) {
                     is MainUiState.Error -> {
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(if (isTablet) 30.dp else 20.dp))
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(if (isTablet) 16.dp else 12.dp)
                         ) {
                             Column(
-                                modifier = Modifier.padding(16.dp),
+                                modifier = Modifier.padding(if (isTablet) 24.dp else 16.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(bottom = 12.dp)
+                                    modifier = Modifier.padding(bottom = if (isTablet) 18.dp else 12.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Info,
                                         contentDescription = "Error",
                                         tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(20.dp)
+                                        modifier = Modifier.size(if (isTablet) 28.dp else 20.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 8.dp))
                                     Text(
                                         text = "Modification Failed",
                                         color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.titleMedium,
+                                        style = if (isTablet) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -261,36 +282,47 @@ fun ReworkScreen(
                                 Text(
                                     text = (uiState as MainUiState.Error).message,
                                     color = MaterialTheme.colorScheme.onErrorContainer,
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    style = if (isTablet) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
                                     textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(bottom = 16.dp)
+                                    modifier = Modifier.padding(bottom = if (isTablet) 24.dp else 16.dp)
                                 )
                                 
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
                                 ) {
                                     if ((uiState as MainUiState.Error).canRetry) {
                                         androidx.compose.material3.OutlinedButton(
                                             onClick = { mainViewModel.retryGeneration() },
                                             enabled = prompt.isNotBlank(),
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text("Retry")
-                                        }
+                                            modifier = Modifier.weight(1f),
+                                            content = {
+                                                Text(
+                                                    "Retry",
+                                                    fontSize = if (isTablet) 16.sp else 14.sp
+                                                )
+                                            }
+                                        )
                                     } else {
                                         androidx.compose.material3.OutlinedButton(
                                             onClick = { navController.navigate("settings") },
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text("Settings")
-                                        }
+                                            modifier = Modifier.weight(1f),
+                                            content = {
+                                                Text(
+                                                    "Settings",
+                                                    fontSize = if (isTablet) 16.sp else 14.sp
+                                                )
+                                            }
+                                        )
                                     }
                                     
                                     androidx.compose.material3.TextButton(
                                         onClick = { mainViewModel.clearUiState() },
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text("Dismiss")
+                                        Text(
+                                            "Dismiss",
+                                            fontSize = if (isTablet) 16.sp else 14.sp
+                                        )
                                     }
                                 }
                             }
@@ -301,18 +333,18 @@ fun ReworkScreen(
                             delay(3000)
                             mainViewModel.clearUiState()
                         }
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(if (isTablet) 30.dp else 20.dp))
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(if (isTablet) 16.dp else 12.dp)
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp),
+                                    .padding(if (isTablet) 20.dp else 16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center
                             ) {
@@ -320,13 +352,13 @@ fun ReworkScreen(
                                     imageVector = androidx.compose.material.icons.Icons.Default.Edit,
                                     contentDescription = "Success",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(if (isTablet) 32.dp else 24.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 8.dp))
                                 Text(
                                     text = "PWA modified successfully!",
                                     color = MaterialTheme.colorScheme.primary,
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    style = if (isTablet) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -340,8 +372,8 @@ fun ReworkScreen(
         // Quick actions section
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = if (isTablet) 12.dp else 8.dp),
+            shape = RoundedCornerShape(quickActionCornerRadius),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             )
@@ -349,38 +381,46 @@ fun ReworkScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(if (isTablet) 32.dp else 24.dp)
             ) {
                 Text(
                     text = "Quick Actions",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = if (isTablet) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 20.dp)
+                    modifier = Modifier.padding(bottom = if (isTablet) 28.dp else 20.dp)
                 )
 
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
                 ) {
                     ReworkQuickActionButton(
                         icon = Icons.Default.Info,
                         title = "View Generated PWAs",
                         subtitle = "Browse your app collection",
-                        onClick = { navController.navigate("appList") }
+                        onClick = { navController.navigate("appList") },
+                        height = quickActionButtonHeight,
+                        iconSize = if (isTablet) 32.dp else 24.dp,
+                        textSize = if (isTablet) 18.sp else 16.sp,
+                        subtextSize = if (isTablet) 14.sp else 12.sp
                     )
 
                     ReworkQuickActionButton(
                         icon = Icons.Default.Settings,
                         title = "Settings",
                         subtitle = "Configure API and preferences",
-                        onClick = { navController.navigate("settings") }
+                        onClick = { navController.navigate("settings") },
+                        height = quickActionButtonHeight,
+                        iconSize = if (isTablet) 32.dp else 24.dp,
+                        textSize = if (isTablet) 18.sp else 16.sp,
+                        subtextSize = if (isTablet) 14.sp else 12.sp
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(if (isTablet) 40.dp else 20.dp))
     }
 }
 
@@ -389,13 +429,17 @@ private fun ReworkQuickActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    height: androidx.compose.ui.unit.Dp = 72.dp,
+    iconSize: androidx.compose.ui.unit.Dp = 24.dp,
+    textSize: androidx.compose.ui.unit.TextUnit = 16.sp,
+    subtextSize: androidx.compose.ui.unit.TextUnit = 12.sp
 ) {
     AnimatedButton(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(72.dp),
+            .height(height),
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(
@@ -406,7 +450,7 @@ private fun ReworkQuickActionButton(
             Icon(
                 imageVector = icon,
                 contentDescription = title,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(iconSize)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(
@@ -415,12 +459,14 @@ private fun ReworkQuickActionButton(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    fontSize = textSize
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                    fontSize = subtextSize
                 )
             }
         }

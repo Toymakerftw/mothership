@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,18 @@ fun SplashScreen(onTimeout: () -> Unit) {
     val alpha = remember { Animatable(0f) }
     val scale = remember { Animatable(0.3f) }
     val pulseScale = remember { Animatable(1f) }
+    
+    // Get screen configuration for responsive sizing
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp
+    val screenWidth = configuration.screenWidthDp
+    
+    // Calculate responsive sizes based on screen dimensions
+    val logoSize = if (screenWidth > 600) 120.dp else 80.dp
+    val logoTextSize = if (screenWidth > 600) 48.sp else 36.sp
+    val titleTextSize = if (screenWidth > 600) 48.sp else 36.sp
+    val subtitleTextSize = if (screenWidth > 600) 18.sp else 14.sp
+    val spacing = if (screenWidth > 600) 24.dp else 16.dp
     
     LaunchedEffect(Unit) {
         // Start animations simultaneously
@@ -101,7 +114,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
             // Rocket logo with pulse animation
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(logoSize)
                     .scale(pulseScale.value)
                     .clip(CircleShape)
                     .background(
@@ -111,16 +124,16 @@ fun SplashScreen(onTimeout: () -> Unit) {
             ) {
                 Text(
                     text = "🚀",
-                    fontSize = 36.sp,
+                    fontSize = logoTextSize,
                     textAlign = TextAlign.Center
                 )
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(spacing))
             
             Text(
                 text = "Mothership",
-                fontSize = 36.sp,
+                fontSize = titleTextSize,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 letterSpacing = 1.sp
@@ -128,11 +141,11 @@ fun SplashScreen(onTimeout: () -> Unit) {
             
             Text(
                 text = "Generate PWAs with AI",
-                fontSize = 14.sp,
+                fontSize = subtitleTextSize,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 letterSpacing = 0.3.sp,
-                modifier = Modifier.padding(top = 6.dp)
+                modifier = Modifier.padding(top = if (screenWidth > 600) 12.dp else 6.dp)
             )
         }
     }
