@@ -24,12 +24,13 @@ class JsonPromptBuilder {
 
             **Core Requirements:**
             - **Responsive Design:**
-              Use TailwindCSS (CDN: `<script src='https://cdn.tailwindcss.com'></script>` in `<head>`).
+              Use TailwindCSS LOCALLY via `<script src='tailwind.min.js'></script>` included in the generated PWA folder (do NOT use an external CDN).
               Use Tailwind classes for layout, styling, and responsiveness (e.g., `sm:`, `md:`, `lg:` breakpoints).
               Fall back to custom CSS in `styles.css` only if Tailwind is insufficient.
 
             - **Offline Functionality:**
               Implement a service worker (`sw.js`) to cache all essential assets (HTML, CSS, JS, images).
+              Ensure `tailwind.min.js` is included in the cache list for offline use.
               Handle network errors gracefully with fallback messages.
 
             - **Installability:**
@@ -43,7 +44,7 @@ class JsonPromptBuilder {
 
             - **File Structure:**
               Generate:
-              - `index.html` (entry point, meta viewport, manifest and service worker registration)
+              - `index.html` (entry point, meta viewport, includes `<script src='tailwind.min.js'></script>` in `<head>`, manifest link, and service worker registration)
               - `manifest.json`
               - `sw.js` (install, activate, fetch events for caching)
               - `app.js` (core logic, PWA registration via `if ('serviceWorker' in navigator)`)
@@ -91,12 +92,13 @@ class JsonPromptBuilder {
               - Valid manifest.json (include icons, start_url: '/', display: 'standalone', theme_color, and background_color).
               - Register the service worker in index.html or app.js.
             - **Design & Styling:**
-              - Use TailwindCSS (via CDN) for responsive design. Add custom CSS in styles.css only when Tailwind is insufficient.
+              - Use TailwindCSS LOCALLY via `<script src='tailwind.min.js'></script>` included with the app (do NOT use external CDN). Add custom CSS in styles.css only when Tailwind is insufficient.
             - **Functionality:**
               - Implement changes in app.js using vanilla JavaScript (e.g., DOM manipulation, localStorage, client-side routing for new pages).
               - Ensure all features work offline.
             - **Assets:**
               - Add a favicon if missing: `<link rel="icon" href="favicon.ico" type="image/x-icon">`.
+              - Ensure `tailwind.min.js` is referenced in index.html and cached in sw.js for offline usage.
               - Optionally use Feather Icons, AOS, or Vanta.js if they enhance the design or functionality.
             - **Standards:**
               - Preserve existing features unless explicitly requested for removal.
@@ -158,7 +160,7 @@ class JsonPromptBuilder {
         // Define each file property
         val indexHtml = JSONObject()
         indexHtml.put("type", "string")
-        indexHtml.put("description", "Complete, valid HTML file (index.html) with <!DOCTYPE html>, <html lang='en'>, <head> including meta viewport='width=device-width, initial-scale=1', title, favicon link, Tailwind CDN script, manifest link <link rel='manifest' href='manifest.json'>, and service worker registration in <body> or via app.js. Reference styles.css and app.js. Ensure semantic structure and responsiveness.")
+        indexHtml.put("description", "Complete, valid HTML file (index.html) with <!DOCTYPE html>, <html lang='en'>, <head> including meta viewport='width=device-width, initial-scale=1', title, favicon link, local Tailwind script <script src='tailwind.min.js'></script>, manifest link <link rel='manifest' href='manifest.json'>, and service worker registration in <body> or via app.js. Reference styles.css and app.js. Ensure semantic structure and responsiveness.")
         properties.put("index.html", indexHtml)
 
         val manifestJson = JSONObject()
@@ -168,7 +170,7 @@ class JsonPromptBuilder {
 
         val swJs = JSONObject()
         swJs.put("type", "string")
-        swJs.put("description", "Fully functional service worker (sw.js) with self.addEventListener for 'install' (caches static assets like index.html, styles.css, app.js, manifest.json), 'activate' (cleans old caches), and 'fetch' (serves from cache or fetches/network fallback with error handling for offline). Use Cache API.")
+        swJs.put("description", "Fully functional service worker (sw.js) with self.addEventListener for 'install' (caches static assets like index.html, styles.css, app.js, manifest.json, favicon.ico, and tailwind.min.js), 'activate' (cleans old caches), and 'fetch' (serves from cache or fetches/network fallback with error handling for offline). Use Cache API.")
         properties.put("sw.js", swJs)
 
         val appJs = JSONObject()
@@ -193,9 +195,9 @@ class JsonPromptBuilder {
         // Add example
         val example = JSONObject()
         val exampleFiles = JSONObject()
-        exampleFiles.put("index.html", "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Example PWA</title><link rel='manifest' href='manifest.json'><link rel='icon' href='favicon.ico' type='image/x-icon'><script src='https://cdn.tailwindcss.com'></script><link rel='stylesheet' href='styles.css'></head><body><script src='app.js'></script></body></html>")
+        exampleFiles.put("index.html", "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Example PWA</title><link rel='manifest' href='manifest.json'><link rel='icon' href='favicon.ico' type='image/x-icon'><script src='tailwind.min.js'></script><link rel='stylesheet' href='styles.css'></head><body><script src='app.js'></script></body></html>")
         exampleFiles.put("manifest.json", "{\"name\":\"Example PWA\",\"short_name\":\"Example\",\"start_url\":\"/\",\"display\":\"standalone\",\"theme_color\":\"#000000\",\"background_color\":\"#ffffff\",\"icons\":[{\"src\":\"icon-192.png\",\"sizes\":\"192x192\",\"type\":\"image/png\"},{\"src\":\"icon-512.png\",\"sizes\":\"512x512\",\"type\":\"image/png\"}]}")
-        exampleFiles.put("sw.js", "const CACHE_NAME = 'pwa-cache-v1'; self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['/index.html', '/styles.css', '/app.js', '/manifest.json']))); }); self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(response => response || fetch(e.request).catch(() => caches.match('/index.html')))); });")
+        exampleFiles.put("sw.js", "const CACHE_NAME = 'pwa-cache-v1'; self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['/', '/index.html', '/styles.css', '/app.js', '/manifest.json', '/favicon.ico', '/tailwind.min.js']))); }); self.addEventListener('fetch', e => { e.respondWith(caches.match(e.request).then(response => response || fetch(e.request).catch(() => caches.match('/index.html')))); });")
         exampleFiles.put("app.js", "if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); } // App logic here")
         exampleFiles.put("styles.css", "/* Custom styles */ body { font-family: sans-serif; }")
         example.put("files", exampleFiles)

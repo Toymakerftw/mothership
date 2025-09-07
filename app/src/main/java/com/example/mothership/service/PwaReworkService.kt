@@ -11,6 +11,7 @@ import org.json.JSONObject
 import java.io.File
 import java.net.SocketException
 import java.net.UnknownHostException
+import java.net.URL
 import javax.net.ssl.SSLException
 import kotlinx.coroutines.delay
 
@@ -77,6 +78,7 @@ class PwaReworkService(private val context: Context) {
         promptBuilder.append(" Return ONLY a JSON object with no explanations.\n")
         promptBuilder.append(" Wrap the JSON in a fenced code block as ```json ... ```.\n")
         promptBuilder.append(" The JSON should either be { \"files\": { <filename>: <content>, ... } } or a top-level object mapping filenames to their content.\n")
+        promptBuilder.append(" IMPORTANT: Use TailwindCSS LOCALLY by referencing <script src='tailwind.min.js'></script> in index.html (do NOT use external CDNs). Ensure tailwind.min.js is cached by sw.js for offline use.\n")
 
         val messages = listOf(Message(role = "system", content = promptBuilder.toString()))
         val request = OpenRouterRequest(
@@ -252,6 +254,19 @@ class PwaReworkService(private val context: Context) {
         for ((fileName, content) in updatedFiles) {
             val file = File(pwaFolder, fileName)
             file.writeText(content)
+        }
+
+        // Ensure local Tailwind asset exists alongside updated files
+        try {
+            val tailwindFile = File(pwaFolder, "tailwind.min.js")
+            if (!tailwindFile.exists()) {
+                val tailwindAsset = context.assets.open("tailwind.min.js")
+                tailwindAsset.copyTo(tailwindFile.outputStream())
+                tailwindAsset.close()
+                Log.d(TAG, "Copied tailwind.min.js to PWA directory after rework")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to ensure tailwind.min.js in PWA directory", e)
         }
     }
 

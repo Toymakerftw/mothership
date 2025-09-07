@@ -19,6 +19,7 @@ import org.json.JSONException
 import java.io.File
 import java.net.SocketException
 import java.net.UnknownHostException
+import java.util.UUID
 import javax.net.ssl.SSLException
 
 class PwaGenerationWorker(
@@ -237,7 +238,7 @@ class PwaGenerationWorker(
     }
 
     private fun savePwaFiles(pwaName: String, files: String) {
-        val uuid = java.util.UUID.randomUUID().toString()
+        val uuid = UUID.randomUUID().toString()
         val pwaDir = File(context.getExternalFilesDir(null), uuid)
         pwaDir.mkdirs()
         val appInfo = "{\"name\": \"$pwaName\", \"uuid\": \"$uuid\"}"
@@ -272,6 +273,17 @@ class PwaGenerationWorker(
         } catch (e: Exception) {
             Log.w("PwaGenerationWorker", "Failed to copy favicon.ico to PWA directory", e)
         }
+
+        // Copy Tailwind locally so PWAs can load it without CDN
+        try {
+            val tailwindAsset = context.assets.open("tailwind.min.js")
+            val tailwindFile = File(pwaDir, "tailwind.min.js")
+            tailwindAsset.copyTo(tailwindFile.outputStream())
+            tailwindAsset.close()
+            Log.d("PwaGenerationWorker", "Copied tailwind.min.js to PWA directory")
+        } catch (e: Exception) {
+            Log.w("PwaGenerationWorker", "Failed to copy tailwind.min.js to PWA directory", e)
+        }
     }
 
     private fun parseJsonResponse(response: String): Map<String, String> {
@@ -303,10 +315,40 @@ class PwaGenerationWorker(
             }
 
             if (!filesMap.containsKey("sw.js")) {
-                Log.d("PwaGenerationWorker", "Adding default service worker")
+                Log.d("PwaGenerationWorker", "Adding default service worker with basic caching")
                 filesMap["sw.js"] = """
+                    const CACHE_NAME = 'pwa-cache-v1';
+                    const ASSETS = [
+                      '/',
+                      '/index.html',
+                      '/styles.css',
+                      '/app.js',
+                      '/manifest.json',
+                      '/favicon.ico',
+                      '/tailwind.min.js'
+                    ];
+
+                    self.addEventListener('install', event => {
+                      event.waitUntil(
+                        caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+                      );
+                    });
+
+                    self.addEventListener('activate', event => {
+                      event.waitUntil(
+                        caches.keys().then(keys => Promise.all(
+                          keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+                        ))
+                      );
+                    });
+
                     self.addEventListener('fetch', event => {
-                        // Simple service worker
+                      event.respondWith(
+                        caches.match(event.request)
+                          .then(response => {
+                            return response || fetch(event.request).catch(() => caches.match('/index.html'));
+                          })
+                      );
                     });
                 """.trimIndent()
             }
@@ -420,6 +462,7 @@ class PwaGenerationWorker(
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 <title>Generated PWA</title>
                 <link rel="manifest" href="manifest.json">
+                <script src="tailwind.min.js"></script>
                 <link rel="stylesheet" href="styles.css">
                 <link rel="icon" href="favicon.ico" type="image/x-icon">
             </head>
@@ -448,21 +491,38 @@ class PwaGenerationWorker(
 
         filesMap["manifest.json"] = createDefaultManifest()
         filesMap["sw.js"] = """
-            self.addEventListener('fetch', event => {
-                event.respondWith(
-                    caches.match(event.request)
-                        .then(response => {
-                            return response || fetch(event.request);
-                        })
-                );
-            });
+            const CACHE_NAME = 'pwa-cache-v1';
+            const ASSETS = [
+              '/',
+              '/index.html',
+              '/styles.css',
+              '/app.js',
+              '/manifest.json',
+              '/favicon.ico',
+              '/tailwind.min.js'
+            ];
 
             self.addEventListener('install', event => {
-                console.log('Service Worker installing.');
+              event.waitUntil(
+                caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+              );
             });
 
             self.addEventListener('activate', event => {
-                console.log('Service Worker activating.');
+              event.waitUntil(
+                caches.keys().then(keys => Promise.all(
+                  keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+                ))
+              );
+            });
+
+            self.addEventListener('fetch', event => {
+              event.respondWith(
+                caches.match(event.request)
+                  .then(response => {
+                    return response || fetch(event.request).catch(() => caches.match('/index.html'));
+                  })
+              );
             });
         """.trimIndent()
 
