@@ -80,6 +80,7 @@ class PwaReworkService(private val context: Context) {
         promptBuilder.append(" The JSON should either be { \"files\": { <filename>: <content>, ... } } or a top-level object mapping filenames to their content.\n")
         promptBuilder.append(" IMPORTANT: Use TailwindCSS LOCALLY by referencing <script src='tailwind.min.js'></script> in index.html (do NOT use external CDNs). Ensure tailwind.min.js is cached by sw.js for offline use.\n")
         promptBuilder.append(" If using Vanta background animations, reference Vanta Globe LOCALLY via <script src='vanta.globe.min.js'></script> and ensure it is cached by sw.js (no CDN).\n")
+        promptBuilder.append(" Use AOS LOCALLY via <link href='aos.css' rel='stylesheet'> and <script src='aos.js'></script>; initialize with <script>AOS.init();</script>. Ensure both files are cached by sw.js (no CDN).\n")
 
         val messages = listOf(Message(role = "system", content = promptBuilder.toString()))
         val request = OpenRouterRequest(
@@ -281,6 +282,30 @@ class PwaReworkService(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to ensure vanta.globe.min.js in PWA directory", e)
+        }
+
+        // Ensure local AOS assets exist alongside updated files
+        try {
+            val aosJsFile = File(pwaFolder, "aos.js")
+            if (!aosJsFile.exists()) {
+                val aosJsAsset = context.assets.open("aos.js")
+                aosJsAsset.copyTo(aosJsFile.outputStream())
+                aosJsAsset.close()
+                Log.d(TAG, "Copied aos.js to PWA directory after rework")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to ensure aos.js in PWA directory", e)
+        }
+        try {
+            val aosCssFile = File(pwaFolder, "aos.css")
+            if (!aosCssFile.exists()) {
+                val aosCssAsset = context.assets.open("aos.css")
+                aosCssAsset.copyTo(aosCssFile.outputStream())
+                aosCssAsset.close()
+                Log.d(TAG, "Copied aos.css to PWA directory after rework")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to ensure aos.css in PWA directory", e)
         }
     }
 

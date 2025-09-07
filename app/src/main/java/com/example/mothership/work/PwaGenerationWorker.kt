@@ -295,6 +295,26 @@ class PwaGenerationWorker(
         } catch (e: Exception) {
             Log.w("PwaGenerationWorker", "Failed to copy vanta.globe.min.js to PWA directory", e)
         }
+
+        // Copy AOS (Animate On Scroll) assets locally
+        try {
+            val aosJsAsset = context.assets.open("aos.js")
+            val aosJsFile = File(pwaDir, "aos.js")
+            aosJsAsset.copyTo(aosJsFile.outputStream())
+            aosJsAsset.close()
+            Log.d("PwaGenerationWorker", "Copied aos.js to PWA directory")
+        } catch (e: Exception) {
+            Log.w("PwaGenerationWorker", "Failed to copy aos.js to PWA directory", e)
+        }
+        try {
+            val aosCssAsset = context.assets.open("aos.css")
+            val aosCssFile = File(pwaDir, "aos.css")
+            aosCssAsset.copyTo(aosCssFile.outputStream())
+            aosCssAsset.close()
+            Log.d("PwaGenerationWorker", "Copied aos.css to PWA directory")
+        } catch (e: Exception) {
+            Log.w("PwaGenerationWorker", "Failed to copy aos.css to PWA directory", e)
+        }
     }
 
     private fun parseJsonResponse(response: String): Map<String, String> {
@@ -337,7 +357,9 @@ class PwaGenerationWorker(
                       '/manifest.json',
                       '/favicon.ico',
                       '/tailwind.min.js',
-                      '/vanta.globe.min.js'
+                      '/vanta.globe.min.js',
+                      '/aos.js',
+                      '/aos.css'
                     ];
 
                     self.addEventListener('install', event => {
@@ -475,7 +497,7 @@ class PwaGenerationWorker(
                 <title>Generated PWA</title>
                 <link rel="manifest" href="manifest.json">
                 <script src="tailwind.min.js"></script>
-                <script src="vanta.globe.min.js"></script>
+                <link rel="stylesheet" href="aos.css">
                 <link rel="stylesheet" href="styles.css">
                 <link rel="icon" href="favicon.ico" type="image/x-icon">
             </head>
@@ -485,6 +507,8 @@ class PwaGenerationWorker(
                     <div id="content">$response</div>
                 </div>
                 <script src="app.js"></script>
+                <script src="aos.js"></script>
+                <script>try{AOS.init();}catch(e){console.log('AOS init skipped');}</script>
                 <script>
                     if ('serviceWorker' in navigator) {
                         window.addEventListener('load', function() {
@@ -513,7 +537,9 @@ class PwaGenerationWorker(
               '/manifest.json',
               '/favicon.ico',
               '/tailwind.min.js',
-              '/vanta.globe.min.js'
+              '/vanta.globe.min.js',
+              '/aos.js',
+              '/aos.css'
             ];
 
             self.addEventListener('install', event => {
