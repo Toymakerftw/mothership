@@ -60,6 +60,29 @@ class JsonPromptBuilder {
               - **Icons:** Use Feather Icons LOCALLY via `<script src='feather.min.js'></script>` in `<head>`, then initialize with `<script>feather.replace();</script>` in `<body>` (do NOT use an external CDN). Ensure `feather.min.js` is cached in `sw.js` for offline usage.
               - **Animations:** Use AOS LOCALLY via `<link href='aos.css' rel='stylesheet'>` and `<script src='aos.js'></script>` in `<head>`, then initialize with `<script>AOS.init();</script>` in `<body>` (do NOT use an external CDN). Ensure both files are cached in `sw.js`.
               
+            - **JavaScript Code Quality:**
+              - Write clean, readable, and maintainable JavaScript code
+              - Use modern ES6+ features (const/let, arrow functions, template literals, destructuring, etc.)
+              - Follow consistent naming conventions (camelCase for variables/functions, PascalCase for constructors)
+              - Use meaningful variable and function names that clearly express their purpose
+              - Comment complex logic and functions with JSDoc-style comments
+              - Avoid global variables; encapsulate code in modules or IIFEs when appropriate
+              - Use strict mode ('use strict';) to prevent common coding mistakes
+              - Implement proper error handling with try/catch blocks where appropriate
+              - Write modular code that follows the Single Responsibility Principle
+              - Use event delegation for better performance when handling multiple similar events
+              - Minimize DOM queries by caching references to elements
+              - Use === and !== for comparisons instead of == and !=
+              - Avoid deeply nested code; prefer early returns and guard clauses
+              - Use array methods (map, filter, reduce) instead of traditional for-loops when appropriate
+              - Validate function parameters and provide default values where appropriate
+              - Follow ESLint rules for code consistency and error prevention (prefer single quotes, no trailing commas, no unused variables, etc.)
+              - Use template literals for string concatenation
+              - Prefer const over let, and let over var
+              - Use object and array destructuring to simplify code
+              - Use spread syntax (...) for shallow copying and merging objects/arrays
+              - Use async/await instead of callbacks for asynchronous operations
+              - Use the class syntax for object-oriented programming when needed
 
             - **Best Practices:**
               Ensure accessibility (ARIA, semantic HTML), performance (lazy loading), security (HTTPS assumed), and PWA compliance (aim for Lighthouse score 100).
@@ -103,6 +126,29 @@ class JsonPromptBuilder {
               - Use AOS LOCALLY via `<link href='aos.css' rel='stylesheet'>` and `<script src='aos.js'></script>`, and cache both in sw.js (no CDN). Initialize AOS in the page.
               
               - Optionally use Feather Icons, AOS, or Vanta.js if they enhance the design or functionality.
+            - **JavaScript Code Quality:**
+              - Write clean, readable, and maintainable JavaScript code
+              - Use modern ES6+ features (const/let, arrow functions, template literals, destructuring, etc.)
+              - Follow consistent naming conventions (camelCase for variables/functions, PascalCase for constructors)
+              - Use meaningful variable and function names that clearly express their purpose
+              - Comment complex logic and functions with JSDoc-style comments
+              - Avoid global variables; encapsulate code in modules or IIFEs when appropriate
+              - Use strict mode ('use strict';) to prevent common coding mistakes
+              - Implement proper error handling with try/catch blocks where appropriate
+              - Write modular code that follows the Single Responsibility Principle
+              - Use event delegation for better performance when handling multiple similar events
+              - Minimize DOM queries by caching references to elements
+              - Use === and !== for comparisons instead of == and !=
+              - Avoid deeply nested code; prefer early returns and guard clauses
+              - Use array methods (map, filter, reduce) instead of traditional for-loops when appropriate
+              - Validate function parameters and provide default values where appropriate
+              - Follow ESLint rules for code consistency and error prevention (prefer single quotes, no trailing commas, no unused variables, etc.)
+              - Use template literals for string concatenation
+              - Prefer const over let, and let over var
+              - Use object and array destructuring to simplify code
+              - Use spread syntax (...) for shallow copying and merging objects/arrays
+              - Use async/await instead of callbacks for asynchronous operations
+              - Use the class syntax for object-oriented programming when needed
             - **Standards:**
               - Preserve existing features unless explicitly requested for removal.
               - Ensure accessibility, performance, and compliance with PWA best practices.
@@ -127,7 +173,7 @@ class JsonPromptBuilder {
 
         val instructions = JSONObject()
         instructions.put("role", "You are a helpful assistant that rewrites user prompts to make them optimal for generating fully functional Progressive Web Apps (PWAs) using only HTML, CSS, and JavaScript.")
-        instructions.put("goal", "Enhance the original prompt to be more detailed, specific, and focused on creating exceptional UI/UX design, responsive layouts (emphasize TailwindCSS), PWA features (offline support, installability via manifest and service worker), and robust client-side functionality. Suggest multi-page if it suits, or SPA otherwise. Include details on animations (Feather Icons, AOS) and accessibility if relevant.")
+        instructions.put("goal", "Enhance the original prompt to be more detailed, specific, and focused on creating exceptional UI/UX design, responsive layouts (emphasize TailwindCSS), PWA features (offline support, installability via manifest and service worker), and robust client-side functionality. Suggest multi-page if it suits, or SPA otherwise. Include details on animations (Feather Icons, AOS) and accessibility if relevant. Emphasize JavaScript code quality with modern ES6+ features, clean code practices, and maintainability.")
 
         val outputFormat = JSONObject()
         outputFormat.put("format", "text")
@@ -141,6 +187,7 @@ class JsonPromptBuilder {
         val rules = JSONObject()
         rules.put("if_no_rewrite_needed", "return original prompt unchanged")
         rules.put("add_pwa_focus", "Always incorporate PWA requirements like service worker, manifest, offline capability, and responsiveness")
+        rules.put("add_js_quality_focus", "Always emphasize JavaScript code quality including modern ES6+ features, clean code practices, error handling, and maintainability")
         rules.put("avoid_overcomplication", "Keep it concise yet detailed; don't add unrelated features")
         instructions.put("rules", rules)
 
