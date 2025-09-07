@@ -79,7 +79,7 @@ class PwaReworkService(private val context: Context) {
         promptBuilder.append(" Wrap the JSON in a fenced code block as ```json ... ```.\n")
         promptBuilder.append(" The JSON should either be { \"files\": { <filename>: <content>, ... } } or a top-level object mapping filenames to their content.\n")
         promptBuilder.append(" IMPORTANT: Use TailwindCSS LOCALLY by referencing <script src='tailwind.min.js'></script> in index.html (do NOT use external CDNs). Ensure tailwind.min.js is cached by sw.js for offline use.\n")
-        promptBuilder.append(" If using Vanta background animations, reference Vanta Globe LOCALLY via <script src='vanta.globe.min.js'></script> and ensure it is cached by sw.js (no CDN).\n")
+        
         promptBuilder.append(" Use AOS LOCALLY via <link href='aos.css' rel='stylesheet'> and <script src='aos.js'></script>; initialize with <script>AOS.init();</script>. Ensure both files are cached by sw.js (no CDN).\n")
         promptBuilder.append(" Use Feather Icons LOCALLY via <script src='feather.min.js'></script> and initialize with <script>feather.replace();</script>. Ensure it is cached by sw.js (no CDN).\n")
 
@@ -272,20 +272,7 @@ class PwaReworkService(private val context: Context) {
             Log.w(TAG, "Failed to ensure tailwind.min.js in PWA directory", e)
         }
 
-        // (Reverted) Do not ensure THREE.js asset during rework
-
-        // Ensure local Vanta Globe asset exists alongside updated files
-        try {
-            val vantaFile = File(pwaFolder, "vanta.globe.min.js")
-            if (!vantaFile.exists()) {
-                val vantaAsset = context.assets.open("vanta.globe.min.js")
-                vantaAsset.copyTo(vantaFile.outputStream())
-                vantaAsset.close()
-                Log.d(TAG, "Copied vanta.globe.min.js to PWA directory after rework")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to ensure vanta.globe.min.js in PWA directory", e)
-        }
+        
 
         // Ensure local AOS assets exist alongside updated files
         try {

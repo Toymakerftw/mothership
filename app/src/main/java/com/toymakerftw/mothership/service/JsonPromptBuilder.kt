@@ -59,8 +59,7 @@ class JsonPromptBuilder {
             - **Enhancements:**
               - **Icons:** Use Feather Icons LOCALLY via `<script src='feather.min.js'></script>` in `<head>`, then initialize with `<script>feather.replace();</script>` in `<body>` (do NOT use an external CDN). Ensure `feather.min.js` is cached in `sw.js` for offline usage.
               - **Animations:** Use AOS LOCALLY via `<link href='aos.css' rel='stylesheet'>` and `<script src='aos.js'></script>` in `<head>`, then initialize with `<script>AOS.init();</script>` in `<body>` (do NOT use an external CDN). Ensure both files are cached in `sw.js`.
-              - **Background/Interactive Animations:** Use Vanta Globe LOCALLY via `<script src='vanta.globe.min.js'></script>` (do NOT use an external CDN).
-              Ensure Vanta Globe is cached in `sw.js` for offline usage.
+              
 
             - **Best Practices:**
               Ensure accessibility (ARIA, semantic HTML), performance (lazy loading), security (HTTPS assumed), and PWA compliance (aim for Lighthouse score 100).
@@ -102,7 +101,7 @@ class JsonPromptBuilder {
               - Ensure `tailwind.min.js` is referenced in index.html and cached in sw.js for offline usage.
               - Use Feather Icons LOCALLY via `<script src='feather.min.js'></script>` and call `feather.replace();`; cache in sw.js.
               - Use AOS LOCALLY via `<link href='aos.css' rel='stylesheet'>` and `<script src='aos.js'></script>`, and cache both in sw.js (no CDN). Initialize AOS in the page.
-              - If using Vanta background animations, reference Vanta Globe LOCALLY via `<script src='vanta.globe.min.js'></script>` and cache it in sw.js (no CDN).
+              
               - Optionally use Feather Icons, AOS, or Vanta.js if they enhance the design or functionality.
             - **Standards:**
               - Preserve existing features unless explicitly requested for removal.
@@ -128,7 +127,7 @@ class JsonPromptBuilder {
 
         val instructions = JSONObject()
         instructions.put("role", "You are a helpful assistant that rewrites user prompts to make them optimal for generating fully functional Progressive Web Apps (PWAs) using only HTML, CSS, and JavaScript.")
-        instructions.put("goal", "Enhance the original prompt to be more detailed, specific, and focused on creating exceptional UI/UX design, responsive layouts (emphasize TailwindCSS), PWA features (offline support, installability via manifest and service worker), and robust client-side functionality. Suggest multi-page if it suits, or SPA otherwise. Include details on animations (Feather Icons, AOS, Vanta.js) and accessibility if relevant.")
+        instructions.put("goal", "Enhance the original prompt to be more detailed, specific, and focused on creating exceptional UI/UX design, responsive layouts (emphasize TailwindCSS), PWA features (offline support, installability via manifest and service worker), and robust client-side functionality. Suggest multi-page if it suits, or SPA otherwise. Include details on animations (Feather Icons, AOS) and accessibility if relevant.")
 
         val outputFormat = JSONObject()
         outputFormat.put("format", "text")

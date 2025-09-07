@@ -287,18 +287,9 @@ class PwaGenerationWorker(
             Log.w("PwaGenerationWorker", "Failed to copy tailwind.min.js to PWA directory", e)
         }
 
-        // Copy Vanta Globe locally so PWAs can load it without CDN
-        try {
-            val vantaAsset = context.assets.open("vanta.globe.min.js")
-            val vantaFile = File(pwaDir, "vanta.globe.min.js")
-            vantaAsset.copyTo(vantaFile.outputStream())
-            vantaAsset.close()
-            Log.d("PwaGenerationWorker", "Copied vanta.globe.min.js to PWA directory")
-        } catch (e: Exception) {
-            Log.w("PwaGenerationWorker", "Failed to copy vanta.globe.min.js to PWA directory", e)
-        }
+        
 
-        // Copy AOS (Animate On Scroll) assets locally
+        
         try {
             val aosJsAsset = context.assets.open("aos.js")
             val aosJsFile = File(pwaDir, "aos.js")
@@ -328,6 +319,8 @@ class PwaGenerationWorker(
         } catch (e: Exception) {
             Log.w("PwaGenerationWorker", "Failed to copy feather.min.js to PWA directory", e)
         }
+
+        
     }
 
     private fun parseJsonResponse(response: String): Map<String, String> {
@@ -370,7 +363,8 @@ class PwaGenerationWorker(
                       '/manifest.json',
                       '/favicon.ico',
                       '/tailwind.min.js',
-                      '/vanta.globe.min.js',
+
+
                       '/aos.js',
                       '/aos.css',
                       '/feather.min.js'
@@ -553,7 +547,8 @@ class PwaGenerationWorker(
               '/manifest.json',
               '/favicon.ico',
               '/tailwind.min.js',
-              '/vanta.globe.min.js',
+              
+              
               '/aos.js',
               '/aos.css',
               '/feather.min.js'
