@@ -349,11 +349,34 @@ class MainViewModel(
                     _pwas.value = pwaDir.listFiles()?.mapNotNull { 
                         if (it.isDirectory) {
                             val appInfoFile = java.io.File(it, "app_info.json")
+                            val manifestFile = java.io.File(it, "manifest.json")
+                            
                             if (appInfoFile.exists()) {
                                 try {
-                                    val appInfo = appInfoFile.readText()
-                                    val jsonObject = org.json.JSONObject(appInfo)
-                                    val pwaName = jsonObject.optString("name", "Untitled App")
+                                    // Try to get name from manifest.json first (prefer short_name)
+                                    var pwaName = "Untitled App"
+                                    
+                                    if (manifestFile.exists()) {
+                                        try {
+                                            val manifestContent = manifestFile.readText()
+                                            val manifestJson = org.json.JSONObject(manifestContent)
+                                            
+                                            // Prefer short_name, fallback to name, then to app_info name
+                                            pwaName = manifestJson.optString("short_name") 
+                                                ?: manifestJson.optString("name") 
+                                                ?: "Untitled App"
+                                        } catch (manifestException: Exception) {
+                                            // If manifest parsing fails, fall back to app_info
+                                        }
+                                    }
+                                    
+                                    // If we still don't have a good name, try app_info.json
+                                    if (pwaName == "Untitled App") {
+                                        val appInfo = appInfoFile.readText()
+                                        val jsonObject = org.json.JSONObject(appInfo)
+                                        pwaName = jsonObject.optString("name", "Untitled App")
+                                    }
+                                    
                                     it.name to pwaName
                                 } catch (e: Exception) {
                                     // Handle corrupted app_info.json files

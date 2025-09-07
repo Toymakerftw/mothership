@@ -28,12 +28,16 @@ class PwaInstaller(private val context: Context) {
             // Read app info
             val appInfo = appInfoFile.readText()
             val appInfoJson = JSONObject(appInfo)
-            val appName = appInfoJson.optString("name", "PWA App")
+            var appName = appInfoJson.optString("name", "PWA App")
             
-            // Read manifest for additional info
+            // Try to get better name from manifest
             val manifest = manifestFile.readText()
             val manifestJson = JSONObject(manifest)
             val shortName = manifestJson.optString("short_name", appName)
+            val manifestName = manifestJson.optString("name", appName)
+            
+            // Prefer short_name, fallback to name from manifest
+            appName = shortName.ifEmpty { manifestName }
             
             // Try to get start URL from manifest, fallback to index.html
             val startUrl = manifestJson.optString("start_url", "index.html")

@@ -18,6 +18,7 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.core.content.ContextCompat
+import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -69,7 +70,7 @@ class PwaViewerActivity : ComponentActivity() {
         ContextCompat.registerReceiver(this, pwaReworkedReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
 
         var pwaUrl = intent.getStringExtra("pwaUrl")
-        val pwaName = intent.getStringExtra("pwaName") ?: "PWA App"
+        var pwaName = intent.getStringExtra("pwaName") ?: "PWA App"
 
         if (pwaUrl == null || !pwaUrl.startsWith("file://")) {
             Toast.makeText(this, "Invalid PWA URL", Toast.LENGTH_SHORT).show()
@@ -96,6 +97,27 @@ class PwaViewerActivity : ComponentActivity() {
             Toast.makeText(this, "Error processing PWA URL", Toast.LENGTH_SHORT).show()
             finish()
             return
+        }
+
+        // Try to get a better name from manifest.json
+        try {
+            val pwaDir = File(getExternalFilesDir(null), pwaUuid!!)
+            val manifestFile = File(pwaDir, "manifest.json")
+            
+            if (manifestFile.exists()) {
+                val manifestContent = manifestFile.readText()
+                val manifestJson = JSONObject(manifestContent)
+                val shortName = manifestJson.optString("short_name")
+                val manifestName = manifestJson.optString("name")
+                
+                // Prefer short_name, fallback to name from manifest
+                val betterName = shortName.ifEmpty { manifestName }
+                if (betterName.isNotEmpty()) {
+                    pwaName = betterName
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not read manifest for better name: ${e.message}")
         }
 
         // Initialize WebView but don't set it as content view yet
