@@ -15,6 +15,21 @@ class PromptRewriteService(private val mothershipApi: MothershipApi) {
         
         // Rewriting prompt as specified in the documentation
         private val REWRITING_PROMPT = JsonPromptBuilder().buildPromptRewritePrompt()
+        
+        // Public helper method for testing the extraction logic
+        fun testExtractRewrittenPrompt(response: String, originalPrompt: String): String {
+            // Create a minimal service instance for testing
+            val service = PromptRewriteService(object : MothershipApi {
+                override suspend fun rewritePrompt(apiKey: String, request: com.toymakerftw.mothership.api.model.PromptRewriteRequest): com.toymakerftw.mothership.api.model.PromptRewriteResponse {
+                    throw NotImplementedError("Mock implementation")
+                }
+                
+                override suspend fun generatePwa(apiKey: String, request: com.toymakerftw.mothership.api.model.OpenRouterRequest): com.toymakerftw.mothership.api.model.OpenRouterResponse {
+                    throw NotImplementedError("Mock implementation")
+                }
+            })
+            return service.extractRewrittenPrompt(response, originalPrompt)
+        }
     }
 
     /**
@@ -43,7 +58,7 @@ class PromptRewriteService(private val mothershipApi: MothershipApi) {
                 )
 
                 Log.d(TAG, "Making API request to rewrite prompt...")
-                val response = mothershipApi.rewritePrompt("Bearer $apiKey", request)
+                val response = mothershipApi.rewritePrompt(apiKey = "Bearer $apiKey", request = request)
                 Log.d(TAG, "Received response from prompt rewriting API")
                 
                 if (response.choices.isEmpty()) {
@@ -96,17 +111,53 @@ class PromptRewriteService(private val mothershipApi: MothershipApi) {
             // Fallback to code blocks if markers are not found or extraction fails
             val codeBlockStartIndex = response.indexOf(codeBlockMarker)
             if (codeBlockStartIndex != -1) {
+                // Handle nested code blocks by finding the last valid closing marker
+                // First, find all code block marker positions
+                val markerPositions = mutableListOf<Int>()
+                var currentIndex = codeBlockStartIndex
+                while (currentIndex < response.length) {
+                    val nextIndex = response.indexOf(codeBlockMarker, currentIndex)
+                    if (nextIndex == -1) break
+                    markerPositions.add(nextIndex)
+                    currentIndex = nextIndex + codeBlockMarker.length
+                }
+                
+                // If we have at least 2 markers, try to extract content between the first and last
+                if (markerPositions.size >= 2) {
+                    val lastMarkerIndex = markerPositions[markerPositions.size - 1]
+                    
+                    // Find content start (after first marker and any language identifier)
+                    val afterFirstMarker = codeBlockStartIndex + codeBlockMarker.length
+                    val firstNewLineIndex = response.indexOf("\n", afterFirstMarker)
+                    val contentStartIndex = if (firstNewLineIndex != -1) firstNewLineIndex + 1 else afterFirstMarker
+                    
+                    // Extract content between first marker (after language identifier) and last marker
+                    if (lastMarkerIndex > contentStartIndex) {
+                        val extractedPrompt = response.substring(contentStartIndex, lastMarkerIndex).trim()
+                        if (extractedPrompt.isNotEmpty()) {
+                            Log.d(TAG, "Successfully extracted rewritten prompt using code blocks (enhanced method)")
+                            return extractedPrompt
+                        }
+                    }
+                }
+                
+                // Fallback to simple extraction if enhanced method fails
                 val codeBlockEndIndex = response.indexOf(
                     codeBlockMarker,
                     startIndex = codeBlockStartIndex + codeBlockMarker.length
                 )
                 if (codeBlockEndIndex != -1) {
+                    // Find content start (after first marker and any language identifier)
+                    val afterFirstMarker = codeBlockStartIndex + codeBlockMarker.length
+                    val firstNewLineIndex = response.indexOf("\n", afterFirstMarker)
+                    val contentStartIndex = if (firstNewLineIndex != -1) firstNewLineIndex + 1 else afterFirstMarker
+                    
                     val extractedPrompt = response.substring(
-                        codeBlockStartIndex + codeBlockMarker.length,
+                        contentStartIndex,
                         codeBlockEndIndex
                     ).trim()
                     if (extractedPrompt.isNotEmpty()) {
-                        Log.d(TAG, "Successfully extracted rewritten prompt using code blocks")
+                        Log.d(TAG, "Successfully extracted rewritten prompt using code blocks (simple method)")
                         return extractedPrompt
                     }
                 }
