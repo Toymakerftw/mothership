@@ -34,7 +34,7 @@ import com.toymakerftw.mothership.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(navController: NavController, settingsViewModel: SettingsViewModel) {
+fun SettingsScreen(settingsViewModel: SettingsViewModel) {
     val apiKey by settingsViewModel.apiKey.collectAsState()
     var newApiKey by remember { mutableStateOf(apiKey ?: "") }
     var isPasswordVisible by remember { mutableStateOf(false) }
@@ -123,7 +123,7 @@ fun SettingsScreen(navController: NavController, settingsViewModel: SettingsView
                     .fillMaxWidth()
                     .padding(bottom = 20.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = TextFieldDefaults.outlinedTextFieldColors(
+                colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                 ),

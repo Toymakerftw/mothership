@@ -251,6 +251,8 @@ class PwaGenerationWorker(
             parseSimpleResponse(files)
         }
 
+        // No HTML post-processing required
+
         filesMap.entries.chunked(3).forEach { chunk ->
             chunk.forEach { (fileName, content) ->
                 val file = File(pwaDir, fileName)

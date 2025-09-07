@@ -67,6 +67,6 @@ fun NavigationHost(
                 pwaName = pwaName
             )
         }
-        composable("settings") { SettingsScreen(navController = navController, settingsViewModel = settingsViewModel) }
+        composable("settings") { SettingsScreen(settingsViewModel = settingsViewModel) }
     }
 }

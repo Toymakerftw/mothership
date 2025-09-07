@@ -272,6 +272,8 @@ class PwaReworkService(private val context: Context) {
             Log.w(TAG, "Failed to ensure tailwind.min.js in PWA directory", e)
         }
 
+        // (Reverted) Do not ensure THREE.js asset during rework
+
         // Ensure local Vanta Globe asset exists alongside updated files
         try {
             val vantaFile = File(pwaFolder, "vanta.globe.min.js")

@@ -81,7 +81,6 @@ import androidx.core.content.FileProvider
 fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
     val pwas by mainViewModel.pwas.collectAsState()
     mainViewModel.getPwas()
-    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -442,7 +441,7 @@ fun AppCard(
                             // Share button
                             OutlinedButton(
                                 onClick = {
-                                    sharePwa(uuid, pwaName, pwaDir, context)
+                                    sharePwa(pwaName, pwaDir, context)
                                 },
                                 modifier = Modifier.weight(1f),
                                 enabled = hasIndexFile,
@@ -534,7 +533,6 @@ private fun isShortcutInstalled(context: Context, shortcutId: String): Boolean {
 }
 
 private fun sharePwa(
-    uuid: String,
     pwaName: String,
     pwaDir: File,
     context: android.content.Context

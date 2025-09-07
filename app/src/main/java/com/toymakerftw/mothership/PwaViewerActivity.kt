@@ -84,7 +84,6 @@ class PwaViewerActivity : ComponentActivity() {
         webSettings.displayZoomControls = false
         webSettings.databaseEnabled = true
         webSettings.cacheMode = WebSettings.LOAD_NO_CACHE
-        webSettings.setRenderPriority(WebSettings.RenderPriority.HIGH)
 
         title = pwaName
 
@@ -227,8 +226,9 @@ class PwaViewerActivity : ComponentActivity() {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (webView.canGoBack()) {
+        if (::webView.isInitialized && webView.canGoBack()) {
             webView.goBack()
         } else {
             super.onBackPressed()
