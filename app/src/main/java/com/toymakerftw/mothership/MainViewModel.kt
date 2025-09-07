@@ -61,6 +61,10 @@ class MainViewModel(
         }
     }
 
+    fun clearUiState() {
+        _uiState.value = MainUiState.Idle
+    }
+
     fun generatePwa(prompt: String) {
         viewModelScope.launch {
             _uiState.value = MainUiState.Loading

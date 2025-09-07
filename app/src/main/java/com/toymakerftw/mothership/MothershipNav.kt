@@ -26,10 +26,12 @@ fun MothershipNav(mainViewModel: MainViewModel, settingsViewModel: SettingsViewM
 
     Scaffold(
         bottomBar = {
-            BottomNavigationBar(
-                navController = navController,
-                currentRoute = currentRoute
-            )
+            if (currentRoute?.startsWith("rework/") == false) {
+                BottomNavigationBar(
+                    navController = navController,
+                    currentRoute = currentRoute
+                )
+            }
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {

@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
@@ -26,12 +27,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.toymakerftw.mothership.MainUiState
 import com.toymakerftw.mothership.MainViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +82,14 @@ fun ReworkScreen(
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            IconButton(onClick = { navController.navigate("appList") }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            }
+        }
         // Header with rocket logo
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -275,7 +287,7 @@ fun ReworkScreen(
                                     }
                                     
                                     androidx.compose.material3.TextButton(
-                                        onClick = { mainViewModel.clearError() },
+                                        onClick = { mainViewModel.clearUiState() },
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Text("Dismiss")
@@ -285,6 +297,10 @@ fun ReworkScreen(
                         }
                     }
                     is MainUiState.Success -> {
+                        LaunchedEffect(uiState) {
+                            delay(3000)
+                            mainViewModel.clearUiState()
+                        }
                         Spacer(modifier = Modifier.height(20.dp))
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -364,7 +380,7 @@ fun ReworkScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(100.dp)) // Space for bottom navigation
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
