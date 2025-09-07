@@ -1,6 +1,7 @@
 package com.toymakerftw.mothership.service
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import com.toymakerftw.mothership.api.model.Message
 import com.toymakerftw.mothership.api.model.OpenRouterRequest
@@ -38,6 +39,13 @@ class PwaReworkService(private val context: Context) {
                 return Result.failure("Invalid API response")
             }
             writeUpdatedFiles(pwaFolder, apiResponse)
+            
+            // Send a broadcast to notify that the PWA has been reworked
+            val intent = Intent("com.toymakerftw.mothership.PWA_REWORKED").apply {
+                putExtra("pwa_uuid", uuid)
+            }
+            context.sendBroadcast(intent)
+            
             Result.success("PWA reworked successfully!")
         } catch (e: Exception) {
             Log.e(TAG, "Rework failed", e)
@@ -254,7 +262,25 @@ class PwaReworkService(private val context: Context) {
     }
 
     private fun writeUpdatedFiles(pwaFolder: File, updatedFiles: Map<String, String>) {
-        for ((fileName, content) in updatedFiles) {
+        // Update the sw.js file to use a new cache version
+        val updatedFilesWithNewSw = if (updatedFiles.containsKey("sw.js")) {
+            // If sw.js is being updated, use the updated version
+            val updatedSwContent = updateServiceWorkerCacheVersion(updatedFiles["sw.js"]!!)
+            val mutableMap = updatedFiles.toMutableMap()
+            mutableMap["sw.js"] = updatedSwContent
+            mutableMap.toMap()
+        } else {
+            // If sw.js is not being updated, modify the existing one
+            val swFile = File(pwaFolder, "sw.js")
+            if (swFile.exists()) {
+                val currentSwContent = swFile.readText()
+                val updatedSwContent = updateServiceWorkerCacheVersion(currentSwContent)
+                swFile.writeText(updatedSwContent)
+            }
+            updatedFiles
+        }
+
+        for ((fileName, content) in updatedFilesWithNewSw) {
             val file = File(pwaFolder, fileName)
             file.writeText(content)
         }
@@ -310,6 +336,14 @@ class PwaReworkService(private val context: Context) {
         } catch (e: Exception) {
             Log.w(TAG, "Failed to ensure feather.min.js in PWA directory", e)
         }
+    }
+
+    private fun updateServiceWorkerCacheVersion(swContent: String): String {
+        // Update the cache version in the service worker
+        val cacheNameRegex = """const\s+CACHE_NAME\s*=\s*['"][^'"]*['"]""".toRegex()
+        val timestamp = System.currentTimeMillis()
+        val newCacheName = "const CACHE_NAME = 'pwa-cache-v$timestamp'"
+        return swContent.replace(cacheNameRegex, newCacheName)
     }
 
     sealed class Result {

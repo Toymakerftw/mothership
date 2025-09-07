@@ -353,8 +353,9 @@ class PwaGenerationWorker(
 
             if (!filesMap.containsKey("sw.js")) {
                 Log.d("PwaGenerationWorker", "Adding default service worker with basic caching")
+                val timestamp = System.currentTimeMillis()
                 filesMap["sw.js"] = """
-                    const CACHE_NAME = 'pwa-cache-v1';
+                    const CACHE_NAME = 'pwa-cache-v$timestamp';
                     const ASSETS = [
                       '/',
                       '/index.html',
@@ -391,6 +392,21 @@ class PwaGenerationWorker(
                             return response || fetch(event.request).catch(() => caches.match('/index.html'));
                           })
                       );
+                    });
+                    
+                    // Listen for cache update messages
+                    self.addEventListener('message', event => {
+                      if (event.data && event.data.type === 'CACHE_UPDATE') {
+                        // Clear all caches to force fresh content on next load
+                        caches.keys().then(keyList => {
+                          return Promise.all(keyList.map(key => {
+                            return caches.delete(key);
+                          }));
+                        }).then(() => {
+                          // Skip waiting to activate the new service worker immediately
+                          self.skipWaiting();
+                        });
+                      }
                     });
                 """.trimIndent()
             }
@@ -537,8 +553,9 @@ class PwaGenerationWorker(
         """.trimIndent()
 
         filesMap["manifest.json"] = createDefaultManifest()
+        val timestamp = System.currentTimeMillis()
         filesMap["sw.js"] = """
-            const CACHE_NAME = 'pwa-cache-v1';
+            const CACHE_NAME = 'pwa-cache-v$timestamp';
             const ASSETS = [
               '/',
               '/index.html',
@@ -575,6 +592,21 @@ class PwaGenerationWorker(
                     return response || fetch(event.request).catch(() => caches.match('/index.html'));
                   })
               );
+            });
+            
+            // Listen for cache update messages
+            self.addEventListener('message', event => {
+              if (event.data && event.data.type === 'CACHE_UPDATE') {
+                // Clear all caches to force fresh content on next load
+                caches.keys().then(keyList => {
+                  return Promise.all(keyList.map(key => {
+                    return caches.delete(key);
+                  }));
+                }).then(() => {
+                  // Skip waiting to activate the new service worker immediately
+                  self.skipWaiting();
+                });
+              }
             });
         """.trimIndent()
 

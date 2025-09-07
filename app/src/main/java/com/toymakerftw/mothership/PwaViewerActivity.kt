@@ -1,6 +1,8 @@
 package com.toymakerftw.mothership
 
+import android.content.BroadcastReceiver
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.Handler
@@ -13,6 +15,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.core.content.ContextCompat
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -35,10 +38,33 @@ class PwaViewerActivity : ComponentActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var orbRetryCount = 0
     private val MAX_ORB_RETRIES = 2 // Allow only 2 retries
+    
+    private val pwaReworkedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            if (intent?.action == "com.toymakerftw.mothership.PWA_REWORKED") {
+                val reworkedPwaUuid = intent.getStringExtra("pwa_uuid")
+                if (reworkedPwaUuid == pwaUuid) {
+                    // Clear WebView cache and service worker cache
+                    webView.clearCache(true)
+                    // Send message to service worker to clear its cache
+                    webView.post {
+                        webView.evaluateJavascript(
+                            "if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(function(registrations) { for(let registration of registrations) { registration.active.postMessage({type: 'CACHE_UPDATE'}); } }); }",
+                            null
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_pwa_splash) // Show splash screen initially
+
+        // Register receiver for PWA rework notifications
+        val filter = IntentFilter("com.toymakerftw.mothership.PWA_REWORKED")
+        ContextCompat.registerReceiver(this, pwaReworkedReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
 
         var pwaUrl = intent.getStringExtra("pwaUrl")
         val pwaName = intent.getStringExtra("pwaName") ?: "PWA App"
@@ -106,7 +132,11 @@ class PwaViewerActivity : ComponentActivity() {
                     orbRetryCount++
                     if (orbRetryCount <= MAX_ORB_RETRIES) {
                         Log.w(TAG, "ORB error detected, retrying... (Attempt $orbRetryCount)")
-                        handler.postDelayed({ view?.reload() }, RELOAD_DELAY)
+                        handler.post {
+                            // Clear WebView cache before reloading to ensure fresh content
+                            webView.clearCache(true)
+                            handler.postDelayed({ view?.reload() }, RELOAD_DELAY)
+                        }
                     } else {
                         Log.e(TAG, "Max ORB retries reached. Showing fallback page.")
                         handler.post {
@@ -181,7 +211,7 @@ class PwaViewerActivity : ComponentActivity() {
                 if (responseCode == 200) {
                     handler.post {
                         setContentView(webView) // Switch to WebView after server is ready
-                        val serverUrl = "http://localhost:$serverPort/"
+                        val serverUrl = "http://localhost:$serverPort/?t=${System.currentTimeMillis()}"
                         Log.d(TAG, "Loading PWA from local server: $serverUrl")
                         webView.loadUrl(serverUrl)
                     }
@@ -212,6 +242,13 @@ class PwaViewerActivity : ComponentActivity() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null)
         stopHttpServer()
+        
+        // Unregister receiver for PWA rework notifications
+        try {
+            unregisterReceiver(pwaReworkedReceiver)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to unregister receiver", e)
+        }
     }
 
     private fun stopHttpServer() {
