@@ -95,3 +95,24 @@
 # Keep file I/O classes used by the HTTP server
 -keep class java.io.FileInputStream { *; }
 -keep class java.io.File { *; }
+
+# zip4j
+-keep public class net.lingala.zip4j.** { *; }
+-keepnames class * implements java.io.Serializable
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    private static final java.io.ObjectStreamField[] serialPersistentFields;
+    !static !transient <fields>;
+    !private <fields>;
+    !private <methods>;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}
+-keep class net.lingala.zip4j.model.** { *; }
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+-dontwarn net.lingala.zip4j.**
