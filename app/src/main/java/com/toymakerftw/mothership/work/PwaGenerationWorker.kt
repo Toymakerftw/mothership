@@ -255,7 +255,8 @@ class PwaGenerationWorker(
 
         filesMap.entries.chunked(3).forEach { chunk ->
             chunk.forEach { (fileName, content) ->
-                val file = File(pwaDir, fileName)
+                val finalFileName = if (fileName.startsWith("files/")) fileName.substring(6) else fileName
+                val file = File(pwaDir, finalFileName)
                 file.writeText(content)
             }
             try {
@@ -335,8 +336,9 @@ class PwaGenerationWorker(
                 val filesJson = json.getJSONObject("files")
                 Log.d("PwaGenerationWorker", "Found 'files' object with ${filesJson.length()} files")
                 filesJson.keys().forEach { key ->
-                    filesMap[key] = filesJson.getString(key)
-                    Log.d("PwaGenerationWorker", "Extracted file: $key (${filesMap[key]?.length ?: 0} chars)")
+                    val finalKey = if (key.startsWith("files/")) key.substring(6) else key
+                    filesMap[finalKey] = filesJson.getString(key)
+                    Log.d("PwaGenerationWorker", "Extracted file: $finalKey (${filesMap[finalKey]?.length ?: 0} chars)")
                 }
             } else {
                 Log.w("PwaGenerationWorker", "No 'files' object found in JSON, treating as index.html")

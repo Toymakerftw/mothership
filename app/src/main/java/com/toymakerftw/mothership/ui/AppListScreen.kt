@@ -256,6 +256,7 @@ fun AppCard(
                         val intent = Intent(context, PwaViewerActivity::class.java).apply {
                             putExtra("pwaUrl", "file://${context.getExternalFilesDir(null)}/$uuid/index.html")
                             putExtra("pwaName", pwaName)
+                            putExtra("pwaId", uuid)
                         }
                         context.startActivity(intent)
                     } else {

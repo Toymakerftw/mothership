@@ -172,8 +172,9 @@ class PwaReworkService(private val context: Context) {
             val keys = filesJson.keys()
             while (keys.hasNext()) {
                 val key = keys.next()
+                val finalKey = if (key.startsWith("files/")) key.substring(6) else key
                 val value = filesJson.opt(key)
-                result[key] = when (value) {
+                result[finalKey] = when (value) {
                     is String -> value
                     is JSONObject -> value.toString()
                     else -> value?.toString() ?: ""
@@ -281,7 +282,8 @@ class PwaReworkService(private val context: Context) {
         }
 
         for ((fileName, content) in updatedFilesWithNewSw) {
-            val file = File(pwaFolder, fileName)
+            val finalFileName = if (fileName.startsWith("files/")) fileName.substring(6) else fileName
+            val file = File(pwaFolder, finalFileName)
             file.writeText(content)
         }
 

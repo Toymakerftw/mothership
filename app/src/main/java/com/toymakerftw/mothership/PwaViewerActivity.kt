@@ -70,25 +70,21 @@ class PwaViewerActivity : ComponentActivity() {
         var pwaUrl = intent.getStringExtra("pwaUrl")
         var pwaName = intent.getStringExtra("pwaName") ?: "PWA App"
 
-        if (pwaUrl == null || !pwaUrl.startsWith("file://")) {
+        if (pwaUrl == null) {
             Toast.makeText(this, "Invalid PWA URL", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
 
-        // Extract UUID from the PWA URL
+        pwaUuid = intent.getStringExtra("pwaId")
+
+        if (pwaUuid == null) {
+            Toast.makeText(this, "Invalid PWA ID", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
         try {
-            val decodedUrl = URLDecoder.decode(pwaUrl, "UTF-8")
-            val filePath = decodedUrl.substring(7)
-            val file = File(filePath)
-            pwaUuid = file.parentFile?.name
-
-            if (pwaUuid == null) {
-                Toast.makeText(this, "Invalid PWA path", Toast.LENGTH_SHORT).show()
-                finish()
-                return
-            }
-
             UUID.fromString(pwaUuid)
         } catch (e: Exception) {
             Log.e(TAG, "Error extracting PWA UUID: ${e.message}")
