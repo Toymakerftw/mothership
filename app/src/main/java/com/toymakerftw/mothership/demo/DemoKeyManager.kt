@@ -144,7 +144,6 @@ class DemoKeyManager(private val context: Context) {
      */
     private fun generateHmac(deviceId: String): String {
         Log.d(TAG, "Generating HMAC for device ID: $deviceId")
-        Log.d(TAG, "Using PSK: $PSK")
         
         try {
             // Use PSK directly as string (like bash script does), not decoded
@@ -190,7 +189,6 @@ class DemoKeyManager(private val context: Context) {
             }
             
             val hmac = generateHmac(deviceId)
-            Log.d(TAG, "Generated HMAC for device ID $deviceId: $hmac")
             
             val getKeyRequest = GetApiKeyRequest(
                 deviceId = deviceId,
