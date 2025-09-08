@@ -48,8 +48,7 @@ fun LoadingButton(
     enabled: Boolean = true,
     isLoading: Boolean = false,
     shape: Shape = RoundedCornerShape(12.dp),
-    normalText: String = "Launch PWA Generation",
-    fontSize: androidx.compose.ui.unit.TextUnit = 16.sp
+    normalText: String = "Launch PWA Generation"
 ) {
     var isPressed by remember { mutableStateOf(false) }
     var currentMessageIndex by remember { mutableStateOf(0) }
@@ -146,7 +145,7 @@ fun LoadingButton(
                     ) {
                         Text(
                             text = "",
-                            fontSize = fontSize
+                            fontSize = 16.sp
                         )
                         
                         Spacer(modifier = Modifier.width(8.dp))
@@ -155,8 +154,7 @@ fun LoadingButton(
                             text = loadingMessages[currentMessageIndex],
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            fontSize = fontSize
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                     }
                 }
@@ -175,8 +173,7 @@ fun LoadingButton(
                     Text(
                         text = normalText,
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = fontSize
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }

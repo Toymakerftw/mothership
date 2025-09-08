@@ -56,7 +56,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -82,24 +81,6 @@ import androidx.core.content.FileProvider
 fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
     val pwas by mainViewModel.pwas.collectAsState()
     mainViewModel.getPwas()
-    
-    // Get screen configuration for responsive sizing
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp
-    val isTablet = screenWidth > 600
-    
-    // Calculate responsive sizes
-    val padding = if (isTablet) 40.dp else 20.dp
-    val headerPadding = if (isTablet) 36.dp else 24.dp
-    val headerIconSize = if (isTablet) 80.dp else 60.dp
-    val headerIconTextSize = if (isTablet) 32.sp else 24.sp
-    val emptyStateIconSize = if (isTablet) 160.dp else 120.dp
-    val emptyStateIconTextSize = if (isTablet) 64.sp else 48.sp
-    val cardCornerRadius = if (isTablet) 32.dp else 24.dp
-    val emptyStateCardCornerRadius = if (isTablet) 36.dp else 24.dp
-    val emptyStatePadding = if (isTablet) 48.dp else 32.dp
-    val buttonHeight = if (isTablet) 64.dp else 56.dp
-    val buttonCornerRadius = if (isTablet) 20.dp else 16.dp
 
     Column(
         modifier = Modifier
@@ -112,39 +93,39 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
                     )
                 )
             )
-            .padding(padding)
+            .padding(20.dp)
     ) {
         // Header
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = headerPadding),
+                .padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(headerIconSize)
+                    .size(60.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = "🚀", fontSize = headerIconTextSize)
+                Text(text = "🚀", fontSize = 24.sp)
             }
 
-            Spacer(modifier = Modifier.height(if (isTablet) 16.dp else 12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "Your PWA Collection",
-                style = if (isTablet) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.primary
             )
 
             Text(
                 text = "${pwas.size} ${if (pwas.size == 1) "app" else "apps"} generated",
-                style = if (isTablet) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                modifier = Modifier.padding(top = if (isTablet) 8.dp else 4.dp)
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
 
@@ -152,8 +133,8 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
             // Empty state
             Card(
                 modifier = Modifier.fillMaxSize(),
-                elevation = CardDefaults.cardElevation(defaultElevation = if (isTablet) 12.dp else 8.dp),
-                shape = RoundedCornerShape(emptyStateCardCornerRadius),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
@@ -161,7 +142,7 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(emptyStatePadding),
+                        .padding(32.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
@@ -170,7 +151,7 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(emptyStateIconSize)
+                                .size(120.dp)
                                 .clip(CircleShape)
                                 .background(
                                     Brush.radialGradient(
@@ -184,43 +165,43 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
                         ) {
                             Text(
                                 text = "🌟",
-                                fontSize = emptyStateIconTextSize
+                                fontSize = 48.sp
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(if (isTablet) 32.dp else 24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
                         Text(
                             text = "Ready for Launch!",
-                            style = if (isTablet) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
 
                         Text(
                             text = "You haven't created any PWAs yet. Start building your first app and watch the magic happen!",
-                            style = if (isTablet) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                            modifier = Modifier.padding(top = if (isTablet) 16.dp else 12.dp, bottom = if (isTablet) 48.dp else 32.dp),
-                            lineHeight = if (isTablet) 28.sp else 22.sp
+                            modifier = Modifier.padding(top = 12.dp, bottom = 32.dp),
+                            lineHeight = 22.sp
                         )
 
                         Button(
                             onClick = { navController.navigate("main") },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(buttonHeight),
-                            shape = RoundedCornerShape(buttonCornerRadius),
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary
                             )
                         ) {
-                            Text(text = "🚀", fontSize = if (isTablet) 28.sp else 20.sp)
-                            Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 8.dp))
+                            Text(text = "🚀", fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Create Your First PWA",
-                                style = if (isTablet) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -230,18 +211,17 @@ fun AppListScreen(navController: NavController, mainViewModel: MainViewModel) {
         } else {
             // PWA list
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(if (isTablet) 24.dp else 16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(pwas) { (uuid, pwaName) ->
                     AppCard(
                         uuid = uuid,
                         pwaName = pwaName,
                         mainViewModel = mainViewModel,
-                        navController = navController,
-                        isTablet = isTablet
+                        navController = navController
                     )
                 }
-                item { Spacer(modifier = Modifier.height(if (isTablet) 120.dp else 80.dp)) } // Space for bottom nav
+                item { Spacer(modifier = Modifier.height(80.dp)) } // Space for bottom nav
             }
         }
     }
@@ -253,8 +233,7 @@ fun AppCard(
     uuid: String,
     pwaName: String,
     mainViewModel: MainViewModel,
-    navController: NavController,
-    isTablet: Boolean = false
+    navController: NavController
 ) {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
@@ -267,17 +246,6 @@ fun AppCard(
     var isInstalled by remember(uuid) {
         mutableStateOf(isShortcutInstalled(context, uuid))
     }
-    
-    // Calculate responsive sizes
-    val cardPadding = if (isTablet) 32.dp else 24.dp
-    val cardCornerRadius = if (isTablet) 28.dp else 20.dp
-    val appIconSize = if (isTablet) 72.dp else 56.dp
-    val appIconTextSize = if (isTablet) 32.sp else 24.sp
-    val iconSize = if (isTablet) 32.dp else 24.dp
-    val expandedCardPadding = if (isTablet) 28.dp else 20.dp
-    val expandedCardCornerRadius = if (isTablet) 20.dp else 16.dp
-    val buttonCornerRadius = if (isTablet) 16.dp else 12.dp
-    val buttonIconSize = if (isTablet) 24.dp else 18.dp
 
     Card(
         modifier = Modifier
@@ -298,8 +266,8 @@ fun AppCard(
                     expanded = !expanded
                 }
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isTablet) 12.dp else 8.dp),
-        shape = RoundedCornerShape(cardCornerRadius),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
@@ -311,13 +279,13 @@ fun AppCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(cardPadding),
+                    .padding(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // App icon
                 Box(
                     modifier = Modifier
-                        .size(appIconSize)
+                        .size(56.dp)
                         .clip(CircleShape)
                         .background(
                             Brush.radialGradient(
@@ -331,11 +299,11 @@ fun AppCard(
                 ) {
                     Text(
                         text = "📱",
-                        fontSize = appIconTextSize
+                        fontSize = 24.sp
                     )
                 }
 
-                Spacer(modifier = Modifier.width(if (isTablet) 24.dp else 16.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
                 // App info
                 Column(
@@ -343,7 +311,7 @@ fun AppCard(
                 ) {
                     Text(
                         text = pwaName,
-                        style = if (isTablet) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
@@ -352,21 +320,21 @@ fun AppCard(
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = if (isTablet) 8.dp else 4.dp)
+                        modifier = Modifier.padding(top = 4.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(if (isTablet) 12.dp else 8.dp)
+                                .size(8.dp)
                                 .clip(CircleShape)
                                 .background(
                                     if (hasIndexFile) MaterialTheme.colorScheme.primary
                                     else MaterialTheme.colorScheme.outline
                                 )
                         )
-                        Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 8.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = if (hasIndexFile) "Ready to launch" else "Generating...",
-                            style = if (isTablet) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium,
                             color = if (hasIndexFile) MaterialTheme.colorScheme.primary
                             else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -379,7 +347,7 @@ fun AppCard(
                     imageVector = Icons.Default.Info,
                     contentDescription = "Expand",
                     modifier = Modifier
-                        .size(iconSize)
+                        .size(24.dp)
                         .rotate(rotationAngle),
                     tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                 )
@@ -394,9 +362,9 @@ fun AppCard(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = cardPadding, vertical = 0.dp)
-                        .padding(bottom = cardPadding),
-                    shape = RoundedCornerShape(expandedCardCornerRadius),
+                        .padding(horizontal = 24.dp, vertical = 0.dp)
+                        .padding(bottom = 24.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     ),
@@ -405,13 +373,13 @@ fun AppCard(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(expandedCardPadding),
-                        verticalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         // Primary actions row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             // Install/Uninstall button
                             if (isInstalled) {
@@ -428,18 +396,17 @@ fun AppCard(
                                         containerColor = MaterialTheme.colorScheme.errorContainer,
                                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                                     ),
-                                    shape = RoundedCornerShape(buttonCornerRadius)
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.Delete,
                                         contentDescription = null,
-                                        modifier = Modifier.size(buttonIconSize)
+                                        modifier = Modifier.size(18.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 8.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = "Uninstall",
-                                        fontWeight = FontWeight.Medium,
-                                        fontSize = if (isTablet) 16.sp else 14.sp
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
                             } else {
@@ -456,18 +423,17 @@ fun AppCard(
                                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                                     ),
-                                    shape = RoundedCornerShape(buttonCornerRadius)
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.GetApp,
                                         contentDescription = null,
-                                        modifier = Modifier.size(buttonIconSize)
+                                        modifier = Modifier.size(18.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 8.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = "Install",
-                                        fontWeight = FontWeight.Medium,
-                                        fontSize = if (isTablet) 16.sp else 14.sp
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
                             }
@@ -483,22 +449,21 @@ fun AppCard(
                                     contentColor = MaterialTheme.colorScheme.tertiary
                                 ),
                                 border = BorderStroke(
-                                    if (isTablet) 2.dp else 1.5.dp,
+                                    1.5.dp,
                                     if (hasIndexFile) MaterialTheme.colorScheme.tertiary
                                     else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                                 ),
-                                shape = RoundedCornerShape(buttonCornerRadius)
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Share,
                                     contentDescription = null,
-                                    modifier = Modifier.size(buttonIconSize)
+                                    modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 8.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "Share",
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = if (isTablet) 16.sp else 14.sp
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
@@ -506,7 +471,7 @@ fun AppCard(
                         // Secondary actions row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             // Rework button
                             Button(
@@ -518,18 +483,17 @@ fun AppCard(
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary
                                 ),
-                                shape = RoundedCornerShape(buttonCornerRadius)
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
                                     contentDescription = null,
-                                    modifier = Modifier.size(buttonIconSize)
+                                    modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 8.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "Rework",
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = if (isTablet) 16.sp else 14.sp
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
 
@@ -542,18 +506,17 @@ fun AppCard(
                                 colors = ButtonDefaults.textButtonColors(
                                     contentColor = MaterialTheme.colorScheme.error
                                 ),
-                                shape = RoundedCornerShape(buttonCornerRadius)
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = null,
-                                    modifier = Modifier.size(buttonIconSize)
+                                    modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 8.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "Delete",
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = if (isTablet) 16.sp else 14.sp
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }

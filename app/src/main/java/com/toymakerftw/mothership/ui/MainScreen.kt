@@ -43,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -58,23 +57,6 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
     val prompt by mainViewModel.prompt.collectAsState()
     val uiState by mainViewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
-    
-    // Get screen configuration for responsive sizing
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp
-    val isTablet = screenWidth > 600
-    
-    // Calculate responsive sizes
-    val padding = if (isTablet) 40.dp else 20.dp
-    val headerPadding = if (isTablet) 48.dp else 32.dp
-    val logoSize = if (isTablet) 100.dp else 80.dp
-    val logoTextSize = if (isTablet) 48.sp else 36.sp
-    val cardPadding = if (isTablet) 36.dp else 28.dp
-    val textFieldHeight = if (isTablet) 160.dp else 120.dp
-    val buttonHeight = if (isTablet) 64.dp else 56.dp
-    val quickActionButtonHeight = if (isTablet) 80.dp else 72.dp
-    val cardCornerRadius = if (isTablet) 32.dp else 24.dp
-    val quickActionCornerRadius = if (isTablet) 24.dp else 20.dp
 
     val isLoading = uiState is MainUiState.Loading
 
@@ -90,17 +72,17 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                 )
             )
             .verticalScroll(scrollState)
-            .padding(padding),
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Header with rocket logo
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(vertical = headerPadding)
+            modifier = Modifier.padding(vertical = 32.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(logoSize)
+                    .size(80.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.radialGradient(
@@ -114,15 +96,15 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
             ) {
                 Text(
                     text = "🚀",
-                    fontSize = logoTextSize
+                    fontSize = 36.sp
                 )
             }
             
-            Spacer(modifier = Modifier.height(if (isTablet) 24.dp else 16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             Text(
                 text = "Mothership",
-                style = if (isTablet) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineLarge,
+                style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.primary,
                 letterSpacing = 1.sp
@@ -130,10 +112,10 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
             
             Text(
                 text = "AI-Powered PWA Generator",
-                style = if (isTablet) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
                 fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = if (isTablet) 8.dp else 4.dp)
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
 
@@ -141,9 +123,9 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = if (isTablet) 36.dp else 24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (isTablet) 16.dp else 12.dp),
-            shape = RoundedCornerShape(cardCornerRadius),
+                .padding(bottom = 24.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+            shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             )
@@ -151,23 +133,23 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(cardPadding),
+                    .padding(28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = if (isTablet) 30.dp else 20.dp)
+                    modifier = Modifier.padding(bottom = 20.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.AutoAwesome,
                         contentDescription = "Create",
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(if (isTablet) 36.dp else 28.dp)
+                        modifier = Modifier.size(28.dp)
                     )
-                    Spacer(modifier = Modifier.width(if (isTablet) 16.dp else 12.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "Create Your PWA",
-                        style = if (isTablet) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -175,11 +157,11 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
 
                 Text(
                     text = "Describe your app idea and watch AI bring it to life as a Progressive Web App!",
-                    style = if (isTablet) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    modifier = Modifier.padding(bottom = if (isTablet) 36.dp else 28.dp),
-                    lineHeight = if (isTablet) 28.sp else 24.sp
+                    modifier = Modifier.padding(bottom = 28.dp),
+                    lineHeight = 24.sp
                 )
 
                 OutlinedTextField(
@@ -188,23 +170,21 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                     label = { 
                         Text(
                             "What app would you like to create?",
-                            fontWeight = FontWeight.Medium,
-                            fontSize = if (isTablet) 18.sp else 16.sp
+                            fontWeight = FontWeight.Medium
                         ) 
                     },
                     placeholder = { 
                         Text(
                             "e.g., A todo app with dark mode, or a weather dashboard...",
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                            fontSize = if (isTablet) 16.sp else 14.sp
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         ) 
                     },
                     enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(textFieldHeight)
-                        .padding(bottom = if (isTablet) 32.dp else 24.dp),
-                    shape = RoundedCornerShape(if (isTablet) 20.dp else 16.dp),
+                        .height(120.dp)
+                        .padding(bottom = 24.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
@@ -220,44 +200,43 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(buttonHeight),
+                        .height(56.dp),
                     enabled = prompt.isNotBlank() && !isLoading,
                     isLoading = isLoading,
-                    shape = RoundedCornerShape(if (isTablet) 20.dp else 16.dp),
-                    normalText = "Launch PWA Generation",
-                    fontSize = if (isTablet) 18.sp else 16.sp
+                    shape = RoundedCornerShape(16.dp),
+                    normalText = "Launch PWA Generation"
                 )
 
                 // Error state with retry functionality
                 when (uiState) {
                     is MainUiState.Error -> {
-                        Spacer(modifier = Modifier.height(if (isTablet) 30.dp else 20.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
                             ),
-                            shape = RoundedCornerShape(if (isTablet) 16.dp else 12.dp)
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Column(
-                                modifier = Modifier.padding(if (isTablet) 24.dp else 16.dp),
+                                modifier = Modifier.padding(16.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(bottom = if (isTablet) 18.dp else 12.dp)
+                                    modifier = Modifier.padding(bottom = 12.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Info,
                                         contentDescription = "Error",
                                         tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(if (isTablet) 28.dp else 20.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 8.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = "Generation Failed",
                                         color = MaterialTheme.colorScheme.error,
-                                        style = if (isTablet) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleMedium,
+                                        style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
@@ -265,65 +244,54 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                                 Text(
                                     text = (uiState as MainUiState.Error).message,
                                     color = MaterialTheme.colorScheme.onErrorContainer,
-                                    style = if (isTablet) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(bottom = if (isTablet) 24.dp else 16.dp)
+                                    modifier = Modifier.padding(bottom = 16.dp)
                                 )
                                 
                                 Row(
-                                    horizontalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     if ((uiState as MainUiState.Error).canRetry) {
                                         OutlinedButton(
                                             onClick = { mainViewModel.retryGeneration() },
                                             enabled = prompt.isNotBlank(),
-                                            modifier = Modifier.weight(1f),
-                                            content = {
-                                                Text(
-                                                    "Retry",
-                                                    fontSize = if (isTablet) 16.sp else 14.sp
-                                                )
-                                            }
-                                        )
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text("Retry")
+                                        }
                                     } else {
                                         OutlinedButton(
                                             onClick = { navController.navigate("settings") },
-                                            modifier = Modifier.weight(1f),
-                                            content = {
-                                                Text(
-                                                    "Settings",
-                                                    fontSize = if (isTablet) 16.sp else 14.sp
-                                                )
-                                            }
-                                        )
+                                            modifier = Modifier.weight(1f)
+                                        ) {
+                                            Text("Settings")
+                                        }
                                     }
                                     
                                     TextButton(
                                         onClick = { mainViewModel.clearError() },
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        Text(
-                                            "Dismiss",
-                                            fontSize = if (isTablet) 16.sp else 14.sp
-                                        )
+                                        Text("Dismiss")
                                     }
                                 }
                             }
                         }
                     }
                     is MainUiState.Success -> {
-                        Spacer(modifier = Modifier.height(if (isTablet) 30.dp else 20.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                             ),
-                            shape = RoundedCornerShape(if (isTablet) 16.dp else 12.dp)
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(if (isTablet) 20.dp else 16.dp),
+                                    .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center
                             ) {
@@ -331,13 +299,13 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
                                     imageVector = Icons.Default.Check,
                                     contentDescription = "Success",
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(if (isTablet) 32.dp else 24.dp)
+                                    modifier = Modifier.size(24.dp)
                                 )
-                                Spacer(modifier = Modifier.width(if (isTablet) 12.dp else 8.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "PWA generated successfully!",
                                     color = MaterialTheme.colorScheme.primary,
-                                    style = if (isTablet) MaterialTheme.typography.titleLarge else MaterialTheme.typography.bodyMedium,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -351,8 +319,8 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
         // Quick actions section
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (isTablet) 12.dp else 8.dp),
-            shape = RoundedCornerShape(quickActionCornerRadius),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             )
@@ -360,46 +328,38 @@ fun MainScreen(navController: NavController, mainViewModel: MainViewModel) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(if (isTablet) 32.dp else 24.dp)
+                    .padding(24.dp)
             ) {
                 Text(
                     text = "Quick Actions",
-                    style = if (isTablet) MaterialTheme.typography.headlineSmall else MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = if (isTablet) 28.dp else 20.dp)
+                    modifier = Modifier.padding(bottom = 20.dp)
                 )
 
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     QuickActionButton(
                         icon = Icons.Default.Info,
                         title = "View Generated PWAs",
                         subtitle = "Browse your app collection",
-                        onClick = { navController.navigate("appList") },
-                        height = quickActionButtonHeight,
-                        iconSize = if (isTablet) 32.dp else 24.dp,
-                        textSize = if (isTablet) 18.sp else 16.sp,
-                        subtextSize = if (isTablet) 14.sp else 12.sp
+                        onClick = { navController.navigate("appList") }
                     )
 
                     QuickActionButton(
                         icon = Icons.Default.Settings,
                         title = "Settings",
                         subtitle = "Configure API and preferences",
-                        onClick = { navController.navigate("settings") },
-                        height = quickActionButtonHeight,
-                        iconSize = if (isTablet) 32.dp else 24.dp,
-                        textSize = if (isTablet) 18.sp else 16.sp,
-                        subtextSize = if (isTablet) 14.sp else 12.sp
+                        onClick = { navController.navigate("settings") }
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(if (isTablet) 120.dp else 100.dp)) // Space for bottom navigation
+        Spacer(modifier = Modifier.height(100.dp)) // Space for bottom navigation
     }
 }
 
@@ -408,17 +368,13 @@ private fun QuickActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
-    onClick: () -> Unit,
-    height: androidx.compose.ui.unit.Dp = 72.dp,
-    iconSize: androidx.compose.ui.unit.Dp = 24.dp,
-    textSize: androidx.compose.ui.unit.TextUnit = 16.sp,
-    subtextSize: androidx.compose.ui.unit.TextUnit = 12.sp
+    onClick: () -> Unit
 ) {
     AnimatedButton(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(height),
+            .height(72.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Row(
@@ -429,7 +385,7 @@ private fun QuickActionButton(
             Icon(
                 imageVector = icon,
                 contentDescription = title,
-                modifier = Modifier.size(iconSize)
+                modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(
@@ -438,14 +394,12 @@ private fun QuickActionButton(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = textSize
+                    fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
-                    fontSize = subtextSize
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                 )
             }
         }
