@@ -30,10 +30,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.GetApp
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -68,6 +70,7 @@ import androidx.navigation.NavController
 import com.toymakerftw.mothership.MainViewModel
 import com.toymakerftw.mothership.PwaInstaller
 import com.toymakerftw.mothership.PwaViewerActivity
+import com.toymakerftw.mothership.data.VersionInfo
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -521,6 +524,49 @@ fun AppCard(
                                 )
                             }
                         }
+                        
+                        // Revert button (only show if there are versions available)
+                        val versions = mainViewModel.getAppVersions(uuid)
+                        var showRevertDialog by remember { mutableStateOf(false) }
+                        
+                        if (versions.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                TextButton(
+                                    onClick = {
+                                        showRevertDialog = true
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.textButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.History,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Revert (${versions.size})",
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                            
+                            // Show revert dialog when requested
+                            if (showRevertDialog) {
+                                RevertDialog(
+                                    uuid = uuid,
+                                    versions = versions,
+                                    mainViewModel = mainViewModel,
+                                    onDismiss = { showRevertDialog = false }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -580,4 +626,105 @@ private fun sharePwa(
             }
         }
     }
+}
+
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+fun RevertDialog(
+    uuid: String,
+    versions: List<VersionInfo>,
+    mainViewModel: MainViewModel,
+    onDismiss: () -> Unit
+) {
+    var selectedVersion by remember { mutableStateOf<VersionInfo?>(null) }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Revert to Previous Version",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            if (versions.isEmpty()) {
+                Text("No previous versions available.")
+            } else {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(versions) { version ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (selectedVersion == version) 
+                                    MaterialTheme.colorScheme.primaryContainer 
+                                else 
+                                    MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .combinedClickable(
+                                        onClick = { selectedVersion = version }
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = version.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = version.formattedTimestamp,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                    )
+                                    Text(
+                                        text = version.formattedSize,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    selectedVersion?.let { version ->
+                        mainViewModel.revertToVersion(uuid, version.fileName)
+                        onDismiss()
+                    }
+                },
+                enabled = selectedVersion != null,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Revert")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
 }

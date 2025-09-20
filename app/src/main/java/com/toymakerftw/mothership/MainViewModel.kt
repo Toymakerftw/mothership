@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.toymakerftw.mothership.api.MothershipApi
 import com.toymakerftw.mothership.data.SettingsRepository
+import com.toymakerftw.mothership.data.VersionManager
 import com.toymakerftw.mothership.demo.DemoKeyManager
 import com.toymakerftw.mothership.work.PwaWorkManager
 import com.toymakerftw.mothership.work.PwaGenerationWorker
@@ -26,6 +27,7 @@ class MainViewModel(
 
     private val demoKeyManager = DemoKeyManager(context)
     private val pwaWorkManager = PwaWorkManager.getInstance(context)
+    private val versionManager = VersionManager(context)
 
     private val _uiState = MutableStateFlow<MainUiState>(MainUiState.Idle)
     val uiState = _uiState.asStateFlow()
@@ -393,6 +395,45 @@ class MainViewModel(
             } catch (e: Exception) {
                 _pwas.value = emptyList()
             }
+        }
+    }
+    
+    /**
+     * Creates a backup version of the app before reworking
+     */
+    fun createAppVersion(uuid: String, versionName: String = "Before Rework") {
+        viewModelScope.launch {
+            versionManager.createVersionBackup(uuid, versionName)
+        }
+    }
+    
+    /**
+     * Reverts the app to a specific version
+     */
+    fun revertToVersion(uuid: String, versionFileName: String) {
+        viewModelScope.launch {
+            val success = versionManager.revertToVersion(uuid, versionFileName)
+            if (success) {
+                // Refresh the PWA list
+                getPwas()
+                _uiState.value = MainUiState.Success
+            } else {
+                _uiState.value = MainUiState.Error("Failed to revert to previous version")
+            }
+        }
+    }
+    
+    /**
+     * Gets a list of available versions for an app
+     */
+    fun getAppVersions(uuid: String) = versionManager.getVersions(uuid)
+    
+    /**
+     * Deletes a specific version
+     */
+    fun deleteAppVersion(uuid: String, versionFileName: String) {
+        viewModelScope.launch {
+            versionManager.deleteVersion(uuid, versionFileName)
         }
     }
 }
