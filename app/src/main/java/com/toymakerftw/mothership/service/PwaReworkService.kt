@@ -93,7 +93,7 @@ class PwaReworkService(private val context: Context) {
 
         val messages = listOf(Message(role = "system", content = promptBuilder.toString()))
         val request = OpenRouterRequest(
-            model = "qwen/qwen-2.5-coder-32b-instruct:free",
+            model = "x-ai/grok-4-fast:free",
             messages = messages
         )
 

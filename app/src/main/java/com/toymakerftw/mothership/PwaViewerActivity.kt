@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
+import android.net.ConnectivityManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -62,6 +63,11 @@ class PwaViewerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_pwa_splash) // Show splash screen initially
+
+        // Check for internet permission
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.INTERNET) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "Internet permission not granted, but it's a normal permission and should be granted at install time")
+        }
 
         // Register receiver for PWA rework notifications
         val filter = IntentFilter("com.toymakerftw.mothership.PWA_REWORKED")
@@ -127,7 +133,13 @@ class PwaViewerActivity : ComponentActivity() {
         webSettings.builtInZoomControls = true
         webSettings.displayZoomControls = false
         webSettings.databaseEnabled = true
-        webSettings.cacheMode = WebSettings.LOAD_NO_CACHE
+        webSettings.cacheMode = WebSettings.LOAD_DEFAULT
+        // Enable internet access for PWAs
+        webSettings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        // Set a user agent that identifies as a mobile browser
+        webSettings.userAgentString = "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 MothershipPWA"
+        // Enable DOM storage for PWA features
+        webSettings.domStorageEnabled = true
 
         title = pwaName
 
@@ -141,6 +153,11 @@ class PwaViewerActivity : ComponentActivity() {
                 super.onPageFinished(view, url)
                 Log.d(TAG, "Page loaded: $url")
                 view?.scrollTo(0, 1)
+            }
+
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                // Allow all URLs to be loaded in the WebView
+                return false
             }
 
             override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
@@ -192,6 +209,12 @@ class PwaViewerActivity : ComponentActivity() {
             Toast.makeText(this, "PWA UUID not available", Toast.LENGTH_SHORT).show()
             finish()
             return
+        }
+
+        // Check network connectivity
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, "No internet connection available", Toast.LENGTH_LONG).show()
+            // Still try to load the PWA as it might have offline capabilities
         }
 
         try {
@@ -288,5 +311,16 @@ class PwaViewerActivity : ComponentActivity() {
         } else {
             super.onBackPressed()
         }
+    }
+
+    // Handle network connectivity issues
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
+        return networkCapabilities != null && (
+                networkCapabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
+                networkCapabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                networkCapabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET))
     }
 }

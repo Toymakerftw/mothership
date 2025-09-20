@@ -164,10 +164,10 @@ class PwaGenerationWorker(
         Log.d("PwaGenerationWorker", "Rewritten prompt: ${rewrittenPrompt.take(100)}...")
         Log.d("PwaGenerationWorker", "Prompt rewriting successful: ${rewrittenPrompt != prompt}")
 
-        Log.d("PwaGenerationWorker", "Step 2: Generating PWA using qwen/qwen-2.5-coder-32b-instruct:free model with rewritten prompt")
+        Log.d("PwaGenerationWorker", "Step 2: Generating PWA using x-ai/grok-4-fast:free model with rewritten prompt")
         val request = withContext(Dispatchers.IO) {
             OpenRouterRequest(
-                model = "qwen/qwen-2.5-coder-32b-instruct:free",
+                model = "x-ai/grok-4-fast:free",
                 messages = listOf(
                     Message(
                         role = "system",
