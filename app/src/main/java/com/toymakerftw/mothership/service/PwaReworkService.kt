@@ -30,11 +30,6 @@ class PwaReworkService(private val context: Context) {
             if (!pwaFolder.exists() || !pwaFolder.isDirectory) {
                 return Result.failure("PWA folder not found")
             }
-            
-            // Create a backup before reworking
-            val versionManager = com.toymakerftw.mothership.data.VersionManager(context)
-            versionManager.createVersionBackup(uuid, "Before Rework")
-            
             val files = readPwaFiles(pwaFolder)
             if (files.isEmpty()) {
                 return Result.failure("PWA folder or files not found")
