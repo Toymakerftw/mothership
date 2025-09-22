@@ -93,7 +93,7 @@ class PwaReworkService(private val context: Context) {
 
         val messages = listOf(Message(role = "system", content = promptBuilder.toString()))
         val request = OpenRouterRequest(
-            model = "x-ai/grok-4-fast:free",
+            model = "google/gemini-2.0-flash-exp:free",
             messages = messages
         )
 
