@@ -1,6 +1,8 @@
 package com.toymakerftw.appsage
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -13,6 +15,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.toymakerftw.appsage.ui.MainScreen
 import com.toymakerftw.appsage.ui.AppListScreen
 import com.toymakerftw.appsage.ui.ReworkScreen
+import com.toymakerftw.appsage.ui.SettingsScreen
 import com.toymakerftw.appsage.ui.AppsageBottomNavigation
 import com.toymakerftw.appsage.ReworkViewModel
 
@@ -23,8 +26,9 @@ fun AppsageNav() {
     val context = LocalContext.current
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     
-    // Don't show bottom navigation on rework screen
-    val showBottomNav = navBackStackEntry.value?.destination?.route?.startsWith("rework") == false
+    // Don't show bottom navigation on rework and settings screens
+    val currentRoute = navBackStackEntry.value?.destination?.route
+    val showBottomNav = currentRoute != "rework/{uuid}" && currentRoute != "settings"
     
     Scaffold(
         bottomBar = {
@@ -62,6 +66,13 @@ fun AppsageNav() {
                     ReworkViewModel(context, appsageApi, settingsRepository)
                 }
                 ReworkScreen(uuid, reworkViewModel)
+            }
+            composable("settings") { 
+                val settingsViewModel: SettingsViewModel = viewModel {
+                    val settingsRepository = com.toymakerftw.appsage.data.SettingsRepository(context)
+                    SettingsViewModel(settingsRepository)
+                }
+                SettingsScreen(settingsViewModel, navController)
             }
         }
     }

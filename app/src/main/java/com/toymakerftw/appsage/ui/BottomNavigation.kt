@@ -2,8 +2,7 @@ package com.toymakerftw.appsage.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -44,6 +43,17 @@ fun AppsageBottomNavigation(
             selected = currentRoute == "pwa_list",
             onClick = {
                 navController.navigate("pwa_list") {
+                    popUpTo("main") { inclusive = false }
+                    launchSingleTop = true
+                }
+            }
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+            label = { Text("Settings") },
+            selected = currentRoute == "settings",
+            onClick = {
+                navController.navigate("settings") {
                     popUpTo("main") { inclusive = false }
                     launchSingleTop = true
                 }
