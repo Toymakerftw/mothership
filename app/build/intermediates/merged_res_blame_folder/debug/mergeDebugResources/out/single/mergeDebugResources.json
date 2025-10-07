@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "com.toymakerftw.appsage.app-debug-60:/xml_backup_rules.xml.flat",
+        "source": "com.toymakerftw.appsage.app-main-62:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.toymakerftw.appsage.app-debug-60:/xml_network_security_config.xml.flat",
+        "source": "com.toymakerftw.appsage.app-main-62:/xml/network_security_config.xml"
+    },
+    {
+        "merged": "com.toymakerftw.appsage.app-debug-60:/xml_data_extraction_rules.xml.flat",
+        "source": "com.toymakerftw.appsage.app-main-62:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.toymakerftw.appsage.app-debug-60:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.toymakerftw.appsage.app-main-62:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "com.toymakerftw.appsage.app-debug-60:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.toymakerftw.appsage.app-main-62:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    }
+]

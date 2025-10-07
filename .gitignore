@@ -1,0 +1,61 @@
+# Android Studio
+.gradle/
+*.gradle
+gradle-wrapper.properties
+/build/
+captures/
+*.iws
+
+# Android
+/gradle/
+local.properties
+*.apk
+*.ap_
+proguard/
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+*.hprof
+.settings/
+.loadpath
+.project
+.pydevproject
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Android specific
+*.keystore
+*.jks
+*.p12
+*.pem
+*.pfx
+*.p7b
+*.p7c
+*.der
+*.crt
+*.csr
+
+# Log files
+*.log
+!gradle.log
+
+# Coverage reports
+coverage/
+*.ec
+
+# Kotlin
+*.kotlin_metadata
+
+# Temporary folders
+tmp/
+temp/
