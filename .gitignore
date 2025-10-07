@@ -59,3 +59,6 @@ coverage/
 # Temporary folders
 tmp/
 temp/
+
+**/build/
+app/build/
