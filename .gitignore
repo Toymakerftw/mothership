@@ -1,64 +1,27 @@
-# Android Studio
+# Gradle files
 .gradle/
-*.gradle
-gradle-wrapper.properties
-/build/
-captures/
-*.iws
+build/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
 
-# Android
-/gradle/
+# Local configuration
 local.properties
-*.apk
-*.ap_
-proguard/
 
-# IDEs
+# IDE files
 .idea/
 *.iml
-*.ipr
-*.iws
-*.hprof
-.settings/
-.loadpath
-.project
-.pydevproject
+.vscode/
 
-# OS generated files
+# OS files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Android specific
-*.keystore
-*.jks
-*.p12
-*.pem
-*.pfx
-*.p7b
-*.p7c
-*.der
-*.crt
-*.csr
-
-# Log files
+# Other
 *.log
-!gradle.log
 
-# Coverage reports
-coverage/
-*.ec
+# Keystore files
+*.jks
+*.keystore
 
-# Kotlin
-*.kotlin_metadata
-
-# Temporary folders
-tmp/
-temp/
-
-**/build/
-app/build/
+# Signing properties
+signing.properties

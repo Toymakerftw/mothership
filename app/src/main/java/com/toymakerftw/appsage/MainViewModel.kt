@@ -8,6 +8,8 @@ import com.toymakerftw.appsage.api.AppsageApi
 import com.toymakerftw.appsage.api.Message
 import com.toymakerftw.appsage.api.OpenRouterRequest
 import com.toymakerftw.appsage.data.SettingsRepository
+import com.toymakerftw.appsage.service.PwaManager
+import com.toymakerftw.appsage.PwaInstaller
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -237,6 +239,63 @@ class MainViewModel(
             settingsRepository.saveApiKey(apiKey)
         }
         generatePwa(prompt)
+    }
+    
+    fun deletePwa(uuid: String) {
+        viewModelScope.launch {
+            val pwaManager = PwaManager(context)
+            pwaManager.deletePwa(uuid)
+        }
+    }
+
+    fun getPwas(): List<Pair<String, String>> {
+        val pwaDir = context.getExternalFilesDir(null)
+        if (pwaDir != null && pwaDir.exists()) {
+            return pwaDir.listFiles()?.mapNotNull { 
+                if (it.isDirectory) {
+                    val appInfoFile = File(it, "app_info.json")
+                    val manifestFile = File(it, "manifest.json")
+                    
+                    if (appInfoFile.exists()) {
+                        try {
+                            // Try to get name from manifest.json first (prefer short_name)
+                            var pwaName = "Untitled App"
+                            
+                            if (manifestFile.exists()) {
+                                try {
+                                    val manifestContent = manifestFile.readText()
+                                    val manifestJson = org.json.JSONObject(manifestContent)
+                                    
+                                    // Prefer short_name, fallback to name, then to app_info name
+                                    pwaName = manifestJson.optString("short_name") 
+                                        ?: manifestJson.optString("name") 
+                                        ?: "Untitled App"
+                                } catch (manifestException: Exception) {
+                                    // If manifest parsing fails, fall back to app_info
+                                }
+                            }
+                            
+                            // If we still don't have a good name, try app_info.json
+                            if (pwaName == "Untitled App") {
+                                val appInfo = appInfoFile.readText()
+                                val jsonObject = org.json.JSONObject(appInfo)
+                                pwaName = jsonObject.optString("name", "Untitled App")
+                            }
+                            
+                            it.name to pwaName
+                        } catch (e: Exception) {
+                            // Handle corrupted app_info.json files
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
+            } ?: emptyList()
+        }
+        return emptyList()
     }
 }
 

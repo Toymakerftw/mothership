@@ -14,6 +14,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.toymakerftw.appsage.MainViewModel
 import com.toymakerftw.appsage.ModelInfo
 import com.toymakerftw.appsage.data.SettingsRepository
@@ -22,7 +23,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    viewModel: MainViewModel
+    viewModel: MainViewModel,
+    navController: NavController? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val models by viewModel.models.collectAsState()
