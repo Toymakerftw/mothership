@@ -1,5 +1,6 @@
 package com.toymakerftw.appsage.api
 
+import com.google.gson.annotations.SerializedName
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -10,34 +11,30 @@ interface AppsageApi {
     @POST("chat/completions")
     suspend fun generatePwa(@Header("Authorization") apiKey: String, @Body request: OpenRouterRequest): OpenRouterResponse
 
-    @GET("models")
-    suspend fun getModels(@Header("Authorization") apiKey: String): OpenRouterModelsResponse
+
 }
 
 data class OpenRouterRequest(
+    @SerializedName("model")
     val model: String,
+    @SerializedName("messages")
     val messages: List<Message>
 )
 
 data class Message(
+    @SerializedName("role")
     val role: String,
+    @SerializedName("content")
     val content: String
 )
 
 data class OpenRouterResponse(
+    @SerializedName("choices")
     val choices: List<Choice>
 )
 
 data class Choice(
+    @SerializedName("message")
     val message: Message
 )
 
-data class OpenRouterModelsResponse(
-    val data: List<OpenRouterModelData>
-)
-
-data class OpenRouterModelData(
-    val id: String,
-    val name: String,
-    val description: String?
-)

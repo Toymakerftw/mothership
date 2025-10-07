@@ -73,7 +73,7 @@ class ReworkViewModel(
                 """.trimIndent()
 
                 val request = OpenRouterRequest(
-                    model = "openai/gpt-3.5-turbo", // Using default model for rework
+                    model = "x-ai/grok-4-fast", // Using default model for rework
                     messages = listOf(
                         Message(
                             role = "user",

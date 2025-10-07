@@ -10,13 +10,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.toymakerftw.appsage.MainViewModel
-import com.toymakerftw.appsage.ModelInfo
 import com.toymakerftw.appsage.data.SettingsRepository
 import kotlinx.coroutines.launch
 
@@ -27,13 +28,11 @@ fun MainScreen(
     navController: NavController? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val models by viewModel.models.collectAsState()
     val selectedModel by viewModel.selectedModel.collectAsState()
     
     var apiKey by remember { mutableStateOf("") }
     var prompt by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
-    var currentModel by remember { mutableStateOf(selectedModel ?: "openai/gpt-3.5-turbo") }
+    val focusRequester = remember { FocusRequester() }
     
     Column(
         modifier = Modifier
@@ -56,47 +55,7 @@ fun MainScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
         
-        // Model Selection
-        if (models.isNotEmpty()) {
-            Text(
-                text = "Select Model:",
-                style = MaterialTheme.typography.titleMedium
-            )
-            
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                OutlinedTextField(
-                    value = currentModel,
-                    onValueChange = {},
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    trailingIcon = { 
-                        IconButton(onClick = { expanded = true }) {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown")
-                        }
-                    }
-                )
-                
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    models.forEach { model ->
-                        DropdownMenuItem(
-                            text = { Text(model.name) },
-                            onClick = {
-                                currentModel = model.id
-                                viewModel.setSelectedModel(model.id)
-                                expanded = false
-                            }
-                        )
-                    }
-                }
-            }
-        }
+
         
         // Prompt Input
         OutlinedTextField(

@@ -15,6 +15,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
 import com.toymakerftw.appsage.PwaInstaller
+import java.io.File
 
 @Composable
 fun PwaListScreen(context: Context) {
@@ -76,12 +77,37 @@ fun PwaListScreen(context: Context) {
                             installer.uninstall(pwa.uuid)
                         },
                         onLaunch = {
+                            // Generate a unique port for this PWA to avoid conflicts
+                            val port = pwaManager.generateUniquePort(pwa.uuid)
+                            
                             // Start the PWA server
-                            if (pwaManager.startPwaServer(pwa.uuid)) {
+                            if (pwaManager.startPwaServer(pwa.uuid, port)) {
+                                // Try to get a better name from manifest.json
+                                var pwaName = pwa.name
+                                try {
+                                    val pwaDir = File(context.getExternalFilesDir(null), pwa.uuid)
+                                    val manifestFile = File(pwaDir, "manifest.json")
+                                    
+                                    if (manifestFile.exists()) {
+                                        val manifestContent = manifestFile.readText()
+                                        val manifestJson = org.json.JSONObject(manifestContent)
+                                        val shortName = manifestJson.optString("short_name", "")
+                                        val manifestName = manifestJson.optString("name", "")
+                                        
+                                        // Prefer short_name, fallback to name from manifest
+                                        val betterName = if (shortName.isNotEmpty()) shortName else manifestName
+                                        if (betterName.isNotEmpty()) {
+                                            pwaName = betterName
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    // If manifest parsing fails, keep the original name
+                                }
+                                
                                 // Launch the PWA viewer
                                 val intent = Intent(context, Class.forName("com.toymakerftw.appsage.PwaViewerActivity")).apply {
-                                    putExtra("pwaUrl", "http://127.0.0.1:8080/index.html")
-                                    putExtra("pwaName", pwa.name)
+                                    putExtra("pwaUrl", "http://127.0.0.1:$port/index.html")
+                                    putExtra("pwaName", pwaName)
                                     putExtra("pwaId", pwa.uuid)
                                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 }

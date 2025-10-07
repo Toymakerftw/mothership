@@ -326,12 +326,43 @@ fun AppCard(
             .combinedClickable(
                 onClick = {
                     if (hasIndexFile) {
-                        val intent = Intent(context, PwaViewerActivity::class.java).apply {
-                            putExtra("pwaUrl", "file://${context.getExternalFilesDir(null)}/${pwa.uuid}/index.html")
-                            putExtra("pwaName", pwa.name)
-                            putExtra("pwaId", pwa.uuid)
+                        val pwaManager = PwaManager(context)
+                        // Generate a unique port for this PWA to avoid conflicts
+                        val port = pwaManager.generateUniquePort(pwa.uuid)
+                        
+                        // Try to get a better name from manifest.json
+                        var pwaName = pwa.name
+                        try {
+                            val pwaDir = File(context.getExternalFilesDir(null), pwa.uuid)
+                            val manifestFile = File(pwaDir, "manifest.json")
+                            
+                            if (manifestFile.exists()) {
+                                val manifestContent = manifestFile.readText()
+                                val manifestJson = org.json.JSONObject(manifestContent)
+                                val shortName = manifestJson.optString("short_name")
+                                val manifestName = manifestJson.optString("name")
+                                
+                                // Prefer short_name, fallback to name from manifest
+                                val betterName = shortName.ifEmpty { manifestName }
+                                if (betterName.isNotEmpty()) {
+                                    pwaName = betterName
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // If manifest parsing fails, keep the original name
                         }
-                        context.startActivity(intent)
+                        
+                        // Start the PWA server
+                        if (pwaManager.startPwaServer(pwa.uuid, port)) {
+                            val intent = Intent(context, PwaViewerActivity::class.java).apply {
+                                putExtra("pwaUrl", "http://127.0.0.1:$port/index.html")
+                                putExtra("pwaName", pwaName)
+                                putExtra("pwaId", pwa.uuid)
+                            }
+                            context.startActivity(intent)
+                        } else {
+                            Toast.makeText(context, "Failed to start PWA server", Toast.LENGTH_SHORT).show()
+                        }
                     } else {
                         Toast.makeText(context, "PWA not ready yet", Toast.LENGTH_SHORT).show()
                     }

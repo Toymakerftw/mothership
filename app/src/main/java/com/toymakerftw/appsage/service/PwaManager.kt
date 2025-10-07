@@ -26,14 +26,39 @@ class PwaManager(private val context: Context) {
             File(file, "index.html").exists()
         }?.map { dir ->
             val appInfoFile = File(dir, "app_info.json")
+            val manifestFile = File(dir, "manifest.json")
             var name = "PWA (${dir.name})"
             var description = ""
             
-            if (appInfoFile.exists()) {
+            // Try to get name from manifest.json first (prefer short_name)
+            if (manifestFile.exists()) {
+                try {
+                    val manifestContent = manifestFile.readText()
+                    val manifestJson = org.json.JSONObject(manifestContent)
+                    
+                    // Prefer short_name, fallback to name, then to app_info name
+                    val shortName = manifestJson.optString("short_name")
+                    val manifestName = manifestJson.optString("name")
+                    
+                    // Prefer short_name, fallback to name
+                    val betterName = shortName.ifEmpty { manifestName }
+                    if (betterName.isNotEmpty()) {
+                        name = betterName
+                    }
+                } catch (manifestException: Exception) {
+                    // If manifest parsing fails, fall back to app_info
+                }
+            }
+            
+            // If we still don't have a good name, try app_info.json
+            if (name == "PWA (${dir.name})" && appInfoFile.exists()) {
                 try {
                     val appInfo = appInfoFile.readText()
                     val json = org.json.JSONObject(appInfo)
-                    name = json.optString("name", "PWA (${dir.name})")
+                    val appInfoName = json.optString("name", "PWA (${dir.name})")
+                    if (appInfoName != "PWA (${dir.name})") {
+                        name = appInfoName
+                    }
                     description = json.optString("description", "")
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -74,6 +99,12 @@ class PwaManager(private val context: Context) {
             e.printStackTrace()
             false
         }
+    }
+    
+    fun generateUniquePort(uuid: String): Int {
+        val hash = uuid.hashCode()
+        val portOffset = Math.abs(hash) % 1000 // Ports 8080-9079
+        return 8080 + portOffset
     }
     
     fun stopPwaServer(port: Int = 8080): Boolean {

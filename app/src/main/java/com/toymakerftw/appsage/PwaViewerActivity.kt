@@ -1,105 +1,328 @@
 package com.toymakerftw.appsage
 
+import android.content.BroadcastReceiver
 import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.Bitmap
+import android.net.ConnectivityManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
+import com.toymakerftw.appsage.service.PwaHttpServerService
+import org.json.JSONObject
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLDecoder
+import java.util.*
+import kotlin.concurrent.thread
 
 class PwaViewerActivity : ComponentActivity() {
-    
+    companion object {
+        private const val TAG = "PwaViewer"
+        private const val SERVER_PORT_BASE = 8080
+        private const val SERVER_PORT_RANGE = 1000 // Ports 8080-9079
+        private const val SERVER_START_DELAY = 1000L // 1 second delay to allow server to start
+        private const val RELOAD_DELAY = 1000L // 1 second delay before reloading on ORB error
+    }
+
     private lateinit var webView: WebView
+    private var pwaUuid: String? = null
+    private var serverPort: Int = SERVER_PORT_BASE
+    private val handler = Handler(Looper.getMainLooper())
+    private var orbRetryCount = 0
+    private val MAX_ORB_RETRIES = 2 // Allow only 2 retries
     
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        
-        webView = WebView(this)
-        setContentView(webView)
-        
-        val webSettings = webView.settings
-        webSettings.javaScriptEnabled = true
-        webSettings.domStorageEnabled = true
-        webSettings.databaseEnabled = true
-        webSettings.cacheMode = WebSettings.LOAD_DEFAULT
-        
-        // Get the PWA URL from intent
-        val pwaUrl = intent.getStringExtra("pwaUrl") ?: ""
-        val pwaId = intent.getStringExtra("pwaId") ?: ""
-        
-        if (pwaUrl.isNotEmpty()) {
-            // If it's a file URL, use the file:// scheme
-            if (pwaUrl.startsWith("file://")) {
-                webView.webViewClient = object : WebViewClient() {
-                    override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
-                        val url = request.url.toString()
-                        
-                        // Check if this is a local file request
-                        if (url.startsWith("file://")) {
-                            try {
-                                val file = File(url.substring(7)) // Remove "file://" prefix
-                                if (file.exists()) {
-                                    val mimeType = when {
-                                        url.endsWith(".html", ignoreCase = true) -> "text/html"
-                                        url.endsWith(".css", ignoreCase = true) -> "text/css"
-                                        url.endsWith(".js", ignoreCase = true) -> "application/javascript"
-                                        url.endsWith(".json", ignoreCase = true) -> "application/json"
-                                        url.endsWith(".png", ignoreCase = true) -> "image/png"
-                                        url.endsWith(".jpg", ignoreCase = true) || url.endsWith(".jpeg", ignoreCase = true) -> "image/jpeg"
-                                        url.endsWith(".gif", ignoreCase = true) -> "image/gif"
-                                        url.endsWith(".svg", ignoreCase = true) -> "image/svg+xml"
-                                        url.endsWith(".ico", ignoreCase = true) -> "image/x-icon"
-                                        url.endsWith(".woff", ignoreCase = true) -> "font/woff"
-                                        url.endsWith(".woff2", ignoreCase = true) -> "font/woff2"
-                                        else -> "application/octet-stream"
-                                    }
-                                    
-                                    val inputStream = java.io.FileInputStream(file)
-                                    return WebResourceResponse(mimeType, null, inputStream)
-                                }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                            }
-                        }
-                        
-                        return super.shouldInterceptRequest(view, request)
-                    }
-                }
-            } else {
-                // For network URLs, use the standard WebViewClient
-                webView.webViewClient = object : WebViewClient() {
-                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                        // Prevent external URL navigation
-                        val url = request.url.toString()
-                        if (!url.startsWith("http://127.0.0.1:") && !url.startsWith("http://localhost:") && !url.startsWith("file://")) {
-                            // If it's an external URL, open in external browser instead of WebView
-                            val intent = Intent(Intent.ACTION_VIEW, request.url)
-                            startActivity(intent)
-                            return true
-                        }
-                        return false
+    private val pwaReworkedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            if (intent?.action == "com.toymakerftw.appsage.PWA_REWORKED") {
+                val reworkedPwaUuid = intent.getStringExtra("pwa_uuid")
+                if (reworkedPwaUuid == pwaUuid) {
+                    // Clear WebView cache and service worker cache
+                    webView.clearCache(true)
+                    // Send message to service worker to clear its cache
+                    webView.post {
+                        webView.evaluateJavascript(
+                            "if ('serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(function(registrations) { for(let registration of registrations) { registration.active.postMessage({type: 'CACHE_UPDATE'}); } }); }",
+                            null
+                        )
                     }
                 }
             }
-            
-            webView.loadUrl(pwaUrl)
         }
     }
-    
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_pwa_splash) // Show splash screen initially
+
+        // Check for internet permission
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.INTERNET) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "Internet permission not granted, but it's a normal permission and should be granted at install time")
+        }
+
+        // Register receiver for PWA rework notifications
+        val filter = IntentFilter("com.toymakerftw.appsage.PWA_REWORKED")
+        ContextCompat.registerReceiver(this, pwaReworkedReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+
+        var pwaUrl = intent.getStringExtra("pwaUrl")
+        var pwaName = intent.getStringExtra("pwaName") ?: "PWA App"
+
+        if (pwaUrl == null) {
+            Toast.makeText(this, "Invalid PWA URL", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        pwaUuid = intent.getStringExtra("pwaId")
+
+        if (pwaUuid == null) {
+            Toast.makeText(this, "Invalid PWA ID", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        try {
+            UUID.fromString(pwaUuid)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error extracting PWA UUID: ${e.message}")
+            Toast.makeText(this, "Error processing PWA URL", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        // Try to get a better name from manifest.json
+        try {
+            val pwaDir = File(getExternalFilesDir(null), pwaUuid!!)
+            val manifestFile = File(pwaDir, "manifest.json")
+            
+            if (manifestFile.exists()) {
+                val manifestContent = manifestFile.readText()
+                val manifestJson = JSONObject(manifestContent)
+                val shortName = manifestJson.optString("short_name")
+                val manifestName = manifestJson.optString("name")
+                
+                // Prefer short_name, fallback to name from manifest
+                val betterName = shortName.ifEmpty { manifestName }
+                if (betterName.isNotEmpty()) {
+                    pwaName = betterName
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not read manifest for better name: ${e.message}")
+        }
+
+        // Initialize WebView but don't set it as content view yet
+        webView = WebView(this)
+        val webSettings = webView.settings
+        webSettings.javaScriptEnabled = true
+        webSettings.domStorageEnabled = true
+        webSettings.allowFileAccess = true
+        webSettings.allowContentAccess = true
+        webSettings.useWideViewPort = true
+        webSettings.loadWithOverviewMode = true
+        webSettings.setSupportZoom(true)
+        webSettings.builtInZoomControls = true
+        webSettings.displayZoomControls = false
+        webSettings.databaseEnabled = true
+        webSettings.cacheMode = WebSettings.LOAD_DEFAULT
+        // Enable internet access for PWAs
+        webSettings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        // Set a user agent that identifies as a mobile browser
+        webSettings.userAgentString = "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 AppsagePWA"
+        // Enable DOM storage for PWA features
+        webSettings.domStorageEnabled = true
+
+        title = pwaName
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                Log.d(TAG, "Loading page: $url")
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                Log.d(TAG, "Page loaded: $url")
+                view?.scrollTo(0, 1)
+            }
+
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                // Allow all URLs to be loaded in the WebView
+                return false
+            }
+
+            override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
+                super.onReceivedError(view, request, error)
+                Log.e(TAG, "Web error: ${error?.description}")
+                if (error?.description?.contains("ERR_BLOCKED_BY_ORB") == true) {
+                    orbRetryCount++
+                    if (orbRetryCount <= MAX_ORB_RETRIES) {
+                        Log.w(TAG, "ORB error detected, retrying... (Attempt $orbRetryCount)")
+                        handler.post {
+                            // Clear WebView cache before reloading to ensure fresh content
+                            webView.clearCache(true)
+                            handler.postDelayed({ view?.reload() }, RELOAD_DELAY)
+                        }
+                    } else {
+                        Log.e(TAG, "Max ORB retries reached. Showing fallback page.")
+                        handler.post {
+                            // Load a local fallback page or show an error message
+                            val fallbackHtml = """
+                                <html>
+                                    <head>
+                                        <title>PWA Load Error</title>
+                                        <style>
+                                            body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+                                            .error { color: red; }
+                                        </style>
+                                    </head>
+                                    <body>
+                                        <h1>PWA Load Error</h1>
+                                        <p class="error">Failed to load the PWA due to network restrictions.</p>
+                                        <p>Please disable battery saver or data saver mode and try again.</p>
+                                    </body>
+                                </html>
+                            """.trimIndent()
+                            webView.loadData(fallbackHtml, "text/html", "UTF-8")
+                        }
+                    }
+                } else {
+                    Toast.makeText(this@PwaViewerActivity, "Error loading PWA: ${error?.description}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+        startHttpServerAndLoadPwa()
+    }
+
+    private fun startHttpServerAndLoadPwa() {
+        if (pwaUuid == null) {
+            Toast.makeText(this, "PWA UUID not available", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        // Check network connectivity
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, "No internet connection available", Toast.LENGTH_LONG).show()
+            // Still try to load the PWA as it might have offline capabilities
+        }
+
+        try {
+            // Generate a unique port for the PWA
+            serverPort = generateUniquePort(pwaUuid!!)
+            
+            val serverIntent = Intent(this, PwaHttpServerService::class.java).apply {
+                action = PwaHttpServerService.ACTION_START_SERVER
+                putExtra(PwaHttpServerService.EXTRA_PWA_UUID, pwaUuid)
+                putExtra(PwaHttpServerService.EXTRA_PORT, serverPort)
+            }
+            startService(serverIntent)
+
+            handler.postDelayed({
+                checkServerAndLoadPwa()
+            }, SERVER_START_DELAY)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error starting HTTP server or loading PWA: ${e.message}")
+            Toast.makeText(this, "Error loading PWA", Toast.LENGTH_LONG).show()
+            finish()
+        }
+    }
+
+    private fun checkServerAndLoadPwa() {
+        thread {
+            try {
+                val url = URL("http://localhost:$serverPort/")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+
+                val responseCode = connection.responseCode
+                connection.disconnect()
+
+                if (responseCode == 200) {
+                    handler.post {
+                        setContentView(webView) // Switch to WebView after server is ready
+                        val serverUrl = "http://localhost:$serverPort/?t=${System.currentTimeMillis()}"
+                        Log.d(TAG, "Loading PWA from local server: $serverUrl")
+                        webView.loadUrl(serverUrl)
+                    }
+                } else {
+                    Log.e(TAG, "Server responded with error code: $responseCode")
+                    handler.post {
+                        Toast.makeText(this, "Server error: $responseCode", Toast.LENGTH_LONG).show()
+                        finish()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Server not responding: ${e.message}")
+                handler.post {
+                    Toast.makeText(this, "Failed to connect to PWA server", Toast.LENGTH_LONG).show()
+                    finish()
+                }
+            }
+        }
+    }
+
+    private fun generateUniquePort(uuid: String): Int {
+        val hash = uuid.hashCode()
+        val portOffset = Math.abs(hash) % SERVER_PORT_RANGE
+        return SERVER_PORT_BASE + portOffset
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        handler.removeCallbacksAndMessages(null)
+        stopHttpServer()
+        
+        // Unregister receiver for PWA rework notifications
+        try {
+            unregisterReceiver(pwaReworkedReceiver)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to unregister receiver", e)
+        }
+    }
+
+    private fun stopHttpServer() {
+        try {
+            val serverIntent = Intent(this, PwaHttpServerService::class.java).apply {
+                action = PwaHttpServerService.ACTION_STOP_SERVER
+                putExtra(PwaHttpServerService.EXTRA_PORT, serverPort)
+            }
+            startService(serverIntent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping HTTP server: ${e.message}")
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (webView.canGoBack()) {
+        if (::webView.isInitialized && webView.canGoBack()) {
             webView.goBack()
         } else {
             super.onBackPressed()
         }
     }
-    
-    override fun onDestroy() {
-        webView.destroy()
-        super.onDestroy()
+
+    // Handle network connectivity issues
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
+        return networkCapabilities != null && (
+                networkCapabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
+                networkCapabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                networkCapabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET))
     }
 }
