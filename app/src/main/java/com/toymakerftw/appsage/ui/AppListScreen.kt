@@ -60,16 +60,10 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
     var pwas by remember { mutableStateOf(emptyList<PwaManager.PwaInfo>()) }
     var isLoading by remember { mutableStateOf(true) }
     val listState = rememberLazyListState()
-    val firstVisibleItemIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
-    
-    // Animate items when they come into view
-    val animatedItems = remember { mutableStateListOf<Boolean>() }
     
     LaunchedEffect(Unit) {
         pwas = pwaManager.getGeneratedPwas()
         isLoading = false
-        // Initialize animation states
-        repeat(pwas.size) { animatedItems.add(false) }
     }
 
     // Refresh when deletion happens
@@ -77,125 +71,82 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
         if (viewModel.uiState.value.pwaDeleted) {
             pwas = pwaManager.getGeneratedPwas()
             viewModel.clearPwaDeleted()
-            // Reset animation states
-            animatedItems.clear()
-            repeat(pwas.size) { animatedItems.add(false) }
-        }
-    }
-    
-    // Trigger animations when items become visible
-    LaunchedEffect(firstVisibleItemIndex) {
-        val visibleRange = firstVisibleItemIndex..(firstVisibleItemIndex + 3)
-        visibleRange.forEach { index ->
-            if (index < animatedItems.size && !animatedItems[index]) {
-                delay(index * 50L) // Stagger the animations
-                animatedItems[index] = true
-            }
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+                        )
                     )
                 )
-            )
-            .padding(20.dp)
-    ) {
-        // Header with animation
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(
-                initialOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300)),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(animationSpec = tween(300))
+                .padding(20.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Header with animation
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    initialOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
             ) {
-                Box(
+                Column(
                     modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(bottom = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = "📱", fontSize = 24.sp)
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Your App Collection",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                Text(
-                    text = "${pwas.size} ${if (pwas.size == 1) "app" else "apps"} generated",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-        }
-
-        if (isLoading) {
-            // Loading state with animation
-            LoadingState()
-        } else if (pwas.isEmpty()) {
-            // Empty state with animation
-            EmptyState(navController = navController)
-        } else {
-            // PWA list with staggered animations
-            LazyColumn(
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 80.dp) // Space for bottom nav
-            ) {
-                itemsIndexed(pwas) { index, pwa ->
-                    val isVisible = remember { mutableStateOf(index < 3) }
-                    
-                    LaunchedEffect(firstVisibleItemIndex) {
-                        if (index >= firstVisibleItemIndex - 1 && index <= firstVisibleItemIndex + 3) {
-                            isVisible.value = true
-                        }
-                    }
-                    
-                    AnimatedVisibility(
-                        visible = isVisible.value,
-                        enter = slideInVertically(
-                            initialOffsetY = { 40 },
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                delayMillis = index * 50,
-                                easing = FastOutSlowInEasing
-                            )
-                        ) + fadeIn(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                delayMillis = index * 50,
-                                easing = FastOutSlowInEasing
-                            )
-                        ),
-                        exit = slideOutVertically(
-                            targetOffsetY = { -40 },
-                            animationSpec = tween(300, easing = FastOutSlowInEasing)
-                        ) + fadeOut(animationSpec = tween(300))
+                    Box(
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
                     ) {
+                        Text(text = "📱", fontSize = 24.sp)
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Your App Collection",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        text = "${pwas.size} ${if (pwas.size == 1) "app" else "apps"} generated",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+
+            if (isLoading) {
+                LoadingState()
+            } else if (pwas.isEmpty()) {
+                EmptyState(navController = navController)
+            } else {
+                LazyColumn(
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp)
+                ) {
+                    itemsIndexed(pwas) { index, pwa ->
                         AppCard(
                             pwa = pwa,
                             navController = navController,

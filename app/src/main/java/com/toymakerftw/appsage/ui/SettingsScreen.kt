@@ -67,131 +67,144 @@ fun SettingsScreen(
         showApiKeySuccess = !apiKey.isNullOrBlank()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+                        )
                     )
                 )
-            )
-            .verticalScroll(scrollState)
-            .padding(20.dp)
-    ) {
-        // Header with animation
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(
-                initialOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300)),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(animationSpec = tween(300))
+                .verticalScroll(scrollState)
+                .padding(20.dp)
         ) {
-            SettingsHeader(
-                modifier = Modifier.scale(headerScale),
-                alpha = headerAlpha
-            )
-        }
-
-        // API Configuration Card with animation
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(
-                initialOffsetY = { 40 },
-                animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(animationSpec = tween(300))
-        ) {
-            SettingsSectionCard(
-                icon = Icons.Default.Lock,
-                title = "API Configuration",
-                subtitle = "Secure API key management"
+            // Header with animation
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    initialOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
             ) {
-                ApiKeyConfigSection(
-                    newApiKey = newApiKey,
-                    onApiKeyChange = {
-                        newApiKey = it
-                        if (showApiKeySuccess) showApiKeySuccess = false
-                    },
-                    isPasswordVisible = isPasswordVisible,
-                    onPasswordVisibilityToggle = { isPasswordVisible = !isPasswordVisible },
-                    showSuccess = showApiKeySuccess,
-                    onSave = {
-                        settingsViewModel.setApiKey(newApiKey)
-                        showApiKeySuccess = true
-                        Toast.makeText(
-                            context,
-                            "API key saved successfully!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
-                    onClear = {
-                        settingsViewModel.clearApiKey()
-                        newApiKey = ""
-                        showApiKeySuccess = false
-                        Toast.makeText(
-                            context,
-                            "API key cleared",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                SettingsHeader(
+                    modifier = Modifier.scale(headerScale),
+                    alpha = headerAlpha
                 )
             }
+
+            // API Configuration Card with animation
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    initialOffsetY = { 40 },
+                    animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                SettingsSectionCard(
+                    icon = Icons.Default.Lock,
+                    title = "API Configuration",
+                    subtitle = "Secure API key management"
+                ) {
+                    ApiKeyConfigSection(
+                        newApiKey = newApiKey,
+                        onApiKeyChange = {
+                            newApiKey = it
+                            if (showApiKeySuccess) showApiKeySuccess = false
+                        },
+                        isPasswordVisible = isPasswordVisible,
+                        onPasswordVisibilityToggle = { isPasswordVisible = !isPasswordVisible },
+                        showSuccess = showApiKeySuccess,
+                        onSave = {
+                            settingsViewModel.setApiKey(newApiKey)
+                            showApiKeySuccess = true
+                            Toast.makeText(
+                                context,
+                                "API key saved successfully!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        },
+                        onClear = {
+                            settingsViewModel.clearApiKey()
+                            newApiKey = ""
+                            showApiKeySuccess = false
+                            Toast.makeText(
+                                context,
+                                "API key cleared",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Info Cards with animation
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    initialOffsetY = { 40 },
+                    animationSpec = tween(300, delayMillis = 200, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300, delayMillis = 200)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                InfoCard(
+                    icon = Icons.Default.Info,
+                    title = "About API Keys",
+                    content = "Appsage requires an OpenRouter API key to generate PWAs. You can get a free key from OpenRouter. Your key is stored securely on your device and never sent to our servers.",
+                    backgroundColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
+                    iconColor = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    initialOffsetY = { 40 },
+                    animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                InfoCard(
+                    icon = Icons.Default.Security,
+                    title = "Security & Privacy",
+                    content = "Your API key is encrypted and stored securely on your device. We never store or transmit your prompts or generated code. All processing happens directly between your device and OpenRouter.",
+                    backgroundColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.1f),
+                    iconColor = MaterialTheme.colorScheme.secondary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(80.dp)) // Extra space for bottom nav
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Info Cards with animation
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(
-                initialOffsetY = { 40 },
-                animationSpec = tween(300, delayMillis = 200, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300, delayMillis = 200)),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(animationSpec = tween(300))
+        // Bottom Navigation - positioned at bottom
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
         ) {
-            InfoCard(
-                icon = Icons.Default.Info,
-                title = "About API Keys",
-                content = "Appsage requires an OpenRouter API key to generate PWAs. You can get a free key from OpenRouter. Your key is stored securely on your device and never sent to our servers.",
-                backgroundColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
-                iconColor = MaterialTheme.colorScheme.primary
-            )
+            AppsageBottomNavigation(navController)
         }
-
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(
-                initialOffsetY = { 40 },
-                animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(animationSpec = tween(300))
-        ) {
-            InfoCard(
-                icon = Icons.Default.Security,
-                title = "Security & Privacy",
-                content = "Your API key is encrypted and stored securely on your device. We never store or transmit your prompts or generated code. All processing happens directly between your device and OpenRouter.",
-                backgroundColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.1f),
-                iconColor = MaterialTheme.colorScheme.secondary
-            )
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 

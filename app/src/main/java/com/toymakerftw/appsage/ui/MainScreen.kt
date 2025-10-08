@@ -55,157 +55,163 @@ fun MainScreen(
         label = "header_alpha"
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+                        )
                     )
                 )
-            )
-            .verticalScroll(scrollState)
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        // Header with animation
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(
-                initialOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300)),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(animationSpec = tween(300))
+                .verticalScroll(scrollState)
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            MainHeader(
-                modifier = Modifier.scale(headerScale),
-                alpha = headerAlpha
-            )
-        }
+            // Header with animation
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    initialOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                MainHeader(
+                    modifier = Modifier.scale(headerScale),
+                    alpha = headerAlpha
+                )
+            }
 
-        // API Key Status Card with animation
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(
-                initialOffsetY = { 40 },
-                animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(animationSpec = tween(300))
-        ) {
-            ApiKeyStatusCard(
-                hasApiKey = !uiState.apiKey.isNullOrBlank(),
-                onConfigure = { navController?.navigate("settings") }
-            )
-        }
+            // API Key Status Card with animation
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    initialOffsetY = { 40 },
+                    animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                ApiKeyStatusCard(
+                    hasApiKey = !uiState.apiKey.isNullOrBlank(),
+                    onConfigure = { navController?.navigate("settings") }
+                )
+            }
 
-        // Prompt Input Card with animation
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(
-                initialOffsetY = { 40 },
-                animationSpec = tween(300, delayMillis = 200, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300, delayMillis = 200)),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(animationSpec = tween(300))
-        ) {
-            PromptInputCard(
-                prompt = prompt,
-                onPromptChange = { prompt = it },
-                isGenerating = uiState.isGenerating
-            )
-        }
+            // Prompt Input Card with animation
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    initialOffsetY = { 40 },
+                    animationSpec = tween(300, delayMillis = 200, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300, delayMillis = 200)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                PromptInputCard(
+                    prompt = prompt,
+                    onPromptChange = { prompt = it },
+                    isGenerating = uiState.isGenerating
+                )
+            }
 
-        // Generate Button with animation
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(
-                initialOffsetY = { 40 },
-                animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(animationSpec = tween(300))
-        ) {
-            GenerateButton(
-                prompt = prompt,
-                uiState = uiState,
-                onGenerate = {
-                    if (!uiState.apiKey.isNullOrBlank()) {
-                        viewModel.generatePwa(prompt)
-                    } else {
-                        navController?.navigate("settings")
+            // Generate Button with animation
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    initialOffsetY = { 40 },
+                    animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                GenerateButton(
+                    prompt = prompt,
+                    uiState = uiState,
+                    onGenerate = {
+                        if (!uiState.apiKey.isNullOrBlank()) {
+                            viewModel.generatePwa(prompt)
+                        } else {
+                            navController?.navigate("settings")
+                        }
                     }
-                }
-            )
-        }
+                )
+            }
 
-        // Progress Timeline with animation
-        AnimatedVisibility(
-            visible = uiState.isGenerating,
-            enter = expandVertically(
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeIn(
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ),
-            exit = shrinkVertically(
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            )
-        ) {
-            ProgressTimeline(
-                currentStep = uiState.generationStep ?: 0,
-                totalSteps = 4
-            )
-        }
+            // Progress Timeline with animation
+            AnimatedVisibility(
+                visible = uiState.isGenerating,
+                enter = expandVertically(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeIn(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ),
+                exit = shrinkVertically(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                )
+            ) {
+                ProgressTimeline(
+                    currentStep = uiState.generationStep ?: 0,
+                    totalSteps = 4
+                )
+            }
 
-        // Error Message with animation
-        AnimatedVisibility(
-            visible = uiState.errorMessage != null,
-            enter = slideInVertically(
-                initialOffsetY = { 40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeIn(
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            )
-        ) {
-            ErrorCard(errorMessage = uiState.errorMessage ?: "")
-        }
+            // Error Message with animation
+            AnimatedVisibility(
+                visible = uiState.errorMessage != null,
+                enter = slideInVertically(
+                    initialOffsetY = { 40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeIn(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                )
+            ) {
+                ErrorCard(errorMessage = uiState.errorMessage ?: "")
+            }
 
-        // Success Message with animation
-        AnimatedVisibility(
-            visible = uiState.pwaGenerated,
-            enter = slideInVertically(
-                initialOffsetY = { 40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeIn(
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            )
-        ) {
-            SuccessCard(onViewApps = { navController?.navigate("app_list") })
+            // Success Message with animation
+            AnimatedVisibility(
+                visible = uiState.pwaGenerated,
+                enter = slideInVertically(
+                    initialOffsetY = { 40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeIn(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                )
+            ) {
+                SuccessCard(onViewApps = { navController?.navigate("app_list") })
+            }
+
+            Spacer(modifier = Modifier.height(80.dp)) // Extra space for bottom nav
         }
     }
 }
