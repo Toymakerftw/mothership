@@ -8,6 +8,7 @@ import com.toymakerftw.appsage.api.AppsageApi
 import com.toymakerftw.appsage.api.Message
 import com.toymakerftw.appsage.api.OpenRouterRequest
 import com.toymakerftw.appsage.data.SettingsRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -30,6 +31,7 @@ class ReworkViewModel(
             try {
                 // Step 1: Analyzing prompt
                 _uiState.value = _uiState.value.copy(generationStep = 1)
+                delay(500) // Small delay to ensure UI updates
                 
                 val apiKey = settingsRepository.getApiKey()
                 if (apiKey.isNullOrEmpty()) {
@@ -45,6 +47,7 @@ class ReworkViewModel(
 
                 // Step 2: Reading existing files
                 _uiState.value = _uiState.value.copy(generationStep = 2)
+                delay(500) // Small delay to ensure UI updates
                 
                 val filesToRead = listOf("index.html", "style.css", "script.js", "manifest.json")
                 val fileContents = mutableMapOf<String, String>()
@@ -79,6 +82,7 @@ class ReworkViewModel(
 
                 // Step 3: Generating code
                 _uiState.value = _uiState.value.copy(generationStep = 3)
+                delay(500) // Small delay to ensure UI updates
 
                 val request = OpenRouterRequest(
                     model = "x-ai/grok-4-fast", // Using default model for rework
@@ -96,6 +100,7 @@ class ReworkViewModel(
                     val content = response.choices[0].message.content
                     // Step 4: Finalizing
                     _uiState.value = _uiState.value.copy(generationStep = 4)
+                    delay(500) // Small delay to ensure UI updates
                     updatePwaCode(uuid, content, fileContents)
                 }
             } catch (e: Exception) {
@@ -129,7 +134,8 @@ class ReworkViewModel(
             if (updated) {
                 _uiState.value = _uiState.value.copy(
                     isReworking = false,
-                    pwaReworked = true
+                    pwaReworked = true,
+                    generationStep = null // Reset to null when complete
                 )
             } else {
                 // If JSON parsing didn't work, try extracting from code blocks
@@ -162,12 +168,14 @@ class ReworkViewModel(
                 if (updated) {
                     _uiState.value = _uiState.value.copy(
                         isReworking = false,
-                        pwaReworked = true
+                        pwaReworked = true,
+                        generationStep = null // Reset to null when complete
                     )
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isReworking = false,
-                        errorMessage = "Could not parse the response for rework"
+                        errorMessage = "Could not parse the response for rework",
+                        generationStep = null // Reset to null when complete
                     )
                 }
             }
@@ -175,7 +183,8 @@ class ReworkViewModel(
             Log.e("ReworkViewModel", "Error updating PWA code", e)
             _uiState.value = _uiState.value.copy(
                 isReworking = false,
-                errorMessage = "Error updating PWA code: ${e.message}"
+                errorMessage = "Error updating PWA code: ${e.message}",
+                generationStep = null // Reset to null when complete
             )
         }
     }

@@ -91,9 +91,9 @@ fun MainScreen(
                 )
             }
 
-            // API Key Status Card with animation - Always visible
+            // API Key Status Card - Hidden during generation
             AnimatedVisibility(
-                visible = true,
+                visible = !uiState.isGenerating,
                 enter = slideInVertically(
                     initialOffsetY = { 40 },
                     animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
@@ -107,6 +107,21 @@ fun MainScreen(
                     hasApiKey = !uiState.apiKey.isNullOrBlank(),
                     onConfigure = { navController?.navigate("settings") }
                 )
+            }
+
+            // User Prompt Card - Only visible during generation
+            AnimatedVisibility(
+                visible = uiState.isGenerating,
+                enter = slideInVertically(
+                    initialOffsetY = { 40 },
+                    animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                UserPromptCard(prompt = prompt)
             }
 
             // Prompt Input Card - Hidden during generation
@@ -347,6 +362,73 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
                         fontWeight = FontWeight.SemiBold
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserPromptCard(prompt: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Psychology,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "Creating Your App",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Based on your request",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Text(
+                    text = prompt,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(16.dp)
+                )
             }
         }
     }

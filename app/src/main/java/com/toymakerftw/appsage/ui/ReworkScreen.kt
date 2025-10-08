@@ -1,3 +1,4 @@
+// ReworkScreen.kt
 package com.toymakerftw.appsage.ui
 
 import android.content.Intent
@@ -115,9 +116,9 @@ fun ReworkScreen(
             }
         }
 
-        // UUID Card - Always visible
+        // UUID Card - Hidden during rework
         AnimatedVisibility(
-            visible = true,
+            visible = !uiState.isReworking,
             enter = slideInVertically(
                 initialOffsetY = { 40 },
                 animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
@@ -182,6 +183,21 @@ fun ReworkScreen(
                     }
                 }
             }
+        }
+
+        // User Prompt Card - Only visible during rework
+        AnimatedVisibility(
+            visible = uiState.isReworking,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            ReworkPromptCard(prompt = reworkPrompt)
         }
 
         // Rework Prompt - Hidden during rework
@@ -373,7 +389,7 @@ fun ReworkScreen(
             )
         ) {
             ReworkProgressTimeline(
-                currentStep = uiState.generationStep ?: 0,
+                currentStep = uiState.generationStep ?: 1,
                 totalSteps = 4
             )
         }
@@ -484,6 +500,73 @@ fun ReworkScreen(
 }
 
 @Composable
+private fun ReworkPromptCard(prompt: String) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "Modifying Your App",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Based on your modifications",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Text(
+                    text = prompt,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ReworkProgressTimeline(
     currentStep: Int,
     totalSteps: Int
@@ -521,8 +604,8 @@ private fun ReworkProgressTimeline(
                     icon = step.icon,
                     title = step.title,
                     subtitle = step.subtitle,
-                    isCompleted = index < currentStep,
-                    isActive = index == currentStep,
+                    isCompleted = index < currentStep - 1, // Fixed: Adjusted for 1-based indexing
+                    isActive = index == currentStep - 1, // Fixed: Adjusted for 1-based indexing
                     isLast = index == steps.size - 1
                 )
             }
@@ -539,6 +622,18 @@ private fun TimelineItem(
     isActive: Boolean,
     isLast: Boolean
 ) {
+    // Add animation for the active step
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.9f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
     Row(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -567,8 +662,9 @@ private fun TimelineItem(
                         modifier = Modifier.size(20.dp)
                     )
                 } else if (isActive) {
+                    // Add pulsing animation to the active step
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(20.dp).scale(scale),
                         color = MaterialTheme.colorScheme.primary,
                         strokeWidth = 2.dp
                     )
