@@ -1,17 +1,19 @@
 package com.toymakerftw.appsage.ui
 
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -20,7 +22,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -43,32 +47,70 @@ fun SettingsScreen(
     var isPasswordVisible by remember { mutableStateOf(false) }
     var showApiKeySuccess by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val scrollState = rememberScrollState()
+    
+    // Animate header on scroll
+    val headerScale by animateFloatAsState(
+        targetValue = if (scrollState.value > 100) 0.9f else 1f,
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "header_scale"
+    )
+    
+    val headerAlpha by animateFloatAsState(
+        targetValue = if (scrollState.value > 100) 0.8f else 1f,
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "header_alpha"
+    )
 
     LaunchedEffect(apiKey) {
         newApiKey = apiKey ?: ""
         showApiKeySuccess = !apiKey.isNullOrBlank()
     }
 
-    Scaffold(
-        bottomBar = { AppsageBottomNavigation(navController) }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
-                        )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
                     )
                 )
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp)
+            )
+            .verticalScroll(scrollState)
+            .padding(20.dp)
+    ) {
+        // Header with animation
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                initialOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
         ) {
-            SettingsHeader()
+            SettingsHeader(
+                modifier = Modifier.scale(headerScale),
+                alpha = headerAlpha
+            )
+        }
 
+        // API Configuration Card with animation
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
             SettingsSectionCard(
                 icon = Icons.Default.Lock,
                 title = "API Configuration",
@@ -104,9 +146,22 @@ fun SettingsScreen(
                     }
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
+        // Info Cards with animation
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 200, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 200)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
             InfoCard(
                 icon = Icons.Default.Info,
                 title = "About API Keys",
@@ -114,7 +169,19 @@ fun SettingsScreen(
                 backgroundColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
                 iconColor = MaterialTheme.colorScheme.primary
             )
+        }
 
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
             InfoCard(
                 icon = Icons.Default.Security,
                 title = "Security & Privacy",
@@ -122,16 +189,27 @@ fun SettingsScreen(
                 backgroundColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.1f),
                 iconColor = MaterialTheme.colorScheme.secondary
             )
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
+
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
 @Composable
-private fun SettingsHeader() {
+private fun SettingsHeader(modifier: Modifier = Modifier, alpha: Float = 1f) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(bottom = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -143,19 +221,19 @@ private fun SettingsHeader() {
                 .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "⚙️", fontSize = 24.sp)
+            Text(text = "⚙️", fontSize = 24.sp, modifier = Modifier.scale(scale))
         }
         Spacer(modifier = Modifier.height(12.dp))
         Text(
             text = "Settings",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary.copy(alpha = alpha)
         )
         Text(
             text = "Configure your Appsage experience",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f * alpha),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 4.dp)
         )
@@ -179,6 +257,15 @@ private fun ColumnScope.ApiKeyConfigSection(
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
         modifier = Modifier.padding(bottom = 16.dp)
     )
+    
+    // Animated text field
+    var isFocused by remember { mutableStateOf(false) }
+    val borderColor by animateColorAsState(
+        targetValue = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "border_color"
+    )
+    
     OutlinedTextField(
         value = newApiKey,
         onValueChange = onApiKeyChange,
@@ -227,32 +314,30 @@ private fun ColumnScope.ApiKeyConfigSection(
             .padding(bottom = 8.dp),
         shape = RoundedCornerShape(12.dp),
         singleLine = true,
-        supportingText = if (newApiKey.isNotBlank() && !newApiKey.startsWith("sk-or-")) {
-            {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "API key should start with 'sk-or-'",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        } else null
+        colors = TextFieldDefaults.outlinedTextFieldColors(
+            focusedBorderColor = borderColor,
+            unfocusedBorderColor = borderColor
+        ),
+        keyboardOptions = KeyboardOptions(),
+        keyboardActions = KeyboardActions(),
+        interactionSource = remember { MutableInteractionSource() },
+        textStyle = MaterialTheme.typography.bodyMedium,
+        readOnly = false,
+        enabled = true
     )
 
     AnimatedVisibility(
         visible = showSuccess && newApiKey.isNotBlank(),
-        enter = expandVertically() + fadeIn(),
-        exit = shrinkVertically() + fadeOut()
+        enter = expandVertically(
+            animationSpec = tween(300, easing = FastOutSlowInEasing)
+        ) + fadeIn(
+            animationSpec = tween(300, easing = FastOutSlowInEasing)
+        ),
+        exit = shrinkVertically(
+            animationSpec = tween(300, easing = FastOutSlowInEasing)
+        ) + fadeOut(
+            animationSpec = tween(300, easing = FastOutSlowInEasing)
+        )
     ) {
         Surface(
             modifier = Modifier
@@ -286,10 +371,23 @@ private fun ColumnScope.ApiKeyConfigSection(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Save button with animation
+        var isSavePressed by remember { mutableStateOf(false) }
+        val saveScale by animateFloatAsState(
+            targetValue = if (isSavePressed) 0.95f else 1f,
+            animationSpec = tween(100, easing = FastOutSlowInEasing),
+            label = "save_scale"
+        )
+        
         Button(
-            onClick = onSave,
+            onClick = {
+                isSavePressed = true
+                onSave()
+            },
             enabled = newApiKey.isNotBlank() && newApiKey.startsWith("sk-or-"),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .scale(saveScale),
             shape = RoundedCornerShape(12.dp),
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
@@ -304,10 +402,24 @@ private fun ColumnScope.ApiKeyConfigSection(
                 fontWeight = FontWeight.SemiBold
             )
         }
+        
+        // Clear button with animation
+        var isClearPressed by remember { mutableStateOf(false) }
+        val clearScale by animateFloatAsState(
+            targetValue = if (isClearPressed) 0.95f else 1f,
+            animationSpec = tween(100, easing = FastOutSlowInEasing),
+            label = "clear_scale"
+        )
+        
         OutlinedButton(
-            onClick = onClear,
+            onClick = {
+                isClearPressed = true
+                onClear()
+            },
             enabled = newApiKey.isNotBlank(),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .scale(clearScale),
             shape = RoundedCornerShape(12.dp),
             border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outline),
             contentPadding = PaddingValues(vertical = 12.dp)
@@ -334,11 +446,21 @@ fun SettingsSectionCard(
     subtitle: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = tween(100, easing = FastOutSlowInEasing),
+        label = "scale"
+    )
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            .padding(bottom = 20.dp)
+            .scale(scale),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isPressed) 8.dp else 4.dp
+        ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -393,15 +515,26 @@ fun InfoCard(
     icon: ImageVector,
     title: String,
     content: String,
-    backgroundColor: androidx.compose.ui.graphics.Color,
-    iconColor: androidx.compose.ui.graphics.Color
+    backgroundColor: Color,
+    iconColor: Color
 ) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = tween(100, easing = FastOutSlowInEasing),
+        label = "scale"
+    )
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 8.dp)
+            .scale(scale),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor)
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isPressed) 4.dp else 2.dp
+        )
     ) {
         Row(
             modifier = Modifier

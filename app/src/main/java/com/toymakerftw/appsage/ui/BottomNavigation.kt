@@ -1,13 +1,28 @@
 package com.toymakerftw.appsage.ui
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -21,18 +36,52 @@ fun AppsageBottomNavigation(navController: NavController?) {
     
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp
+        tonalElevation = 8.dp,
+        modifier = Modifier.clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
     ) {
         BottomNavItem.items.forEach { item ->
+            val isSelected = currentRoute == item.route
+            val interactionSource = remember { MutableInteractionSource() }
+            val isPressed by interactionSource.collectIsPressedAsState()
+            
+            val scale by animateFloatAsState(
+                targetValue = if (isPressed) 0.9f else 1f,
+                animationSpec = tween(100, easing = FastOutSlowInEasing),
+                label = "scale"
+            )
+            
+            val iconScale by animateFloatAsState(
+                targetValue = if (isSelected) 1.2f else 1f,
+                animationSpec = tween(300, easing = FastOutSlowInEasing),
+                label = "icon_scale"
+            )
+            
             NavigationBarItem(
                 icon = {
                     Icon(
                         imageVector = item.icon,
-                        contentDescription = item.label
+                        contentDescription = item.label,
+                        modifier = Modifier.scale(iconScale)
                     )
                 },
-                label = { Text(item.label) },
-                selected = currentRoute == item.route,
+                label = { 
+                    AnimatedVisibility(
+                        visible = isSelected,
+                        enter = expandVertically(
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeIn(
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ),
+                        exit = shrinkVertically(
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeOut(
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        )
+                    ) {
+                        Text(item.label)
+                    }
+                },
+                selected = isSelected,
                 onClick = {
                     if (currentRoute != item.route) {
                         navController.navigate(item.route) {
@@ -48,6 +97,8 @@ fun AppsageBottomNavigation(navController: NavController?) {
                         }
                     }
                 },
+                interactionSource = interactionSource,
+                modifier = Modifier.scale(scale),
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = MaterialTheme.colorScheme.primary,
                     selectedTextColor = MaterialTheme.colorScheme.primary,

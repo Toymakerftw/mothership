@@ -6,17 +6,16 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,7 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -45,6 +47,7 @@ import com.toymakerftw.appsage.PwaViewerActivity
 import com.toymakerftw.appsage.service.PwaManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.lingala.zip4j.ZipFile
 import java.io.File
@@ -56,10 +59,17 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
     val pwaManager = remember { PwaManager(context) }
     var pwas by remember { mutableStateOf(emptyList<PwaManager.PwaInfo>()) }
     var isLoading by remember { mutableStateOf(true) }
+    val listState = rememberLazyListState()
+    val firstVisibleItemIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
+    
+    // Animate items when they come into view
+    val animatedItems = remember { mutableStateListOf<Boolean>() }
     
     LaunchedEffect(Unit) {
         pwas = pwaManager.getGeneratedPwas()
         isLoading = false
+        // Initialize animation states
+        repeat(pwas.size) { animatedItems.add(false) }
     }
 
     // Refresh when deletion happens
@@ -67,6 +77,20 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
         if (viewModel.uiState.value.pwaDeleted) {
             pwas = pwaManager.getGeneratedPwas()
             viewModel.clearPwaDeleted()
+            // Reset animation states
+            animatedItems.clear()
+            repeat(pwas.size) { animatedItems.add(false) }
+        }
+    }
+    
+    // Trigger animations when items become visible
+    LaunchedEffect(firstVisibleItemIndex) {
+        val visibleRange = firstVisibleItemIndex..(firstVisibleItemIndex + 3)
+        visibleRange.forEach { index ->
+            if (index < animatedItems.size && !animatedItems[index]) {
+                delay(index * 50L) // Stagger the animations
+                animatedItems[index] = true
+            }
         }
     }
 
@@ -83,7 +107,18 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
             )
             .padding(20.dp)
     ) {
-            // Header
+        // Header with animation
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                initialOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -116,19 +151,51 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
+        }
 
-            if (isLoading) {
-                // Loading state
-                LoadingState()
-            } else if (pwas.isEmpty()) {
-                // Empty state
-                EmptyState(navController = navController)
-            } else {
-                // PWA list
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(pwas) { pwa ->
+        if (isLoading) {
+            // Loading state with animation
+            LoadingState()
+        } else if (pwas.isEmpty()) {
+            // Empty state with animation
+            EmptyState(navController = navController)
+        } else {
+            // PWA list with staggered animations
+            LazyColumn(
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 80.dp) // Space for bottom nav
+            ) {
+                itemsIndexed(pwas) { index, pwa ->
+                    val isVisible = remember { mutableStateOf(index < 3) }
+                    
+                    LaunchedEffect(firstVisibleItemIndex) {
+                        if (index >= firstVisibleItemIndex - 1 && index <= firstVisibleItemIndex + 3) {
+                            isVisible.value = true
+                        }
+                    }
+                    
+                    AnimatedVisibility(
+                        visible = isVisible.value,
+                        enter = slideInVertically(
+                            initialOffsetY = { 40 },
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                delayMillis = index * 50,
+                                easing = FastOutSlowInEasing
+                            )
+                        ) + fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                delayMillis = index * 50,
+                                easing = FastOutSlowInEasing
+                            )
+                        ),
+                        exit = slideOutVertically(
+                            targetOffsetY = { -40 },
+                            animationSpec = tween(300, easing = FastOutSlowInEasing)
+                        ) + fadeOut(animationSpec = tween(300))
+                    ) {
                         AppCard(
                             pwa = pwa,
                             navController = navController,
@@ -138,14 +205,25 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
                             }
                         )
                     }
-                    item { Spacer(modifier = Modifier.height(80.dp)) } // Space for bottom nav
                 }
             }
         }
+    }
 }
 
 @Composable
 private fun LoadingState() {
+    val infiniteTransition = rememberInfiniteTransition(label = "loading")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
     Card(
         modifier = Modifier.fillMaxSize(),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
@@ -208,6 +286,17 @@ private fun LoadingState() {
 
 @Composable
 private fun EmptyState(navController: NavController) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
     Card(
         modifier = Modifier.fillMaxSize(),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
@@ -242,7 +331,8 @@ private fun EmptyState(navController: NavController) {
                 ) {
                     Text(
                         text = "🌟",
-                        fontSize = 48.sp
+                        fontSize = 48.sp,
+                        modifier = Modifier.scale(scale)
                     )
                 }
 
@@ -299,24 +389,42 @@ fun AppCard(
     val hasIndexFile = remember(pwaDir) { File(pwaDir, "index.html").exists() }
     val rotationAngle by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        label = "expand_rotation"
+        label = "expand_rotation",
+        animationSpec = tween(300, easing = FastOutSlowInEasing)
     )
     var isInstalled by remember(pwa.uuid) {
         mutableStateOf(isShortcutInstalled(context, pwa.uuid))
     }
+    
+    // Card elevation animation
+    val elevation by animateDpAsState(
+        targetValue = if (expanded) 12.dp else 8.dp,
+        label = "card_elevation",
+        animationSpec = tween(300, easing = FastOutSlowInEasing)
+    )
+    
+    // Card scale animation on press
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        label = "card_scale",
+        animationSpec = tween(100, easing = FastOutSlowInEasing)
+    )
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .scale(scale)
             .combinedClickable(
                 onClick = {
+                    isPressed = true
                     launchPwa(pwa, context)
                 },
                 onLongClick = {
                     expanded = !expanded
                 }
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -332,7 +440,7 @@ fun AppCard(
                     .padding(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // App icon
+                // App icon with animation
                 Box(
                     modifier = Modifier
                         .size(56.dp)
@@ -403,7 +511,7 @@ fun AppCard(
                     }
                 }
 
-                // Expand indicator
+                // Expand indicator with animation
                 Icon(
                     imageVector = Icons.Default.Info,
                     contentDescription = "More options",
@@ -414,11 +522,19 @@ fun AppCard(
                 )
             }
 
-            // Expanded actions
+            // Expanded actions with animation
             AnimatedVisibility(
                 visible = expanded,
-                enter = expandVertically(),
-                exit = shrinkVertically()
+                enter = expandVertically(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeIn(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ),
+                exit = shrinkVertically(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                )
             ) {
                 Card(
                     modifier = Modifier

@@ -2,12 +2,12 @@
 
 package com.toymakerftw.appsage.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -20,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -39,6 +40,20 @@ fun MainScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var prompt by remember { mutableStateOf("") }
+    val scrollState = rememberScrollState()
+    
+    // Animate header on scroll
+    val headerScale by animateFloatAsState(
+        targetValue = if (scrollState.value > 100) 0.9f else 1f,
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "header_scale"
+    )
+    
+    val headerAlpha by animateFloatAsState(
+        targetValue = if (scrollState.value > 100) 0.8f else 1f,
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "header_alpha"
+    )
 
     Column(
         modifier = Modifier
@@ -51,44 +66,103 @@ fun MainScreen(
                     )
                 )
             )
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        // Header
-        MainHeader()
+        // Header with animation
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                initialOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            MainHeader(
+                modifier = Modifier.scale(headerScale),
+                alpha = headerAlpha
+            )
+        }
 
-        // API Key Status Card
-        ApiKeyStatusCard(
-            hasApiKey = !uiState.apiKey.isNullOrBlank(),
-            onConfigure = { navController?.navigate("settings") }
-        )
+        // API Key Status Card with animation
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            ApiKeyStatusCard(
+                hasApiKey = !uiState.apiKey.isNullOrBlank(),
+                onConfigure = { navController?.navigate("settings") }
+            )
+        }
 
-        // Prompt Input Card
-        PromptInputCard(
-            prompt = prompt,
-            onPromptChange = { prompt = it },
-            isGenerating = uiState.isGenerating
-        )
+        // Prompt Input Card with animation
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 200, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 200)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            PromptInputCard(
+                prompt = prompt,
+                onPromptChange = { prompt = it },
+                isGenerating = uiState.isGenerating
+            )
+        }
 
-        // Generate Button
-        GenerateButton(
-            prompt = prompt,
-            uiState = uiState,
-            onGenerate = {
-                if (!uiState.apiKey.isNullOrBlank()) {
-                    viewModel.generatePwa(prompt)
-                } else {
-                    navController?.navigate("settings")
+        // Generate Button with animation
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            GenerateButton(
+                prompt = prompt,
+                uiState = uiState,
+                onGenerate = {
+                    if (!uiState.apiKey.isNullOrBlank()) {
+                        viewModel.generatePwa(prompt)
+                    } else {
+                        navController?.navigate("settings")
+                    }
                 }
-            }
-        )
+            )
+        }
 
-        // Progress Timeline
+        // Progress Timeline with animation
         AnimatedVisibility(
             visible = uiState.isGenerating,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            enter = expandVertically(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ),
+            exit = shrinkVertically(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
         ) {
             ProgressTimeline(
                 currentStep = uiState.generationStep ?: 0,
@@ -96,20 +170,40 @@ fun MainScreen(
             )
         }
 
-        // Error Message
+        // Error Message with animation
         AnimatedVisibility(
             visible = uiState.errorMessage != null,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
         ) {
             ErrorCard(errorMessage = uiState.errorMessage ?: "")
         }
 
-        // Success Message
+        // Success Message with animation
         AnimatedVisibility(
             visible = uiState.pwaGenerated,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
         ) {
             SuccessCard(onViewApps = { navController?.navigate("app_list") })
         }
@@ -117,9 +211,20 @@ fun MainScreen(
 }
 
 @Composable
-private fun MainHeader() {
+private fun MainHeader(modifier: Modifier = Modifier, alpha: Float = 1f) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(bottom = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -131,7 +236,7 @@ private fun MainHeader() {
                 .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "🚀", fontSize = 24.sp)
+            Text(text = "🚀", fontSize = 24.sp, modifier = Modifier.scale(scale))
         }
         
         Spacer(modifier = Modifier.height(12.dp))
@@ -140,13 +245,13 @@ private fun MainHeader() {
             text = "Appsage",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primary.copy(alpha = alpha)
         )
         
         Text(
             text = "Describe your app, we'll build it",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f * alpha),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 4.dp)
         )
@@ -155,8 +260,23 @@ private fun MainHeader() {
 
 @Composable
 fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = tween(100, easing = FastOutSlowInEasing),
+        label = "scale"
+    )
+    
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale)
+            .clickable(
+                enabled = !hasApiKey,
+                onClick = onConfigure
+            ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (hasApiKey) {
@@ -164,6 +284,9 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
             } else {
                 MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
             }
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isPressed) 4.dp else 2.dp
         )
     ) {
         Row(
@@ -313,14 +436,25 @@ private fun GenerateButton(
     uiState: MainUiState,
     onGenerate: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = tween(100, easing = FastOutSlowInEasing),
+        label = "scale"
+    )
+    
     Button(
         onClick = onGenerate,
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp),
+            .height(56.dp)
+            .scale(scale),
         enabled = prompt.isNotBlank() && !uiState.isGenerating,
         shape = RoundedCornerShape(16.dp),
-        contentPadding = PaddingValues(vertical = 12.dp)
+        contentPadding = PaddingValues(vertical = 12.dp),
+        interactionSource = interactionSource
     ) {
         if (uiState.isGenerating) {
             CircularProgressIndicator(
@@ -411,6 +545,17 @@ private fun TimelineItem(
     isActive: Boolean,
     isLast: Boolean
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.9f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    
     Row(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -507,7 +652,8 @@ private fun ErrorCard(errorMessage: String) {
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
             modifier = Modifier
@@ -542,8 +688,19 @@ private fun ErrorCard(errorMessage: String) {
 
 @Composable
 private fun SuccessCard(onViewApps: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = tween(100, easing = FastOutSlowInEasing),
+        label = "scale"
+    )
+    
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
@@ -593,7 +750,8 @@ private fun SuccessCard(onViewApps: () -> Unit) {
                 onClick = onViewApps,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(vertical = 12.dp)
+                contentPadding = PaddingValues(vertical = 12.dp),
+                interactionSource = interactionSource
             ) {
                 Icon(
                     imageVector = Icons.Default.Apps,
