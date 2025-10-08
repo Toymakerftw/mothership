@@ -39,89 +39,92 @@ fun SettingsScreen(
     navController: NavController
 ) {
     val apiKey by settingsViewModel.apiKey.collectAsState()
-
     var newApiKey by remember { mutableStateOf(apiKey ?: "") }
     var isPasswordVisible by remember { mutableStateOf(false) }
     var showApiKeySuccess by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val scrollState = rememberScrollState()
 
     LaunchedEffect(apiKey) {
         newApiKey = apiKey ?: ""
         showApiKeySuccess = !apiKey.isNullOrBlank()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+    Scaffold(
+        bottomBar = { AppsageBottomNavigation(navController) }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
+                        )
                     )
                 )
-            )
-            .verticalScroll(scrollState)
-            .padding(20.dp)
-    ) {
-        SettingsHeader()
-
-        SettingsSectionCard(
-            icon = Icons.Default.Lock,
-            title = "API Configuration",
-            subtitle = "Secure API key management"
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp)
         ) {
-            ApiKeyConfigSection(
-                newApiKey = newApiKey,
-                onApiKeyChange = {
-                    newApiKey = it
-                    if (showApiKeySuccess) showApiKeySuccess = false
-                },
-                isPasswordVisible = isPasswordVisible,
-                onPasswordVisibilityToggle = { isPasswordVisible = !isPasswordVisible },
-                showSuccess = showApiKeySuccess,
-                onSave = {
-                    settingsViewModel.setApiKey(newApiKey)
-                    showApiKeySuccess = true
-                    Toast.makeText(
-                        context,
-                        "API key saved successfully!",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
-                onClear = {
-                    settingsViewModel.clearApiKey()
-                    newApiKey = ""
-                    showApiKeySuccess = false
-                    Toast.makeText(
-                        context,
-                        "API key cleared",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+            SettingsHeader()
+
+            SettingsSectionCard(
+                icon = Icons.Default.Lock,
+                title = "API Configuration",
+                subtitle = "Secure API key management"
+            ) {
+                ApiKeyConfigSection(
+                    newApiKey = newApiKey,
+                    onApiKeyChange = {
+                        newApiKey = it
+                        if (showApiKeySuccess) showApiKeySuccess = false
+                    },
+                    isPasswordVisible = isPasswordVisible,
+                    onPasswordVisibilityToggle = { isPasswordVisible = !isPasswordVisible },
+                    showSuccess = showApiKeySuccess,
+                    onSave = {
+                        settingsViewModel.setApiKey(newApiKey)
+                        showApiKeySuccess = true
+                        Toast.makeText(
+                            context,
+                            "API key saved successfully!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onClear = {
+                        settingsViewModel.clearApiKey()
+                        newApiKey = ""
+                        showApiKeySuccess = false
+                        Toast.makeText(
+                            context,
+                            "API key cleared",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            InfoCard(
+                icon = Icons.Default.Info,
+                title = "About API Keys",
+                content = "Appsage requires an OpenRouter API key to generate PWAs. You can get a free key from OpenRouter. Your key is stored securely on your device and never sent to our servers.",
+                backgroundColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
+                iconColor = MaterialTheme.colorScheme.primary
             )
+
+            InfoCard(
+                icon = Icons.Default.Security,
+                title = "Security & Privacy",
+                content = "Your API key is encrypted and stored securely on your device. We never store or transmit your prompts or generated code. All processing happens directly between your device and OpenRouter.",
+                backgroundColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.1f),
+                iconColor = MaterialTheme.colorScheme.secondary
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        InfoCard(
-            icon = Icons.Default.Info,
-            title = "About API Keys",
-            content = "Appsage requires an OpenRouter API key to generate PWAs. You can get a free key from OpenRouter. Your key is stored securely on your device and never sent to our servers.",
-            backgroundColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
-            iconColor = MaterialTheme.colorScheme.primary
-        )
-
-        InfoCard(
-            icon = Icons.Default.Lock,
-            title = "Security & Privacy",
-            content = "Your API key is encrypted and stored securely on your device. We never store or transmit your prompts or generated code. All processing happens directly between your device and OpenRouter.",
-            backgroundColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.1f),
-            iconColor = MaterialTheme.colorScheme.secondary
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 

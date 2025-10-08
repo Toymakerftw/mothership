@@ -33,6 +33,16 @@ class MainViewModel(
     init {
         // Set default model instead of loading models
         _selectedModel.value = "x-ai/grok-4-fast"
+        
+        // Load initial API key
+        loadApiKey()
+    }
+    
+    private fun loadApiKey() {
+        viewModelScope.launch {
+            val apiKey = settingsRepository.getApiKey()
+            _uiState.value = _uiState.value.copy(apiKey = apiKey)
+        }
     }
 
     fun generatePwa(prompt: String) {
@@ -309,7 +319,12 @@ class MainViewModel(
         viewModelScope.launch {
             val pwaManager = PwaManager(context)
             pwaManager.deletePwa(uuid)
+            _uiState.value = _uiState.value.copy(pwaDeleted = true)
         }
+    }
+
+    fun clearPwaDeleted() {
+        _uiState.value = _uiState.value.copy(pwaDeleted = false)
     }
 
     fun getPwas(): List<Pair<String, String>> {
@@ -380,6 +395,8 @@ data class MainUiState(
     val isGenerating: Boolean = false,
     val pwaGenerated: Boolean = false,
     val pwaUuid: String? = null,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val apiKey: String? = null,
+    val pwaDeleted: Boolean = false
 )
 
