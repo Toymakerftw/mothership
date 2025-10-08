@@ -26,9 +26,9 @@ fun AppsageNav() {
     val context = LocalContext.current
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     
-    // Don't show bottom navigation on rework and settings screens
+    // Don't show bottom navigation on rework screen only (settings screen will show bottom nav now)
     val currentRoute = navBackStackEntry.value?.destination?.route
-    val showBottomNav = currentRoute != "rework/{uuid}" && currentRoute != "settings"
+    val showBottomNav = currentRoute != "rework/{uuid}"
     
     Scaffold(
         bottomBar = {
