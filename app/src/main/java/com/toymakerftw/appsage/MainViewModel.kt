@@ -13,6 +13,7 @@ import com.toymakerftw.appsage.PwaInstaller
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import java.util.UUID
 import java.io.File
 import java.io.EOFException
@@ -47,14 +48,27 @@ class MainViewModel(
 
     fun generatePwa(prompt: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isGenerating = true, errorMessage = null)
+            _uiState.value = _uiState.value.copy(
+                isGenerating = true, 
+                errorMessage = null,
+                generationStep = 0,
+                pwaGenerated = false
+            )
             
             try {
                 val apiKey = settingsRepository.getApiKey()
                 if (apiKey.isNullOrEmpty()) {
-                    _uiState.value = _uiState.value.copy(isGenerating = false, errorMessage = "API key not set")
+                    _uiState.value = _uiState.value.copy(
+                        isGenerating = false, 
+                        errorMessage = "API key not set",
+                        generationStep = null
+                    )
                     return@launch
                 }
+
+                // Step 0: Analyzing prompt
+                delay(500) // Brief delay for UI feedback
+                _uiState.value = _uiState.value.copy(generationStep = 0)
 
                 val selectedModelId = _selectedModel.value ?: "x-ai/grok-4-fast"
                 
@@ -74,19 +88,31 @@ class MainViewModel(
                     )
                 )
                 
+                // Step 1: Generating code
+                _uiState.value = _uiState.value.copy(generationStep = 1)
+                
                 val response = try {
                     appsageApi.generatePwa("Bearer $apiKey", request)
                 } catch (e: EOFException) {
                     Log.e("MainViewModel", "EOFException during API call - response likely truncated", e)
                     _uiState.value = _uiState.value.copy(
                         isGenerating = false,
+                        generationStep = null,
                         errorMessage = "API response was incomplete. Please try again later."
                     )
                     return@launch
                 }
                 
+                // Step 2: Styling UI
+                _uiState.value = _uiState.value.copy(generationStep = 2)
+                delay(300) // Brief delay for UI feedback
+                
                 if (response.choices.isNotEmpty()) {
                     val content = response.choices[0].message.content
+                    
+                    // Step 3: Finalizing
+                    _uiState.value = _uiState.value.copy(generationStep = 3)
+                    
                     extractAndSavePwaCode(content)
                 }
             } catch (e: Exception) {
@@ -95,10 +121,15 @@ class MainViewModel(
                 if (e is EOFException || e.cause is EOFException) {
                     _uiState.value = _uiState.value.copy(
                         isGenerating = false,
+                        generationStep = null,
                         errorMessage = "API response was incomplete. This may be due to a network timeout or connection issue. Please try again."
                     )
                 } else {
-                    _uiState.value = _uiState.value.copy(isGenerating = false, errorMessage = e.message)
+                    _uiState.value = _uiState.value.copy(
+                        isGenerating = false,
+                        generationStep = null,
+                        errorMessage = e.message
+                    )
                 }
             }
         }
@@ -193,6 +224,7 @@ class MainViewModel(
                 
                 _uiState.value = _uiState.value.copy(
                     isGenerating = false,
+                    generationStep = null,
                     pwaGenerated = true,
                     pwaUuid = uuid
                 )
@@ -201,6 +233,7 @@ class MainViewModel(
             Log.e("MainViewModel", "Error extracting PWA code", e)
             _uiState.value = _uiState.value.copy(
                 isGenerating = false,
+                generationStep = null,
                 errorMessage = "Error extracting PWA code: ${e.message}"
             )
         }
@@ -297,12 +330,11 @@ class MainViewModel(
         
         _uiState.value = _uiState.value.copy(
             isGenerating = false,
+            generationStep = null,
             pwaGenerated = true,
             pwaUuid = uuid
         )
     }
-
-
 
     fun clearErrorMessage() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
@@ -393,10 +425,10 @@ class MainViewModel(
 
 data class MainUiState(
     val isGenerating: Boolean = false,
+    val generationStep: Int? = null,
     val pwaGenerated: Boolean = false,
     val pwaUuid: String? = null,
     val errorMessage: String? = null,
     val apiKey: String? = null,
     val pwaDeleted: Boolean = false
 )
-

@@ -50,7 +50,7 @@ fun AppsageNav() {
                 }
                 MainScreen(mainViewModel, navController)
             }
-            composable("pwa_list") {
+            composable("app_list") {
                 val mainViewModel: MainViewModel = viewModel { 
                     val settingsRepository = com.toymakerftw.appsage.data.SettingsRepository(context)
                     val appsageApi = (context.applicationContext as AppsageApp).appsageApi
