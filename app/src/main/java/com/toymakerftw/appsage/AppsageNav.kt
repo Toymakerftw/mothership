@@ -65,7 +65,7 @@ fun AppsageNav() {
                     val appsageApi = (context.applicationContext as AppsageApp).appsageApi
                     ReworkViewModel(context, appsageApi, settingsRepository)
                 }
-                ReworkScreen(uuid, reworkViewModel)
+                ReworkScreen(uuid, reworkViewModel, navController)
             }
             composable("settings") { 
                 val settingsViewModel: SettingsViewModel = viewModel {
