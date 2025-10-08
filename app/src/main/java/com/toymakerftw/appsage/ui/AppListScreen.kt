@@ -136,25 +136,37 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
                 }
             }
 
-            if (isLoading) {
-                LoadingState()
-            } else if (pwas.isEmpty()) {
-                EmptyState(navController = navController)
-            } else {
-                LazyColumn(
-                    state = listState,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    itemsIndexed(pwas) { index, pwa ->
-                        AppCard(
-                            pwa = pwa,
-                            navController = navController,
-                            context = context,
-                            onDelete = {
-                                viewModel.deletePwa(pwa.uuid)
-                            }
-                        )
+            AnimatedVisibility(
+                visible = true,
+                enter = slideInVertically(
+                    initialOffsetY = { 40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                if (isLoading) {
+                    LoadingState()
+                } else if (pwas.isEmpty()) {
+                    EmptyState(navController = navController)
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        contentPadding = PaddingValues(bottom = 80.dp)
+                    ) {
+                        itemsIndexed(pwas) { index, pwa ->
+                            AppCard(
+                                pwa = pwa,
+                                navController = navController,
+                                context = context,
+                                onDelete = {
+                                    viewModel.deletePwa(pwa.uuid)
+                                }
+                            )
+                        }
                     }
                 }
             }
