@@ -13,10 +13,14 @@ class SettingsViewModel(
 
     private val _apiKey = MutableStateFlow<String?>(null)
     val apiKey = _apiKey.asStateFlow()
+    
+    private val _isDarkTheme = MutableStateFlow(false)
+    val isDarkTheme = _isDarkTheme.asStateFlow()
 
     init {
         viewModelScope.launch {
             _apiKey.value = settingsRepository.getApiKey()
+            _isDarkTheme.value = settingsRepository.getThemePreference()
         }
     }
 
@@ -31,6 +35,22 @@ class SettingsViewModel(
         viewModelScope.launch {
             settingsRepository.saveApiKey("")
             _apiKey.value = ""
+        }
+    }
+    
+    fun toggleTheme() {
+        viewModelScope.launch {
+            val currentTheme = _isDarkTheme.value  // Get current theme from the state, not from repo directly
+            val newTheme = !currentTheme
+            settingsRepository.setThemePreference(newTheme)
+            _isDarkTheme.value = newTheme  // Update the state flow
+        }
+    }
+    
+    fun setTheme(isDark: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setThemePreference(isDark)
+            _isDarkTheme.value = isDark
         }
     }
 }

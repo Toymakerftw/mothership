@@ -21,7 +21,7 @@ import com.toymakerftw.appsage.ReworkViewModel
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun AppsageNav() {
+fun AppsageNav(settingsViewModel: SettingsViewModel) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val navBackStackEntry = navController.currentBackStackEntryAsState()
@@ -68,10 +68,6 @@ fun AppsageNav() {
                 ReworkScreen(uuid, reworkViewModel, navController)
             }
             composable("settings") { 
-                val settingsViewModel: SettingsViewModel = viewModel {
-                    val settingsRepository = com.toymakerftw.appsage.data.SettingsRepository(context)
-                    SettingsViewModel(settingsRepository)
-                }
                 SettingsScreen(settingsViewModel, navController)
             }
         }

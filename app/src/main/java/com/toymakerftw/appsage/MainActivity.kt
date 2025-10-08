@@ -6,10 +6,12 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.toymakerftw.appsage.api.AppsageApi
 import com.toymakerftw.appsage.data.SettingsRepository
 import com.toymakerftw.appsage.ui.theme.AppsageTheme
+
 
 class MainActivity : ComponentActivity() {
 
@@ -24,13 +26,28 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            AppsageTheme {
+            val settingsViewModel: SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
+                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+                        if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
+                            return SettingsViewModel(settingsRepository) as T
+                        }
+                        throw IllegalArgumentException("Unknown ViewModel class")
+                    }
+                }
+            )
+            
+            val isDarkThemeState = settingsViewModel.isDarkTheme.collectAsState()
+            
+            AppsageTheme(
+                darkTheme = isDarkThemeState.value
+            ) {
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppsageNav()
+                    AppsageNav(settingsViewModel)
                 }
             }
         }
