@@ -25,9 +25,12 @@ class ReworkViewModel(
 
     fun reworkPwa(uuid: String, reworkPrompt: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isReworking = true, errorMessage = null)
+            _uiState.value = _uiState.value.copy(isReworking = true, errorMessage = null, generationStep = 0)
             
             try {
+                // Step 1: Analyzing prompt
+                _uiState.value = _uiState.value.copy(generationStep = 1)
+                
                 val apiKey = settingsRepository.getApiKey()
                 if (apiKey.isNullOrEmpty()) {
                     _uiState.value = _uiState.value.copy(isReworking = false, errorMessage = "API key not set")
@@ -40,7 +43,9 @@ class ReworkViewModel(
                     return@launch
                 }
 
-                // Read existing files
+                // Step 2: Reading existing files
+                _uiState.value = _uiState.value.copy(generationStep = 2)
+                
                 val filesToRead = listOf("index.html", "style.css", "script.js", "manifest.json")
                 val fileContents = mutableMapOf<String, String>()
                 
@@ -72,6 +77,9 @@ class ReworkViewModel(
                     Return the updated files in JSON format with keys for "index.html", "style.css", "script.js", and other files as needed.
                 """.trimIndent()
 
+                // Step 3: Generating code
+                _uiState.value = _uiState.value.copy(generationStep = 3)
+
                 val request = OpenRouterRequest(
                     model = "x-ai/grok-4-fast", // Using default model for rework
                     messages = listOf(
@@ -86,6 +94,8 @@ class ReworkViewModel(
                 
                 if (response.choices.isNotEmpty()) {
                     val content = response.choices[0].message.content
+                    // Step 4: Finalizing
+                    _uiState.value = _uiState.value.copy(generationStep = 4)
                     updatePwaCode(uuid, content, fileContents)
                 }
             } catch (e: Exception) {
@@ -181,5 +191,6 @@ class ReworkViewModel(
 data class ReworkUiState(
     val isReworking: Boolean = false,
     val pwaReworked: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val generationStep: Int? = null
 )

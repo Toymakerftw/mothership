@@ -80,7 +80,7 @@ fun ReworkScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
 
-        // 🔹 Top Bar with Back Button
+        // Top Bar with Back Button
         AnimatedVisibility(
             visible = true,
             enter = slideInVertically(
@@ -115,7 +115,7 @@ fun ReworkScreen(
             }
         }
 
-        // 🔸 Simple Header Text
+        // UUID Card - Always visible
         AnimatedVisibility(
             visible = true,
             enter = slideInVertically(
@@ -127,30 +127,23 @@ fun ReworkScreen(
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
             ) + fadeOut(animationSpec = tween(300))
         ) {
-            Text(
-                text = "Modify your app by providing clear instructions. You can preview after reworking.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+            var isUuidCardPressed by remember { mutableStateOf(false) }
+            val uuidCardScale by animateFloatAsState(
+                targetValue = if (isUuidCardPressed) 0.98f else 1f,
+                animationSpec = tween(100, easing = FastOutSlowInEasing),
+                label = "uuid_card_scale"
             )
-        }
-
-        // 🔸 UUID Card
-        AnimatedVisibility(
-            visible = true,
-            enter = slideInVertically(
-                initialOffsetY = { 40 },
-                animationSpec = tween(300, delayMillis = 200, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300, delayMillis = 200)),
-            exit = slideOutVertically(
-                targetOffsetY = { -40 },
-                animationSpec = tween(300, easing = FastOutSlowInEasing)
-            ) + fadeOut(animationSpec = tween(300))
-        ) {
+            
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .scale(uuidCardScale),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = if (isUuidCardPressed) 6.dp else 4.dp
                 )
             ) {
                 Row(
@@ -191,21 +184,32 @@ fun ReworkScreen(
             }
         }
 
-        // 🔸 Rework Prompt
+        // Rework Prompt - Hidden during rework
         AnimatedVisibility(
-            visible = true,
+            visible = !uiState.isReworking,
             enter = slideInVertically(
                 initialOffsetY = { 40 },
-                animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
+                animationSpec = tween(300, delayMillis = 200, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 200)),
             exit = slideOutVertically(
                 targetOffsetY = { -40 },
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
             ) + fadeOut(animationSpec = tween(300))
         ) {
+            var isPromptCardPressed by remember { mutableStateOf(false) }
+            val promptCardScale by animateFloatAsState(
+                targetValue = if (isPromptCardPressed) 0.98f else 1f,
+                animationSpec = tween(100, easing = FastOutSlowInEasing),
+                label = "prompt_card_scale"
+            )
+            
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .scale(promptCardScale),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = if (isPromptCardPressed) 10.dp else 8.dp
+                ),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
@@ -270,7 +274,6 @@ fun ReworkScreen(
                             )
                         },
                         shape = RoundedCornerShape(12.dp),
-                        enabled = !uiState.isReworking,
                         colors = TextFieldDefaults.outlinedTextFieldColors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -280,13 +283,13 @@ fun ReworkScreen(
             }
         }
 
-        // 🔸 Action Buttons
+        // Action Buttons - Hidden during rework
         AnimatedVisibility(
-            visible = true,
+            visible = !uiState.isReworking,
             enter = slideInVertically(
                 initialOffsetY = { 40 },
-                animationSpec = tween(300, delayMillis = 400, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300, delayMillis = 400)),
+                animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
             exit = slideOutVertically(
                 targetOffsetY = { -40 },
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
@@ -304,34 +307,23 @@ fun ReworkScreen(
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp),
-                    enabled = reworkPrompt.isNotBlank() && !uiState.isReworking,
+                    enabled = reworkPrompt.isNotBlank(),
                     shape = RoundedCornerShape(16.dp),
                     contentPadding = PaddingValues(vertical = 12.dp)
                 ) {
-                    if (uiState.isReworking) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text("Reworking...", fontWeight = FontWeight.Bold)
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Apply Changes",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Apply Changes",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
-                // Single Preview/View App button with dynamic text and icon
                 Button(
                     onClick = { 
                         launchPreview(uuid, context, pwaManager)
@@ -340,7 +332,7 @@ fun ReworkScreen(
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp),
-                    enabled = isAppReady && !uiState.isReworking,
+                    enabled = isAppReady,
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (uiState.pwaReworked) 
@@ -350,10 +342,9 @@ fun ReworkScreen(
                     )
                 ) {
                     val buttonText = if (uiState.pwaReworked) "View Updated App" else "Preview App"
-                    val buttonIcon = if (uiState.pwaReworked) Icons.Default.PlayArrow else Icons.Default.PlayArrow
                     
                     Icon(
-                        imageVector = buttonIcon,
+                        imageVector = Icons.Default.PlayArrow,
                         contentDescription = buttonText,
                         modifier = Modifier.size(20.dp)
                     )
@@ -367,7 +358,27 @@ fun ReworkScreen(
             }
         }
 
-        // 🔸 Status Messages
+        // Progress Timeline - Only visible during rework
+        AnimatedVisibility(
+            visible = uiState.isReworking,
+            enter = expandVertically(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ),
+            exit = shrinkVertically(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
+        ) {
+            ReworkProgressTimeline(
+                currentStep = uiState.generationStep ?: 0,
+                totalSteps = 4
+            )
+        }
+
+        // Status Messages
         AnimatedVisibility(
             visible = uiState.errorMessage != null,
             enter = expandVertically(
@@ -382,12 +393,24 @@ fun ReworkScreen(
             )
         ) {
             uiState.errorMessage?.let { message ->
+                var isErrorCardPressed by remember { mutableStateOf(false) }
+                val errorCardScale by animateFloatAsState(
+                    targetValue = if (isErrorCardPressed) 0.98f else 1f,
+                    animationSpec = tween(100, easing = FastOutSlowInEasing),
+                    label = "error_card_scale"
+                )
+                
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .scale(errorCardScale),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = if (isErrorCardPressed) 6.dp else 4.dp
+                    )
                 ) {
                     Text(
                         text = message,
@@ -398,9 +421,9 @@ fun ReworkScreen(
             }
         }
 
-        // 🔸 Success Message - simplified without redundant button
+        // Success Message
         AnimatedVisibility(
-            visible = uiState.pwaReworked,
+            visible = uiState.pwaReworked && !uiState.isReworking,
             enter = expandVertically(
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
             ) + fadeIn(
@@ -412,12 +435,24 @@ fun ReworkScreen(
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
             )
         ) {
+            var isSuccessCardPressed by remember { mutableStateOf(false) }
+            val successCardScale by animateFloatAsState(
+                targetValue = if (isSuccessCardPressed) 0.98f else 1f,
+                animationSpec = tween(100, easing = FastOutSlowInEasing),
+                label = "success_card_scale"
+            )
+            
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .scale(successCardScale),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = if (isSuccessCardPressed) 6.dp else 4.dp
+                )
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -444,6 +479,151 @@ fun ReworkScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ReworkProgressTimeline(
+    currentStep: Int,
+    totalSteps: Int
+) {
+    val steps = listOf(
+        TimelineStep(Icons.Default.Psychology, "Analyzing changes", "Understanding your modifications"),
+        TimelineStep(Icons.Default.Code, "Updating code", "Applying your changes"),
+        TimelineStep(Icons.Default.Brush, "Refreshing UI", "Updating the interface"),
+        TimelineStep(Icons.Default.CheckCircle, "Finalizing", "Preparing updated app")
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            Text(
+                text = "Rework Progress",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 20.dp)
+            )
+
+            steps.forEachIndexed { index, step ->
+                TimelineItem(
+                    icon = step.icon,
+                    title = step.title,
+                    subtitle = step.subtitle,
+                    isCompleted = index < currentStep,
+                    isActive = index == currentStep,
+                    isLast = index == steps.size - 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimelineItem(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    isCompleted: Boolean,
+    isActive: Boolean,
+    isLast: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Timeline indicator column
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(
+                        when {
+                            isCompleted -> MaterialTheme.colorScheme.primary
+                            isActive -> MaterialTheme.colorScheme.primaryContainer
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        }
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isCompleted) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else if (isActive) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            
+            if (!isLast) {
+                Box(
+                    modifier = Modifier
+                        .width(2.dp)
+                        .height(40.dp)
+                        .background(
+                            if (isCompleted) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            }
+                        )
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Content
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = if (!isLast) 20.dp else 0.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                color = when {
+                    isCompleted -> MaterialTheme.colorScheme.primary
+                    isActive -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                }
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(
+                    alpha = if (isActive || isCompleted) 0.8f else 0.5f
+                ),
+                modifier = Modifier.padding(top = 2.dp)
+            )
         }
     }
 }

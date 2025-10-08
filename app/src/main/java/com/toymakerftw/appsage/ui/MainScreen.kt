@@ -91,7 +91,7 @@ fun MainScreen(
                 )
             }
 
-            // API Key Status Card with animation
+            // API Key Status Card with animation - Always visible
             AnimatedVisibility(
                 visible = true,
                 enter = slideInVertically(
@@ -109,9 +109,9 @@ fun MainScreen(
                 )
             }
 
-            // Prompt Input Card with animation
+            // Prompt Input Card - Hidden during generation
             AnimatedVisibility(
-                visible = true,
+                visible = !uiState.isGenerating,
                 enter = slideInVertically(
                     initialOffsetY = { 40 },
                     animationSpec = tween(300, delayMillis = 200, easing = FastOutSlowInEasing)
@@ -123,14 +123,13 @@ fun MainScreen(
             ) {
                 PromptInputCard(
                     prompt = prompt,
-                    onPromptChange = { prompt = it },
-                    isGenerating = uiState.isGenerating
+                    onPromptChange = { prompt = it }
                 )
             }
 
-            // Generate Button with animation
+            // Generate Button - Hidden during generation
             AnimatedVisibility(
-                visible = true,
+                visible = !uiState.isGenerating,
                 enter = slideInVertically(
                     initialOffsetY = { 40 },
                     animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
@@ -153,7 +152,7 @@ fun MainScreen(
                 )
             }
 
-            // Progress Timeline with animation
+            // Progress Timeline - Only visible during generation
             AnimatedVisibility(
                 visible = uiState.isGenerating,
                 enter = expandVertically(
@@ -356,12 +355,22 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
 @Composable
 private fun PromptInputCard(
     prompt: String,
-    onPromptChange: (String) -> Unit,
-    isGenerating: Boolean
+    onPromptChange: (String) -> Unit
 ) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = tween(100, easing = FastOutSlowInEasing),
+        label = "prompt_input_scale"
+    )
+    
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isPressed) 10.dp else 8.dp
+        ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -426,7 +435,6 @@ private fun PromptInputCard(
                     ) 
                 },
                 shape = RoundedCornerShape(12.dp),
-                enabled = !isGenerating,
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -457,35 +465,22 @@ private fun GenerateButton(
             .fillMaxWidth()
             .height(56.dp)
             .scale(scale),
-        enabled = prompt.isNotBlank() && !uiState.isGenerating,
+        enabled = prompt.isNotBlank(),
         shape = RoundedCornerShape(16.dp),
         contentPadding = PaddingValues(vertical = 12.dp),
         interactionSource = interactionSource
     ) {
-        if (uiState.isGenerating) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(20.dp),
-                color = MaterialTheme.colorScheme.onPrimary,
-                strokeWidth = 2.dp
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                "Generating...",
-                fontWeight = FontWeight.Bold
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Generate App",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
+        Icon(
+            imageVector = Icons.Default.AutoAwesome,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = "Generate App",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -551,17 +546,6 @@ private fun TimelineItem(
     isActive: Boolean,
     isLast: Boolean
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.9f,
-        targetValue = 1.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = EaseInOutCubic),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
-    
     Row(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -653,13 +637,24 @@ private fun TimelineItem(
 
 @Composable
 private fun ErrorCard(errorMessage: String) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.98f else 1f,
+        animationSpec = tween(100, easing = FastOutSlowInEasing),
+        label = "error_card_scale"
+    )
+    
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .scale(scale),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isPressed) 6.dp else 4.dp
+        )
     ) {
         Row(
             modifier = Modifier
