@@ -53,6 +53,16 @@ fun AppsageBottomNavigation(navController: NavController?) {
                             launchSingleTop = true
                             restoreState = true
                         }
+                    } else {
+                        // If on the same route, navigate to force scroll to top
+                        // Using popUpTo with the same route to reset scroll position
+                        navController.navigate(item.route) {
+                            popUpTo(item.route) { 
+                                inclusive = true 
+                            }
+                            launchSingleTop = true
+                            restoreState = false  // Reset to top by not restoring scroll position
+                        }
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
