@@ -34,7 +34,7 @@ import androidx.navigation.NavController
 import com.toymakerftw.appsage.PwaViewerActivity
 import com.toymakerftw.appsage.ReworkViewModel
 import com.toymakerftw.appsage.service.PwaManager
-import com.toymakerftw.appsage.ui.theme.advancedShadow
+import com.toymakerftw.appsage.ui.theme.naturalShadow
 import com.toymakerftw.appsage.versioncontrol.VersionInfo
 import org.json.JSONObject
 import java.io.File
@@ -135,18 +135,18 @@ fun ReworkScreen(
             ) + fadeOut(animationSpec = tween(300))
         ) {
             var isUuidCardPressed by remember { mutableStateOf(false) }
-            val shadowBlurRadius by animateDpAsState(
-                targetValue = if (isUuidCardPressed) 12.dp else 8.dp,
+            val shadowElevation by animateDpAsState(
+                targetValue = if (isUuidCardPressed) 3.dp else 2.dp,
                 animationSpec = tween(100, easing = FastOutSlowInEasing),
-                label = "shadow_blur"
+                label = "shadow_elevation"
             )
             
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .advancedShadow(
-                        cornersRadius = 16.dp,
-                        shadowBlurRadius = shadowBlurRadius
+                    .naturalShadow(
+                        elevation = shadowElevation,
+                        cornersRadius = 16.dp
                     ),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
@@ -219,18 +219,18 @@ fun ReworkScreen(
             ) + fadeOut(animationSpec = tween(300))
         ) {
             var isPromptCardPressed by remember { mutableStateOf(false) }
-            val shadowBlurRadius by animateDpAsState(
-                targetValue = if (isPromptCardPressed) 12.dp else 8.dp,
+            val shadowElevation by animateDpAsState(
+                targetValue = if (isPromptCardPressed) 4.dp else 2.dp,
                 animationSpec = tween(100, easing = FastOutSlowInEasing),
-                label = "shadow_blur"
+                label = "shadow_elevation"
             )
             
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .advancedShadow(
-                        cornersRadius = 20.dp,
-                        shadowBlurRadius = shadowBlurRadius
+                    .naturalShadow(
+                        elevation = shadowElevation,
+                        cornersRadius = 20.dp
                     ),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
@@ -416,18 +416,18 @@ fun ReworkScreen(
         ) {
             uiState.errorMessage?.let { message ->
                 var isErrorCardPressed by remember { mutableStateOf(false) }
-                val shadowBlurRadius by animateDpAsState(
-                    targetValue = if (isErrorCardPressed) 12.dp else 8.dp,
+                val shadowElevation by animateDpAsState(
+                    targetValue = if (isErrorCardPressed) 3.dp else 2.dp,
                     animationSpec = tween(100, easing = FastOutSlowInEasing),
-                    label = "shadow_blur"
+                    label = "shadow_elevation"
                 )
                 
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .advancedShadow(
-                            cornersRadius = 12.dp,
-                            shadowBlurRadius = shadowBlurRadius
+                        .naturalShadow(
+                            elevation = shadowElevation,
+                            cornersRadius = 12.dp
                         ),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
@@ -458,18 +458,18 @@ fun ReworkScreen(
             )
         ) {
             var isSuccessCardPressed by remember { mutableStateOf(false) }
-            val shadowBlurRadius by animateDpAsState(
-                targetValue = if (isSuccessCardPressed) 12.dp else 8.dp,
+            val shadowElevation by animateDpAsState(
+                targetValue = if (isSuccessCardPressed) 3.dp else 2.dp,
                 animationSpec = tween(100, easing = FastOutSlowInEasing),
-                label = "shadow_blur"
+                label = "shadow_elevation"
             )
             
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .advancedShadow(
-                        cornersRadius = 12.dp,
-                        shadowBlurRadius = shadowBlurRadius
+                    .naturalShadow(
+                        elevation = shadowElevation,
+                        cornersRadius = 12.dp
                     ),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
@@ -518,18 +518,18 @@ fun ReworkScreen(
             )
         ) {
             var isRevertCardPressed by remember { mutableStateOf(false) }
-            val shadowBlurRadius by animateDpAsState(
-                targetValue = if (isRevertCardPressed) 12.dp else 8.dp,
+            val shadowElevation by animateDpAsState(
+                targetValue = if (isRevertCardPressed) 3.dp else 2.dp,
                 animationSpec = tween(100, easing = FastOutSlowInEasing),
-                label = "shadow_blur"
+                label = "shadow_elevation"
             )
             
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .advancedShadow(
-                        cornersRadius = 12.dp,
-                        shadowBlurRadius = shadowBlurRadius
+                    .naturalShadow(
+                        elevation = shadowElevation,
+                        cornersRadius = 12.dp
                     ),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
@@ -583,9 +583,10 @@ fun ReworkScreen(
 @Composable
 private fun ReworkPromptCard(prompt: String) {
     Card(
-        modifier = Modifier.fillMaxWidth().advancedShadow(cornersRadius = 20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .naturalShadow(elevation = 3.dp, cornersRadius = 20.dp),
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
         )
@@ -661,9 +662,10 @@ private fun ReworkProgressTimeline(
     )
 
     Card(
-        modifier = Modifier.fillMaxWidth().advancedShadow(cornersRadius = 20.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .naturalShadow(elevation = 3.dp, cornersRadius = 20.dp),
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
@@ -850,7 +852,7 @@ private fun VersionHistoryCard(uuid: String, viewModel: ReworkViewModel, navCont
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .advancedShadow(cornersRadius = 20.dp),
+            .naturalShadow(elevation = 3.dp, cornersRadius = 20.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -949,8 +951,7 @@ private fun VersionItem(version: VersionInfo, uuid: String, viewModel: ReworkVie
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        )
     ) {
         Row(
             modifier = Modifier
