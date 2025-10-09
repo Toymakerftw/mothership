@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.toymakerftw.appsage.SettingsViewModel
+import com.toymakerftw.appsage.ui.theme.advancedShadow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -470,20 +471,20 @@ fun SettingsSectionCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
+    val shadowBlurRadius by animateDpAsState(
+        targetValue = if (isPressed) 12.dp else 8.dp,
         animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "scale"
+        label = "shadow_blur"
     )
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 20.dp)
-            .scale(scale),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isPressed) 8.dp else 4.dp
-        ),
+            .advancedShadow(
+                cornersRadius = 20.dp,
+                shadowBlurRadius = shadowBlurRadius
+            ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -542,22 +543,22 @@ fun InfoCard(
     iconColor: Color
 ) {
     var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
+    val shadowBlurRadius by animateDpAsState(
+        targetValue = if (isPressed) 12.dp else 8.dp,
         animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "scale"
+        label = "shadow_blur"
     )
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .scale(scale),
+            .advancedShadow(
+                cornersRadius = 16.dp,
+                shadowBlurRadius = shadowBlurRadius
+            ),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isPressed) 4.dp else 2.dp
-        )
+        colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
         Row(
             modifier = Modifier
@@ -597,20 +598,20 @@ fun ThemeToggleCard(
     onThemeToggle: () -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
+    val shadowBlurRadius by animateDpAsState(
+        targetValue = if (isPressed) 12.dp else 8.dp,
         animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "theme_toggle_scale"
+        label = "shadow_blur"
     )
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale)
+            .advancedShadow(
+                cornersRadius = 20.dp,
+                shadowBlurRadius = shadowBlurRadius
+            )
             .clickable { onThemeToggle() },
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isPressed) 8.dp else 4.dp
-        ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

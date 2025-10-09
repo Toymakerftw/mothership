@@ -32,6 +32,7 @@ import com.toymakerftw.appsage.MainUiState
 import androidx.compose.material3.TextFieldDefaults
 import androidx.navigation.NavController
 import com.toymakerftw.appsage.MainViewModel
+import com.toymakerftw.appsage.ui.theme.advancedShadow
 
 @Composable
 fun MainScreen(
@@ -283,16 +284,19 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
+    val shadowBlurRadius by animateDpAsState(
+        targetValue = if (isPressed) 12.dp else 8.dp,
         animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "scale"
+        label = "shadow_blur"
     )
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale)
+            .advancedShadow(
+                cornersRadius = 16.dp,
+                shadowBlurRadius = shadowBlurRadius
+            )
             .clickable(
                 enabled = !hasApiKey,
                 onClick = onConfigure
@@ -304,9 +308,6 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
             } else {
                 MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
             }
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isPressed) 4.dp else 2.dp
         )
     ) {
         Row(
@@ -370,8 +371,7 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
 @Composable
 private fun UserPromptCard(prompt: String) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        modifier = Modifier.fillMaxWidth().advancedShadow(cornersRadius = 20.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
@@ -440,19 +440,19 @@ private fun PromptInputCard(
     onPromptChange: (String) -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
+    val shadowBlurRadius by animateDpAsState(
+        targetValue = if (isPressed) 12.dp else 8.dp,
         animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "prompt_input_scale"
+        label = "shadow_blur"
     )
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isPressed) 10.dp else 8.dp
-        ),
+            .advancedShadow(
+                cornersRadius = 20.dp,
+                shadowBlurRadius = shadowBlurRadius
+            ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -579,8 +579,7 @@ private fun ProgressTimeline(
     )
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        modifier = Modifier.fillMaxWidth().advancedShadow(cornersRadius = 20.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -720,22 +719,22 @@ private fun TimelineItem(
 @Composable
 private fun ErrorCard(errorMessage: String) {
     var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
+    val shadowBlurRadius by animateDpAsState(
+        targetValue = if (isPressed) 12.dp else 8.dp,
         animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "error_card_scale"
+        label = "shadow_blur"
     )
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale),
+            .advancedShadow(
+                cornersRadius = 16.dp,
+                shadowBlurRadius = shadowBlurRadius
+            ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isPressed) 6.dp else 4.dp
         )
     ) {
         Row(
@@ -774,18 +773,20 @@ private fun SuccessCard(onViewApps: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
+    val shadowBlurRadius by animateDpAsState(
+        targetValue = if (isPressed) 12.dp else 8.dp,
         animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "scale"
+        label = "shadow_blur"
     )
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale),
+            .advancedShadow(
+                cornersRadius = 16.dp,
+                shadowBlurRadius = shadowBlurRadius
+            ),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
         )
