@@ -8,6 +8,8 @@ import com.toymakerftw.appsage.api.AppsageApi
 import com.toymakerftw.appsage.api.Message
 import com.toymakerftw.appsage.api.OpenRouterRequest
 import com.toymakerftw.appsage.data.SettingsRepository
+import com.toymakerftw.appsage.versioncontrol.VersionControl
+import com.toymakerftw.appsage.versioncontrol.VersionHistory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,12 +25,26 @@ class ReworkViewModel(
 
     private val _uiState = MutableStateFlow(ReworkUiState())
     val uiState: StateFlow<ReworkUiState> = _uiState
+    
+    private val versionControl = VersionControl(context)
 
     fun reworkPwa(uuid: String, reworkPrompt: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isReworking = true, errorMessage = null, generationStep = 0)
             
             try {
+                // Step 0: Create backup before reworking
+                _uiState.value = _uiState.value.copy(generationStep = 0) // Backup step
+                delay(500) // Small delay to ensure UI updates
+                
+                val backupSuccess = versionControl.createBackup(
+                    uuid, 
+                    "Before rework: $reworkPrompt"
+                )
+                if (!backupSuccess) {
+                    Log.w("ReworkViewModel", "Failed to create backup before rework")
+                }
+                
                 // Step 1: Analyzing prompt
                 _uiState.value = _uiState.value.copy(generationStep = 1)
                 delay(500) // Small delay to ensure UI updates
@@ -80,8 +96,8 @@ class ReworkViewModel(
                     Return the updated files in JSON format with keys for "index.html", "style.css", "script.js", and other files as needed.
                 """.trimIndent()
 
-                // Step 3: Generating code
-                _uiState.value = _uiState.value.copy(generationStep = 3)
+                // Step 4: Generating code (was 3, but backup step added before this)
+                _uiState.value = _uiState.value.copy(generationStep = 4)
                 delay(500) // Small delay to ensure UI updates
 
                 val request = OpenRouterRequest(
@@ -102,10 +118,17 @@ class ReworkViewModel(
                     _uiState.value = _uiState.value.copy(generationStep = 4)
                     delay(500) // Small delay to ensure UI updates
                     updatePwaCode(uuid, content, fileContents)
+                    
+                    // Clean up old versions to prevent excessive storage usage
+                    versionControl.clearOldVersions(uuid)
                 }
             } catch (e: Exception) {
                 Log.e("ReworkViewModel", "Error reworking PWA", e)
-                _uiState.value = _uiState.value.copy(isReworking = false, errorMessage = e.message)
+                _uiState.value = _uiState.value.copy(
+                    isReworking = false, 
+                    errorMessage = e.message,
+                    pwaReverted = false  // Reset revert status
+                )
             }
         }
     }
@@ -135,6 +158,7 @@ class ReworkViewModel(
                 _uiState.value = _uiState.value.copy(
                     isReworking = false,
                     pwaReworked = true,
+                    pwaReverted = false,  // Reset revert status when new changes are applied
                     generationStep = null // Reset to null when complete
                 )
             } else {
@@ -169,6 +193,7 @@ class ReworkViewModel(
                     _uiState.value = _uiState.value.copy(
                         isReworking = false,
                         pwaReworked = true,
+                        pwaReverted = false,  // Reset revert status when new changes are applied
                         generationStep = null // Reset to null when complete
                     )
                 } else {
@@ -184,6 +209,7 @@ class ReworkViewModel(
             _uiState.value = _uiState.value.copy(
                 isReworking = false,
                 errorMessage = "Error updating PWA code: ${e.message}",
+                pwaReverted = false,  // Reset revert status
                 generationStep = null // Reset to null when complete
             )
         }
@@ -195,11 +221,25 @@ class ReworkViewModel(
         }
         reworkPwa(uuid, reworkPrompt)
     }
+    
+    fun getVersionHistory(uuid: String) = versionControl.getHistory(uuid)
+    
+    fun revertToVersion(uuid: String, versionId: String): Boolean {
+        val success = versionControl.revertToVersion(uuid, versionId)
+        if (success) {
+            _uiState.value = _uiState.value.copy(
+                pwaReverted = true,
+                errorMessage = null
+            )
+        }
+        return success
+    }
 }
 
 data class ReworkUiState(
     val isReworking: Boolean = false,
     val pwaReworked: Boolean = false,
+    val pwaReverted: Boolean = false,
     val errorMessage: String? = null,
     val generationStep: Int? = null
 )

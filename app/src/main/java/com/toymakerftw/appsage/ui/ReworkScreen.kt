@@ -10,6 +10,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,8 +35,11 @@ import com.toymakerftw.appsage.PwaViewerActivity
 import com.toymakerftw.appsage.ReworkViewModel
 import com.toymakerftw.appsage.service.PwaManager
 import com.toymakerftw.appsage.ui.theme.advancedShadow
+import com.toymakerftw.appsage.versioncontrol.VersionInfo
 import org.json.JSONObject
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -391,7 +396,7 @@ fun ReworkScreen(
         ) {
             ReworkProgressTimeline(
                 currentStep = uiState.generationStep ?: 1,
-                totalSteps = 4
+                totalSteps = 5  // Updated to 5 steps (including backup)
             )
         }
 
@@ -497,6 +502,81 @@ fun ReworkScreen(
                 }
             }
         }
+
+        // Revert Success Message
+        AnimatedVisibility(
+            visible = uiState.pwaReverted,
+            enter = expandVertically(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ),
+            exit = shrinkVertically(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
+        ) {
+            var isRevertCardPressed by remember { mutableStateOf(false) }
+            val shadowBlurRadius by animateDpAsState(
+                targetValue = if (isRevertCardPressed) 12.dp else 8.dp,
+                animationSpec = tween(100, easing = FastOutSlowInEasing),
+                label = "shadow_blur"
+            )
+            
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .advancedShadow(
+                        cornersRadius = 12.dp,
+                        shadowBlurRadius = shadowBlurRadius
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                )
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Restore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "App reverted to previous version! 🔄",
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Changes have been restored successfully",
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        }
+        
+        // Version History Card - Hidden during rework
+        AnimatedVisibility(
+            visible = !uiState.isReworking,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 400, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 400)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            VersionHistoryCard(uuid = uuid, viewModel = viewModel, navController = navController)
+        }
     }
 }
 
@@ -573,6 +653,7 @@ private fun ReworkProgressTimeline(
     totalSteps: Int
 ) {
     val steps = listOf(
+        TimelineStep(Icons.Default.Backup, "Creating backup", "Saving current version"),
         TimelineStep(Icons.Default.Psychology, "Analyzing changes", "Understanding your modifications"),
         TimelineStep(Icons.Default.Code, "Updating code", "Applying your changes"),
         TimelineStep(Icons.Default.Brush, "Refreshing UI", "Updating the interface"),
@@ -757,5 +838,188 @@ private fun launchPreview(uuid: String, context: android.content.Context, pwaMan
         context.startActivity(intent)
     } else {
         Toast.makeText(context, "Failed to start preview server", Toast.LENGTH_SHORT).show()
+    }
+}
+
+@Composable
+private fun VersionHistoryCard(uuid: String, viewModel: ReworkViewModel, navController: NavController) {
+    val context = LocalContext.current
+    val versionHistory by remember { mutableStateOf(viewModel.getVersionHistory(uuid)) }
+    var expanded by remember { mutableStateOf(false) }
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .advancedShadow(cornersRadius = 20.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Version History",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "${versionHistory.versions.size} versions saved",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+                
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (expanded) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(animationSpec = tween(300)),
+                exit = shrinkVertically(animationSpec = tween(300))
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    if (versionHistory.versions.isEmpty()) {
+                        Text(
+                            text = "No version history available yet. Rework your app to create backups.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.heightIn(max = 300.dp), // Constrain height to avoid infinite constraints
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(versionHistory.versions) { version ->
+                                VersionItem(version = version, uuid = uuid, viewModel = viewModel)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VersionItem(version: VersionInfo, uuid: String, viewModel: ReworkViewModel) {
+    val context = LocalContext.current
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+    val dateStr = dateFormat.format(Date(version.timestamp))
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Restore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Version ${version.versionId}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Text(
+                    text = dateStr,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                if (version.commitMessage.isNotEmpty() && version.commitMessage != "Auto-backup before rework") {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = version.commitMessage,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            Button(
+                onClick = {
+                    if (viewModel.revertToVersion(uuid, version.versionId)) {
+                        Toast.makeText(context, "Version restored successfully!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "Failed to restore version", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ),
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Text(
+                    text = "Revert",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
     }
 }
