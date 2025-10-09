@@ -148,8 +148,8 @@ fun MainScreen(
                 visible = !uiState.isGenerating,
                 enter = slideInVertically(
                     initialOffsetY = { 40 },
-                    animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
+                    animationSpec = tween(300, delayMillis = 250, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300, delayMillis = 250)),
                 exit = slideOutVertically(
                     targetOffsetY = { -40 },
                     animationSpec = tween(300, easing = FastOutSlowInEasing)
@@ -166,6 +166,21 @@ fun MainScreen(
                         }
                     }
                 )
+            }
+
+            // Feature Highlights - Hidden during generation, success, or error
+            AnimatedVisibility(
+                visible = !uiState.isGenerating && !uiState.pwaGenerated && uiState.errorMessage == null,
+                enter = slideInVertically(
+                    initialOffsetY = { 40 },
+                    animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
+                exit = slideOutVertically(
+                    targetOffsetY = { -40 },
+                    animationSpec = tween(300, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(300))
+            ) {
+                FeatureHighlights()
             }
 
             // Progress Timeline - Only visible during generation
@@ -227,6 +242,105 @@ fun MainScreen(
             }
 
             Spacer(modifier = Modifier.height(80.dp)) // Extra space for bottom nav
+        }
+    }
+}
+
+@Composable
+private fun FeatureHighlights() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .naturalShadow(elevation = 2.dp, cornersRadius = 20.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Text(
+                text = "What can Appsage do for you?",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            
+            FeatureItem(
+                icon = Icons.Default.AutoAwesome,
+                title = "AI-Powered Generation",
+                description = "Create fully functional Progressive Web Apps with just a simple description"
+            )
+            
+            FeatureItem(
+                icon = Icons.Default.Code,
+                title = "Complete Code Generation",
+                description = "Get HTML, CSS, JavaScript, and manifest files ready to deploy"
+            )
+            
+            FeatureItem(
+                icon = Icons.Default.Smartphone,
+                title = "Mobile-First Design",
+                description = "All generated apps are responsive and work perfectly on any device"
+            )
+            
+            FeatureItem(
+                icon = Icons.Default.Security,
+                title = "Privacy-Focused",
+                description = "Your API key and prompts are never stored on our servers"
+            )
+        }
+    }
+}
+
+@Composable
+private fun FeatureItem(
+    icon: ImageVector,
+    title: String,
+    description: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.padding(top = 2.dp)
+            )
         }
     }
 }
@@ -321,7 +435,7 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(
-                        if (hasApiKey) {
+                                                if (hasApiKey) {
                             MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                         } else {
                             MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
