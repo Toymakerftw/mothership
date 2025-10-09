@@ -139,7 +139,14 @@ class ReworkViewModel(
             if (!pwaDir.exists()) return
 
             // Try to parse the response as JSON
-            val jsonResponse = JSONObject(responseContent)
+            val jsonResponse = try {
+                JSONObject(responseContent.trim())
+            } catch (jsonException: Exception) {
+                // If JSON parsing fails, try to extract code from text blocks
+                Log.w("ReworkViewModel", "Could not parse response as JSON, trying code blocks", jsonException)
+                extractFromCodeBlocks(uuid, responseContent)
+                return
+            }
             
             // Get the keys from the JSON response
             val keys = jsonResponse.keys()
@@ -162,47 +169,8 @@ class ReworkViewModel(
                     generationStep = null // Reset to null when complete
                 )
             } else {
-                // If JSON parsing didn't work, try extracting from code blocks
-                val htmlMatch = Regex("```html\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
-                val cssMatch = Regex("```css\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
-                val jsMatch = Regex("```javascript\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent) 
-                    ?: Regex("```js\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
-                
-                if (htmlMatch != null) {
-                    val htmlCode = htmlMatch.groupValues[1]
-                    val htmlFile = File(pwaDir, "index.html")
-                    htmlFile.writeText(htmlCode)
-                    updated = true
-                }
-                
-                if (cssMatch != null) {
-                    val cssCode = cssMatch.groupValues[1]
-                    val cssFile = File(pwaDir, "style.css")
-                    cssFile.writeText(cssCode)
-                    updated = true
-                }
-                
-                if (jsMatch != null) {
-                    val jsCode = jsMatch.groupValues[1]
-                    val jsFile = File(pwaDir, "script.js")
-                    jsFile.writeText(jsCode)
-                    updated = true
-                }
-                
-                if (updated) {
-                    _uiState.value = _uiState.value.copy(
-                        isReworking = false,
-                        pwaReworked = true,
-                        pwaReverted = false,  // Reset revert status when new changes are applied
-                        generationStep = null // Reset to null when complete
-                    )
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isReworking = false,
-                        errorMessage = "Could not parse the response for rework",
-                        generationStep = null // Reset to null when complete
-                    )
-                }
+                // If JSON response didn't have proper file content, try extracting from code blocks
+                extractFromCodeBlocks(uuid, responseContent)
             }
         } catch (e: Exception) {
             Log.e("ReworkViewModel", "Error updating PWA code", e)
@@ -210,6 +178,62 @@ class ReworkViewModel(
                 isReworking = false,
                 errorMessage = "Error updating PWA code: ${e.message}",
                 pwaReverted = false,  // Reset revert status
+                generationStep = null // Reset to null when complete
+            )
+        }
+    }
+    
+    private fun extractFromCodeBlocks(uuid: String, responseContent: String) {
+        val pwaDir = File(context.getExternalFilesDir(null), uuid)
+        if (!pwaDir.exists()) return
+        
+        val htmlMatch = Regex("```html\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
+        val cssMatch = Regex("```css\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
+        val jsMatch = Regex("```javascript\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent) 
+            ?: Regex("```js\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
+        val jsonMatch = Regex("```json\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
+        
+        var updated = false
+        
+        if (htmlMatch != null) {
+            val htmlCode = htmlMatch.groupValues[1]
+            val htmlFile = File(pwaDir, "index.html")
+            htmlFile.writeText(htmlCode)
+            updated = true
+        }
+        
+        if (cssMatch != null) {
+            val cssCode = cssMatch.groupValues[1]
+            val cssFile = File(pwaDir, "style.css")
+            cssFile.writeText(cssCode)
+            updated = true
+        }
+        
+        if (jsMatch != null) {
+            val jsCode = jsMatch.groupValues[1]
+            val jsFile = File(pwaDir, "script.js")
+            jsFile.writeText(jsCode)
+            updated = true
+        }
+        
+        if (jsonMatch != null) {
+            val manifestCode = jsonMatch.groupValues[1]
+            val manifestFile = File(pwaDir, "manifest.json")
+            manifestFile.writeText(manifestCode)
+            updated = true
+        }
+        
+        if (updated) {
+            _uiState.value = _uiState.value.copy(
+                isReworking = false,
+                pwaReworked = true,
+                pwaReverted = false,  // Reset revert status when new changes are applied
+                generationStep = null // Reset to null when complete
+            )
+        } else {
+            _uiState.value = _uiState.value.copy(
+                isReworking = false,
+                errorMessage = "Could not parse the response for rework",
                 generationStep = null // Reset to null when complete
             )
         }
