@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
+import com.toymakerftw.appsage.ui.theme.advancedShadow
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,6 +75,19 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
         }
     }
 
+    // Animate header on scroll
+    val headerScale by animateFloatAsState(
+        targetValue = if (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 100) 0.9f else 1f,
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "header_scale"
+    )
+    
+    val headerAlpha by animateFloatAsState(
+        targetValue = if (listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 100) 0.8f else 1f,
+        animationSpec = tween(300, easing = FastOutSlowInEasing),
+        label = "header_alpha"
+    )
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -105,6 +119,7 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .scale(headerScale)
                         .padding(bottom = 32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -124,13 +139,13 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
                         text = "Your App Collection",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = headerAlpha)
                     )
 
                     Text(
                         text = "${pwas.size} ${if (pwas.size == 1) "app" else "apps"} generated",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f * headerAlpha),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
@@ -188,12 +203,17 @@ private fun LoadingState() {
     )
     
     Card(
-        modifier = Modifier.fillMaxSize(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .advancedShadow(
+                cornersRadius = 24.dp,
+                shadowBlurRadius = 8.dp
+            ),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier
@@ -261,12 +281,17 @@ private fun EmptyState(navController: NavController) {
     )
     
     Card(
-        modifier = Modifier.fillMaxSize(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .advancedShadow(
+                cornersRadius = 24.dp,
+                shadowBlurRadius = 8.dp
+            ),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier
@@ -368,6 +393,12 @@ fun AppCard(
     
     // Card scale animation on press
     var isPressed by remember { mutableStateOf(false) }
+    val shadowBlurRadius by animateDpAsState(
+        targetValue = if (isPressed) 12.dp else elevation,
+        animationSpec = tween(100, easing = FastOutSlowInEasing),
+        label = "shadow_blur"
+    )
+    
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
         label = "card_scale",
@@ -386,12 +417,16 @@ fun AppCard(
                 onLongClick = {
                     expanded = !expanded
                 }
+            )
+            .advancedShadow(
+                cornersRadius = 20.dp,
+                shadowBlurRadius = shadowBlurRadius
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -503,7 +538,11 @@ fun AppCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 0.dp)
-                        .padding(bottom = 24.dp),
+                        .padding(bottom = 24.dp)
+                        .advancedShadow(
+                            cornersRadius = 16.dp,
+                            shadowBlurRadius = 4.dp
+                        ),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)

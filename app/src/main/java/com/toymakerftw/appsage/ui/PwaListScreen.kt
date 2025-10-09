@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import com.toymakerftw.appsage.ui.theme.advancedShadow
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -249,11 +250,13 @@ fun PwaItemCard(
             .clickable {
                 isPressed = true
                 onLaunch()
-            },
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isPressed) 8.dp else 4.dp
-        ),
-        shape = RoundedCornerShape(16.dp)
+            }
+            .advancedShadow(
+                cornersRadius = 16.dp,
+                shadowBlurRadius = if (isPressed) 8.dp else 4.dp
+            ),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
