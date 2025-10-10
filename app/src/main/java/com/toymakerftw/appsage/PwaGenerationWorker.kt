@@ -56,7 +56,7 @@ class PwaGenerationWorker(
                 messages = listOf(
                     Message(
                         role = "user",
-                        content = """Generate a complete PWA with HTML, CSS, and JavaScript code in JSON format. The PWA should implement: $prompt. Include index.html, style.css, and script.js in the JSON response. Also include a manifest.json file in the response. If the response is in JSON format, include these files at the top level of the JSON object. The manifest.json should include the proper name and short_name based on the prompt. For example:
+                        content = """Generate a complete mobile first PWA with HTML, CSS, and JavaScript code in JSON format. The PWA should implement: $prompt. Include index.html, style.css, and script.js in the JSON response. Also include a manifest.json file in the response. If the response is in JSON format, include these files at the top level of the JSON object. The manifest.json should include the proper name and short_name based on the prompt. For example:
 {
   "index.html": "<!DOCTYPE html>...",
   "style.css": "body { ... }",
