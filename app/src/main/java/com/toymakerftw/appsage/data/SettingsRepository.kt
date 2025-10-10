@@ -28,14 +28,17 @@ class SettingsRepository(private val context: Context) {
         return preferences[API_KEY_KEY]
     }
 
+    fun getApiKeyFlow() = context.dataStore.data.map { preferences ->
+        preferences[API_KEY_KEY]
+    }
+
     suspend fun setThemePreference(isDark: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[THEME_PREFERENCE_KEY] = isDark
         }
     }
 
-    suspend fun getThemePreference(): Boolean {
-        val preferences = context.dataStore.data.first()
-        return preferences[THEME_PREFERENCE_KEY] ?: false // Default to light theme
+    fun getThemePreferenceFlow() = context.dataStore.data.map { preferences ->
+        preferences[THEME_PREFERENCE_KEY] ?: false // Default to light theme
     }
 }

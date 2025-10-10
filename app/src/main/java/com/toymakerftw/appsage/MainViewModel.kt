@@ -32,19 +32,20 @@ class MainViewModel(
 
     init {
         _selectedModel.value = "x-ai/grok-4-fast"
-        loadApiKey()
+        observeApiKey()
     }
 
-    private fun loadApiKey() {
+    private fun observeApiKey() {
         viewModelScope.launch {
-            val apiKey = settingsRepository.getApiKey()
-            _uiState.value = _uiState.value.copy(apiKey = apiKey)
+            settingsRepository.getApiKeyFlow().collect { apiKey ->
+                _uiState.value = _uiState.value.copy(apiKey = apiKey)
+            }
         }
     }
 
     fun generatePwa(prompt: String) {
         viewModelScope.launch {
-            val apiKey = settingsRepository.getApiKey()
+            val apiKey = _uiState.value.apiKey
             if (apiKey.isNullOrEmpty()) {
                 _uiState.value = _uiState.value.copy(
                     isGenerating = false,

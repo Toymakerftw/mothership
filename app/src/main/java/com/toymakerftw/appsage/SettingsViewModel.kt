@@ -19,8 +19,14 @@ class SettingsViewModel(
 
     init {
         viewModelScope.launch {
-            _apiKey.value = settingsRepository.getApiKey()
-            _isDarkTheme.value = settingsRepository.getThemePreference()
+            settingsRepository.getApiKeyFlow().collect { apiKey ->
+                _apiKey.value = apiKey
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getThemePreferenceFlow().collect { isDarkTheme ->
+                _isDarkTheme.value = isDarkTheme
+            }
         }
     }
 

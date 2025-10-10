@@ -35,8 +35,9 @@ class ThemeViewModel(
 
     private fun loadThemePreference() {
         viewModelScope.launch {
-            val savedTheme = settingsRepository.getThemePreference()
-            _isDarkTheme.value = savedTheme
+            settingsRepository.getThemePreferenceFlow().collect { isDarkTheme ->
+                _isDarkTheme.value = isDarkTheme
+            }
         }
     }
 
