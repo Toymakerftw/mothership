@@ -3,11 +3,14 @@ package com.toymakerftw.appsage
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.toymakerftw.appsage.data.SettingsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class SettingsViewModel(
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 

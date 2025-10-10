@@ -276,9 +276,27 @@ class PwaViewerActivity : ComponentActivity() {
     }
 
     private fun generateUniquePort(uuid: String): Int {
-        val hash = uuid.hashCode()
-        val portOffset = Math.abs(hash) % SERVER_PORT_RANGE
-        return SERVER_PORT_BASE + portOffset
+        // Try to find an available port in the range
+        for (i in 0 until SERVER_PORT_RANGE) {
+            val port = SERVER_PORT_BASE + (Math.abs(uuid.hashCode()) + i) % SERVER_PORT_RANGE
+            if (isPortAvailable(port)) {
+                return port
+            }
+        }
+        // If all ports in range are taken, return the base port (fallback)
+        return SERVER_PORT_BASE
+    }
+    
+    private fun isPortAvailable(port: Int): Boolean {
+        return try {
+            val serverSocket = java.net.ServerSocket(port)
+            serverSocket.close()
+            true
+        } catch (e: java.net.BindException) {
+            false
+        } catch (e: Exception) {
+            false
+        }
     }
 
     override fun onDestroy() {

@@ -4,7 +4,9 @@ import android.content.Context
 import android.util.Log
 import com.toymakerftw.appsage.service.PwaManager
 import java.io.File
-import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 data class VersionInfo(
@@ -19,7 +21,7 @@ data class VersionHistory(
 )
 
 class VersionControl(private val context: Context) {
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault())
+    private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").withZone(ZoneId.systemDefault())
 
     fun createBackup(uuid: String, commitMessage: String = "Auto-backup before rework"): Boolean {
         val pwaDir = File(context.getExternalFilesDir(null), uuid)
@@ -29,7 +31,7 @@ class VersionControl(private val context: Context) {
         }
 
         val timestamp = System.currentTimeMillis()
-        val versionId = dateFormat.format(Date(timestamp))
+        val versionId = dateFormat.format(Instant.ofEpochMilli(timestamp))
         val backupDir = File(context.getExternalFilesDir(null), "$uuid/versions/$versionId")
         
         if (!backupDir.exists()) {

@@ -1,8 +1,9 @@
 package com.toymakerftw.appsage
 
+import android.app.Application
 import android.content.Context
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
@@ -10,21 +11,25 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.toymakerftw.appsage.data.SettingsRepository
 import com.toymakerftw.appsage.versioncontrol.VersionControl
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
+import javax.inject.Inject
 
-class ReworkViewModel(
-    private val context: Context,
+@HiltViewModel
+class ReworkViewModel @Inject constructor(
+    app: Application,
     private val settingsRepository: SettingsRepository
-) : ViewModel() {
+) : AndroidViewModel(app) {
+
+    private val versionControl = VersionControl(getApplication())
+    private val workManager = WorkManager.getInstance(getApplication())
 
     private val _uiState = MutableStateFlow(ReworkUiState())
     val uiState: StateFlow<ReworkUiState> = _uiState
 
-    private val versionControl = VersionControl(context)
-    private val workManager = WorkManager.getInstance(context)
     private var reworkWorkId: UUID? = null
 
     fun reworkPwa(uuid: String, reworkPrompt: String) {

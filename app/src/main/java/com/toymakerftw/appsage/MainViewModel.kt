@@ -1,8 +1,9 @@
 package com.toymakerftw.appsage
 
+import android.app.Application
 import android.content.Context
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
@@ -10,16 +11,22 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.toymakerftw.appsage.data.SettingsRepository
 import com.toymakerftw.appsage.data.PwaRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.UUID
+import javax.inject.Inject
 
-class MainViewModel(
-    private val context: Context,
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    app: Application,
     private val settingsRepository: SettingsRepository
-) : ViewModel() {
+) : AndroidViewModel(app) {
+
+    private val workManager = WorkManager.getInstance(getApplication())
+    private val pwaRepository = PwaRepository(getApplication())
 
     companion object {
         const val DEFAULT_MODEL_ID = "x-ai/grok-4-fast"
@@ -32,8 +39,6 @@ class MainViewModel(
     private val _selectedModel = MutableStateFlow<String?>(null)
     val selectedModel: StateFlow<String?> = _selectedModel
     
-    private val workManager = WorkManager.getInstance(context)
-    private val pwaRepository = PwaRepository(context)
     private var generationWorkId: UUID? = null
     private var workObserver: androidx.lifecycle.Observer<WorkInfo>? = null
 

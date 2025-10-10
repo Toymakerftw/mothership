@@ -7,7 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -43,25 +43,16 @@ fun AppsageNav(settingsViewModel: SettingsViewModel) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("main") {
-                val mainViewModel: MainViewModel = viewModel { 
-                    val settingsRepository = com.toymakerftw.appsage.data.SettingsRepository(context)
-                    MainViewModel(context, settingsRepository)
-                }
+                val mainViewModel: MainViewModel = hiltViewModel()
                 MainScreen(mainViewModel, navController)
             }
             composable("app_list") {
-                val mainViewModel: MainViewModel = viewModel { 
-                    val settingsRepository = com.toymakerftw.appsage.data.SettingsRepository(context)
-                    MainViewModel(context, settingsRepository)
-                }
+                val mainViewModel: MainViewModel = hiltViewModel()
                 AppListScreen(navController, mainViewModel)
             }
             composable("rework/{uuid}") { backStackEntry ->
                 val uuid = backStackEntry.arguments?.getString("uuid") ?: ""
-                val reworkViewModel: ReworkViewModel = viewModel {
-                    val settingsRepository = com.toymakerftw.appsage.data.SettingsRepository(context)
-                    ReworkViewModel(context, settingsRepository)
-                }
+                val reworkViewModel: ReworkViewModel = hiltViewModel()
                 ReworkScreen(uuid, reworkViewModel, navController)
             }
             composable("settings") { 

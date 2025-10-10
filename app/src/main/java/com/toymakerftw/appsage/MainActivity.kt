@@ -10,27 +10,21 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.toymakerftw.appsage.data.SettingsRepository
 import com.toymakerftw.appsage.ui.theme.AppsageTheme
+import dagger.hilt.android.AndroidEntryPoint
+import androidx.lifecycle.viewmodel.compose.viewModel
+import javax.inject.Inject
 
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val settingsRepository: SettingsRepository by lazy { 
-        SettingsRepository(this) 
-    }
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val settingsViewModel: SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
-                factory = object : androidx.lifecycle.ViewModelProvider.Factory {
-                    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                        if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
-                            return SettingsViewModel(settingsRepository) as T
-                        }
-                        throw IllegalArgumentException("Unknown ViewModel class")
-                    }
-                }
-            )
+            val settingsViewModel: SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
             
             val isDarkThemeState = settingsViewModel.isDarkTheme.collectAsState()
             

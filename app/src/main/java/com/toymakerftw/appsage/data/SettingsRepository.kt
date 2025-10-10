@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-class SettingsRepository(private val context: Context) {
+class SettingsRepository(val context: Context) {
 
     private val API_KEY_KEY = stringPreferencesKey("api_key")
     private val THEME_PREFERENCE_KEY = booleanPreferencesKey("theme_preference")
@@ -24,6 +24,7 @@ class SettingsRepository(private val context: Context) {
             }
         } catch (e: Exception) {
             android.util.Log.e("SettingsRepository", "Error saving API key", e)
+            // Don't expose the API key in logs - just log generic error
             throw e
         }
     }
@@ -33,7 +34,8 @@ class SettingsRepository(private val context: Context) {
             val preferences = context.dataStore.data.first()
             preferences[API_KEY_KEY]
         } catch (e: Exception) {
-            android.util.Log.e("SettingsRepository", "Error reading API key", e)
+            // Don't log sensitive information
+            android.util.Log.e("SettingsRepository", "Error reading API key from DataStore", e)
             null
         }
     }
