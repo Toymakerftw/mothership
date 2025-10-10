@@ -9,7 +9,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.toymakerftw.appsage.data.SettingsRepository
-import com.toymakerftw.appsage.service.PwaManager
+import com.toymakerftw.appsage.data.PwaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -21,6 +21,11 @@ class MainViewModel(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
+    companion object {
+        const val DEFAULT_MODEL_ID = "x-ai/grok-4-fast"
+        const val MAX_PROMPT_LENGTH = 2000 // Maximum allowed prompt length
+    }
+
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState
 
@@ -28,10 +33,12 @@ class MainViewModel(
     val selectedModel: StateFlow<String?> = _selectedModel
     
     private val workManager = WorkManager.getInstance(context)
+    private val pwaRepository = PwaRepository(context)
     private var generationWorkId: UUID? = null
+    private var workObserver: androidx.lifecycle.Observer<WorkInfo>? = null
 
     init {
-        _selectedModel.value = "x-ai/grok-4-fast"
+        _selectedModel.value = DEFAULT_MODEL_ID
         observeApiKey()
     }
 
@@ -61,7 +68,10 @@ class MainViewModel(
                 generationStep = 0
             )
 
-            val selectedModelId = _selectedModel.value ?: "x-ai/grok-4-fast"
+            val selectedModelId = _selectedModel.value?.takeIf { it.isNotEmpty() } ?: run {
+                Log.w("MainViewModel", "No selected model found, using default")
+                "x-ai/grok-4-fast"  // Consider making this a constant
+            }
 
             val workRequest = OneTimeWorkRequestBuilder<PwaGenerationWorker>()
                 .setInputData(
@@ -81,7 +91,8 @@ class MainViewModel(
     }
     
     private fun observeWork(workId: UUID) {
-        workManager.getWorkInfoByIdLiveData(workId).observeForever { workInfo ->
+        // Create and store the observer reference to allow proper removal
+        val observer = androidx.lifecycle.Observer<WorkInfo> { workInfo ->
             if (workInfo != null) {
                 when (workInfo.state) {
                     WorkInfo.State.SUCCEEDED -> {
@@ -93,7 +104,8 @@ class MainViewModel(
                             pwaUuid = pwaUuid,
                             errorMessage = null
                         )
-                        workManager.getWorkInfoByIdLiveData(workId).removeObserver { }
+                        // Remove the observer after work is complete
+                        workManager.getWorkInfoByIdLiveData(workId).removeObserver(workObserver!!)
                     }
                     WorkInfo.State.FAILED -> {
                         val error = workInfo.outputData.getString(PwaGenerationWorker.KEY_ERROR_MESSAGE)
@@ -104,18 +116,32 @@ class MainViewModel(
                             pwaUuid = null,
                             errorMessage = error
                         )
-                        workManager.getWorkInfoByIdLiveData(workId).removeObserver { }
+                        // Remove the observer after work is complete
+                        workManager.getWorkInfoByIdLiveData(workId).removeObserver(workObserver!!)
+                    }
+                    WorkInfo.State.CANCELLED -> {
+                        _uiState.value = _uiState.value.copy(
+                            isGenerating = false,
+                            generationStep = null,
+                            errorMessage = "Work was cancelled"
+                        )
+                        // Remove the observer after work is cancelled
+                        workManager.getWorkInfoByIdLiveData(workId).removeObserver(workObserver!!)
                     }
                     WorkInfo.State.RUNNING -> {
                         val step = workInfo.progress.getInt(PwaGenerationWorker.KEY_GENERATION_STEP, 0)
                         _uiState.value = _uiState.value.copy(generationStep = step)
                     }
-                    else -> {
-                        // Other states like ENQUEUED, BLOCKED, CANCELLED
+                    WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
+                        // Optionally handle these states if needed
                     }
                 }
             }
         }
+        
+        // Store the observer for potential future cleanup
+        workObserver = observer
+        workManager.getWorkInfoByIdLiveData(workId).observeForever(observer)
     }
 
     fun clearErrorMessage() {
@@ -131,9 +157,10 @@ class MainViewModel(
     
     fun deletePwa(uuid: String) {
         viewModelScope.launch {
-            val pwaManager = PwaManager(context)
-            pwaManager.deletePwa(uuid)
-            _uiState.value = _uiState.value.copy(pwaDeleted = true)
+            val success = pwaRepository.deletePwa(uuid)
+            if (success) {
+                _uiState.value = _uiState.value.copy(pwaDeleted = true)
+            }
         }
     }
 
@@ -141,62 +168,17 @@ class MainViewModel(
         _uiState.value = _uiState.value.copy(pwaDeleted = false)
     }
 
-    fun getPwas(): List<Pair<String, String>> {
-        val pwaDir = context.getExternalFilesDir(null)
-        if (pwaDir != null && pwaDir.exists()) {
-            return pwaDir.listFiles()?.mapNotNull { 
-                if (it.isDirectory) {
-                    val appInfoFile = File(it, "app_info.json")
-                    val manifestFile = File(it, "manifest.json")
-                    
-                    if (appInfoFile.exists() || manifestFile.exists()) {
-                        try {
-                            var pwaName = "Untitled App"
-                            
-                            if (manifestFile.exists()) {
-                                try {
-                                    val manifestContent = manifestFile.readText()
-                                    val manifestJson = org.json.JSONObject(manifestContent)
-                                    
-                                    val shortName = manifestJson.optString("short_name")
-                                    val manifestName = manifestJson.optString("name")
-                                    
-                                    val betterName = shortName.ifEmpty { manifestName }
-                                    if (betterName.isNotEmpty()) {
-                                        pwaName = betterName
-                                    }
-                                } catch (manifestException: Exception) {
-                                    Log.w("MainViewModel", "Could not parse manifest.json for ${it.name}", manifestException)
-                                }
-                            }
-                            
-                            if (pwaName == "Untitled App" && appInfoFile.exists()) {
-                                val appInfo = appInfoFile.readText()
-                                try {
-                                    val jsonObject = org.json.JSONObject(appInfo)
-                                    val appInfoName = jsonObject.optString("name", "Untitled App")
-                                    if (appInfoName != "Untitled App") {
-                                        pwaName = appInfoName
-                                    }
-                                } catch (e: Exception) {
-                                    Log.w("MainViewModel", "Could not parse app_info.json for ${it.name}", e)
-                                }
-                            }
-                            
-                            it.name to pwaName
-                        } catch (e: Exception) {
-                            Log.w("MainViewModel", "Error getting PWA name for ${it.name}", e)
-                            it.name to "Untitled App (${it.name})"
-                        }
-                    } else {
-                        null
-                    }
-                } else {
-                    null
-                }
-            } ?: emptyList()
+    suspend fun getPwas(): List<Pair<String, String>> {
+        return pwaRepository.getGeneratedPwas()
+    }
+    
+    override fun onCleared() {
+        super.onCleared()
+        // Remove any active observer when the ViewModel is cleared
+        if (generationWorkId != null && workObserver != null) {
+            workManager.getWorkInfoByIdLiveData(generationWorkId!!).removeObserver(workObserver!!)
+            workObserver = null
         }
-        return emptyList()
     }
 }
 

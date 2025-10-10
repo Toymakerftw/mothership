@@ -18,14 +18,24 @@ class SettingsRepository(private val context: Context) {
     private val THEME_PREFERENCE_KEY = booleanPreferencesKey("theme_preference")
 
     suspend fun saveApiKey(apiKey: String) {
-        context.dataStore.edit { preferences ->
-            preferences[API_KEY_KEY] = apiKey
+        try {
+            context.dataStore.edit { preferences ->
+                preferences[API_KEY_KEY] = apiKey
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SettingsRepository", "Error saving API key", e)
+            throw e
         }
     }
 
     suspend fun getApiKey(): String? {
-        val preferences = context.dataStore.data.first()
-        return preferences[API_KEY_KEY]
+        return try {
+            val preferences = context.dataStore.data.first()
+            preferences[API_KEY_KEY]
+        } catch (e: Exception) {
+            android.util.Log.e("SettingsRepository", "Error reading API key", e)
+            null
+        }
     }
 
     fun getApiKeyFlow() = context.dataStore.data.map { preferences ->
@@ -33,8 +43,13 @@ class SettingsRepository(private val context: Context) {
     }
 
     suspend fun setThemePreference(isDark: Boolean) {
-        context.dataStore.edit { preferences ->
-            preferences[THEME_PREFERENCE_KEY] = isDark
+        try {
+            context.dataStore.edit { preferences ->
+                preferences[THEME_PREFERENCE_KEY] = isDark
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SettingsRepository", "Error setting theme preference", e)
+            throw e
         }
     }
 

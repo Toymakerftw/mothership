@@ -74,7 +74,7 @@ class PwaManager(private val context: Context) {
         } ?: emptyList()
     }
     
-    fun deletePwa(uuid: String) {
+    fun deletePwa(uuid: String): Boolean {
         val pwaDir = File(context.getExternalFilesDir(null), uuid)
         if (pwaDir.exists()) {
             // Uninstall the shortcut first
@@ -82,8 +82,9 @@ class PwaManager(private val context: Context) {
             installer.uninstall(uuid)
             
             // Then delete the directory and all its contents
-            pwaDir.deleteRecursively()
+            return pwaDir.deleteRecursively()
         }
+        return true // If directory doesn't exist, consider it as already deleted successfully
     }
     
     fun startPwaServer(uuid: String, port: Int = 8080): Boolean {

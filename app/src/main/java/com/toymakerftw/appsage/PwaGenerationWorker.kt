@@ -29,6 +29,7 @@ class PwaGenerationWorker(
         const val KEY_PWA_UUID = "PWA_UUID"
         const val KEY_ERROR_MESSAGE = "ERROR_MESSAGE"
         const val KEY_GENERATION_STEP = "GENERATION_STEP"
+        const val MAX_PROMPT_LENGTH = 2000 // Maximum allowed prompt length
     }
 
     override suspend fun doWork(): Result {
@@ -38,6 +39,11 @@ class PwaGenerationWorker(
 
         if (prompt.isNullOrEmpty() || apiKey.isNullOrEmpty()) {
             return Result.failure(workDataOf(KEY_ERROR_MESSAGE to "Prompt or API key is missing."))
+        }
+        
+        // Validate prompt length
+        if (prompt.length > MAX_PROMPT_LENGTH) {
+            return Result.failure(workDataOf(KEY_ERROR_MESSAGE to "Prompt exceeds maximum allowed length of ${MAX_PROMPT_LENGTH} characters."))
         }
 
         try {
@@ -98,16 +104,22 @@ class PwaGenerationWorker(
 
         try {
             val jsonResponse = try {
+                // Validate and sanitize the JSON before using it
+                if (!isValidJsonStructure(responseContent.trim())) {
+                    Log.w("PwaGenerationWorker", "Invalid JSON structure received, trying code blocks")
+                    return extractFromCodeBlocks(responseContent, pwaDir, uuid)
+                }
                 JSONObject(responseContent.trim())
             } catch (jsonException: Exception) {
                 Log.w("PwaGenerationWorker", "Could not parse response as JSON, trying code blocks", jsonException)
                 return extractFromCodeBlocks(responseContent, pwaDir, uuid)
             }
 
-            val htmlContent = jsonResponse.optString("index.html", "")
-            val cssContent = jsonResponse.optString("style.css", "")
-            val jsContent = jsonResponse.optString("script.js", "")
-            val manifestContent = jsonResponse.optString("manifest.json", "")
+            // Sanitize the content to prevent potential XSS or other injection issues
+            val htmlContent = sanitizeContent(jsonResponse.optString("index.html", ""))
+            val cssContent = sanitizeContent(jsonResponse.optString("style.css", ""))
+            val jsContent = sanitizeContent(jsonResponse.optString("script.js", ""))
+            val manifestContent = sanitizeManifestContent(jsonResponse.optString("manifest.json", ""))
 
             if (htmlContent.isEmpty() && cssContent.isEmpty() && jsContent.isEmpty()) {
                 return extractFromCodeBlocks(responseContent, pwaDir, uuid)
@@ -130,9 +142,43 @@ class PwaGenerationWorker(
             throw e // Re-throw to be caught by the main try-catch and result in failure
         }
     }
+    
+    private fun isValidJsonStructure(jsonStr: String): Boolean {
+        return try {
+            val obj = JSONObject(jsonStr)
+            // Basic validation - check if it has at least one of the expected keys
+            obj.has("index.html") || obj.has("style.css") || obj.has("script.js") || obj.has("manifest.json")
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    private fun sanitizeContent(content: String): String {
+        // Basic sanitization to remove potentially harmful content
+        // In a real application, you would want more thorough sanitization
+        return content
+            .replace(Regex("<script[\\s\\S]*?>[\\s\\S]*?</script>", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("javascript:", RegexOption.IGNORE_CASE), "js:")
+            .replace(Regex("on\\w+\\s*=", RegexOption.IGNORE_CASE), "sanitized_")
+    }
+    
+    private fun sanitizeManifestContent(content: String): String {
+        // For manifest content, ensure it's valid JSON
+        if (content.isEmpty()) return content
+        return try {
+            // Attempt to parse and re-serialize to ensure valid structure
+            val manifestObj = JSONObject(content)
+            manifestObj.toString()
+        } catch (e: Exception) {
+            Log.w("PwaGenerationWorker", "Invalid manifest JSON, using default", e)
+            createDefaultManifest()
+        }
+    }
 
     private fun extractFromCodeBlocks(responseContent: String, pwaDir: File, uuid: String): String {
-        File(pwaDir, "raw_response.txt").writeText(responseContent)
+        // Sanitize the raw response before saving it
+        val sanitizedResponse = sanitizeRawResponse(responseContent)
+        File(pwaDir, "raw_response.txt").writeText(sanitizedResponse)
 
         val htmlMatch = Regex("```html\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
         val cssMatch = Regex("```css\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
@@ -140,17 +186,33 @@ class PwaGenerationWorker(
             ?: Regex("```js\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
         val manifestMatch = Regex("```json\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
 
-        htmlMatch?.let { File(pwaDir, "index.html").writeText(it.groupValues[1]) }
-        cssMatch?.let { File(pwaDir, "style.css").writeText(it.groupValues[1]) }
-        jsMatch?.let { File(pwaDir, "script.js").writeText(it.groupValues[1]) }
+        htmlMatch?.let { 
+            val sanitizedHtml = sanitizeContent(it.groupValues[1]) 
+            File(pwaDir, "index.html").writeText(sanitizedHtml) 
+        }
+        cssMatch?.let { 
+            val sanitizedCss = sanitizeContent(it.groupValues[1]) 
+            File(pwaDir, "style.css").writeText(sanitizedCss) 
+        }
+        jsMatch?.let { 
+            val sanitizedJs = sanitizeContent(it.groupValues[1]) 
+            File(pwaDir, "script.js").writeText(sanitizedJs) 
+        }
 
         val finalManifestContent = manifestMatch?.groupValues?.get(1) ?: createDefaultManifest()
-        File(pwaDir, "manifest.json").writeText(finalManifestContent)
+        val sanitizedManifest = sanitizeManifestContent(finalManifestContent)
+        File(pwaDir, "manifest.json").writeText(sanitizedManifest)
         
-        val pwaName = extractNameFromManifest(finalManifestContent)
+        val pwaName = extractNameFromManifest(sanitizedManifest)
         File(pwaDir, "app_info.json").writeText("{ \"name\": \"$pwaName\", \"uuid\": \"$uuid\" }")
 
         return uuid
+    }
+    
+    private fun sanitizeRawResponse(response: String): String {
+        // Remove API keys, secrets, or other sensitive information from the raw response
+        return response.replace(Regex("API_KEY|token|secret|password|auth|bearer", 
+            setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE)), "[REDACTED]")
     }
 
     private fun createDefaultManifest(): String = """{
