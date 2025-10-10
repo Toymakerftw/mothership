@@ -18,6 +18,11 @@ class SettingsRepository(val context: Context) {
     private val THEME_PREFERENCE_KEY = booleanPreferencesKey("theme_preference")
 
     suspend fun saveApiKey(apiKey: String) {
+        // Validate API key format (basic validation - should start with 'sk-' for most API providers)
+        if (apiKey.isNotEmpty() && !apiKey.startsWith("sk-")) {
+            android.util.Log.w("SettingsRepository", "API key does not follow standard format (should start with 'sk-')")
+        }
+        
         try {
             context.dataStore.edit { preferences ->
                 preferences[API_KEY_KEY] = apiKey

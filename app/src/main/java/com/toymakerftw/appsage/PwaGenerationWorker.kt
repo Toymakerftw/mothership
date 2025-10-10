@@ -180,26 +180,33 @@ class PwaGenerationWorker(
         val sanitizedResponse = sanitizeRawResponse(responseContent)
         File(pwaDir, "raw_response.txt").writeText(sanitizedResponse)
 
-        val htmlMatch = Regex("```html\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
-        val cssMatch = Regex("```css\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
-        val jsMatch = Regex("```javascript\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
-            ?: Regex("```js\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
-        val manifestMatch = Regex("```json\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
+        // Use a single pass to extract all code blocks more efficiently
+        val allBlocksRegex = Regex("```(\\w+)\\s*\\n(.*?)\\s*```", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.MULTILINE))
+        val allMatches = allBlocksRegex.findAll(responseContent).associate { match ->
+            match.groupValues[1].lowercase() to match.groupValues[2]
+        }
 
-        htmlMatch?.let { 
-            val sanitizedHtml = sanitizeContent(it.groupValues[1]) 
+        // Extract specific file types
+        val htmlContent = allMatches["html"]
+        val cssContent = allMatches["css"]
+        val jsContent = allMatches["javascript"] ?: allMatches["js"]
+        val manifestContent = allMatches["json"]
+
+        htmlContent?.let { 
+            val sanitizedHtml = sanitizeContent(it) 
             File(pwaDir, "index.html").writeText(sanitizedHtml) 
         }
-        cssMatch?.let { 
-            val sanitizedCss = sanitizeContent(it.groupValues[1]) 
+        cssContent?.let { 
+            val sanitizedCss = sanitizeContent(it) 
             File(pwaDir, "style.css").writeText(sanitizedCss) 
         }
-        jsMatch?.let { 
-            val sanitizedJs = sanitizeContent(it.groupValues[1]) 
-            File(pwaDir, "script.js").writeText(sanitizedJs) 
+        jsContent?.let { 
+            val sanitizedJs = sanitizeContent(it)
+            val validatedJs = validateAndSanitizeJS(sanitizedJs)
+            File(pwaDir, "script.js").writeText(validatedJs) 
         }
 
-        val finalManifestContent = manifestMatch?.groupValues?.get(1) ?: createDefaultManifest()
+        val finalManifestContent = manifestContent ?: createDefaultManifest()
         val sanitizedManifest = sanitizeManifestContent(finalManifestContent)
         File(pwaDir, "manifest.json").writeText(sanitizedManifest)
         
@@ -211,8 +218,23 @@ class PwaGenerationWorker(
     
     private fun sanitizeRawResponse(response: String): String {
         // Remove API keys, secrets, or other sensitive information from the raw response
-        return response.replace(Regex("API_KEY|token|secret|password|auth|bearer", 
-            setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE)), "[REDACTED]")
+        var sanitized = response
+        // More comprehensive sanitization to prevent sensitive data leakage
+        sanitized = sanitized.replace(
+            Regex("(API_KEY|token|secret|password|auth|bearer|key|\\w*api\\w*|\\w*token\\w*)\\s*[:=]\\s*[\"']?\\w+[\"']?", 
+                setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE)), 
+            "\$1: [SANITIZED]"
+        )
+        return sanitized
+    }
+    
+    private fun validateAndSanitizeJS(content: String): String {
+        // Check for potentially dangerous JavaScript patterns
+        if (content.contains(Regex("eval\\s*\\(|document\\.cookie|localStorage|sessionStorage|openDatabase|indexedDB", 
+                RegexOption.IGNORE_CASE))) {
+            throw SecurityException("Potentially malicious content detected in JS code")
+        }
+        return content
     }
 
     private fun createDefaultManifest(): String = """{

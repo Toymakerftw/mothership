@@ -75,7 +75,7 @@ class MainViewModel @Inject constructor(
 
             val selectedModelId = _selectedModel.value?.takeIf { it.isNotEmpty() } ?: run {
                 Log.w("MainViewModel", "No selected model found, using default")
-                "x-ai/grok-4-fast"  // Consider making this a constant
+                DEFAULT_MODEL_ID
             }
 
             val workRequest = OneTimeWorkRequestBuilder<PwaGenerationWorker>()
@@ -110,7 +110,9 @@ class MainViewModel @Inject constructor(
                             errorMessage = null
                         )
                         // Remove the observer after work is complete
-                        workManager.getWorkInfoByIdLiveData(workId).removeObserver(workObserver!!)
+                        workObserver?.let { observer ->
+                            workManager.getWorkInfoByIdLiveData(workId).removeObserver(observer)
+                        }
                     }
                     WorkInfo.State.FAILED -> {
                         val error = workInfo.outputData.getString(PwaGenerationWorker.KEY_ERROR_MESSAGE)
@@ -122,7 +124,9 @@ class MainViewModel @Inject constructor(
                             errorMessage = error
                         )
                         // Remove the observer after work is complete
-                        workManager.getWorkInfoByIdLiveData(workId).removeObserver(workObserver!!)
+                        workObserver?.let { observer ->
+                            workManager.getWorkInfoByIdLiveData(workId).removeObserver(observer)
+                        }
                     }
                     WorkInfo.State.CANCELLED -> {
                         _uiState.value = _uiState.value.copy(
@@ -131,7 +135,9 @@ class MainViewModel @Inject constructor(
                             errorMessage = "Work was cancelled"
                         )
                         // Remove the observer after work is cancelled
-                        workManager.getWorkInfoByIdLiveData(workId).removeObserver(workObserver!!)
+                        workObserver?.let { observer ->
+                            workManager.getWorkInfoByIdLiveData(workId).removeObserver(observer)
+                        }
                     }
                     WorkInfo.State.RUNNING -> {
                         val step = workInfo.progress.getInt(PwaGenerationWorker.KEY_GENERATION_STEP, 0)
@@ -156,8 +162,9 @@ class MainViewModel @Inject constructor(
     fun saveApiKeyAndGeneratePwa(apiKey: String, prompt: String) {
         viewModelScope.launch {
             settingsRepository.saveApiKey(apiKey)
+            _uiState.value = _uiState.value.copy(apiKey = apiKey)
+            generatePwa(prompt)
         }
-        generatePwa(prompt)
     }
     
     fun deletePwa(uuid: String) {
@@ -180,10 +187,12 @@ class MainViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         // Remove any active observer when the ViewModel is cleared
-        if (generationWorkId != null && workObserver != null) {
-            workManager.getWorkInfoByIdLiveData(generationWorkId!!).removeObserver(workObserver!!)
-            workObserver = null
+        generationWorkId?.let { workId ->
+            workObserver?.let { observer ->
+                workManager.getWorkInfoByIdLiveData(workId).removeObserver(observer)
+            }
         }
+        workObserver = null
     }
 }
 
