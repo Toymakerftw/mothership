@@ -45,16 +45,14 @@ fun AppsageNav(settingsViewModel: SettingsViewModel) {
             composable("main") {
                 val mainViewModel: MainViewModel = viewModel { 
                     val settingsRepository = com.toymakerftw.appsage.data.SettingsRepository(context)
-                    val appsageApi = (context.applicationContext as AppsageApp).appsageApi
-                    MainViewModel(context, appsageApi, settingsRepository)
+                    MainViewModel(context, settingsRepository)
                 }
                 MainScreen(mainViewModel, navController)
             }
             composable("app_list") {
                 val mainViewModel: MainViewModel = viewModel { 
                     val settingsRepository = com.toymakerftw.appsage.data.SettingsRepository(context)
-                    val appsageApi = (context.applicationContext as AppsageApp).appsageApi
-                    MainViewModel(context, appsageApi, settingsRepository)
+                    MainViewModel(context, settingsRepository)
                 }
                 AppListScreen(navController, mainViewModel)
             }
@@ -62,8 +60,7 @@ fun AppsageNav(settingsViewModel: SettingsViewModel) {
                 val uuid = backStackEntry.arguments?.getString("uuid") ?: ""
                 val reworkViewModel: ReworkViewModel = viewModel {
                     val settingsRepository = com.toymakerftw.appsage.data.SettingsRepository(context)
-                    val appsageApi = (context.applicationContext as AppsageApp).appsageApi
-                    ReworkViewModel(context, appsageApi, settingsRepository)
+                    ReworkViewModel(context, settingsRepository)
                 }
                 ReworkScreen(uuid, reworkViewModel, navController)
             }

@@ -4,24 +4,20 @@ import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.toymakerftw.appsage.api.AppsageApi
-import com.toymakerftw.appsage.api.Message
-import com.toymakerftw.appsage.api.OpenRouterRequest
+import androidx.work.Data
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.toymakerftw.appsage.data.SettingsRepository
 import com.toymakerftw.appsage.service.PwaManager
-import com.toymakerftw.appsage.PwaInstaller
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
-import java.util.UUID
 import java.io.File
-import java.io.EOFException
-import org.json.JSONObject
+import java.util.UUID
 
 class MainViewModel(
     private val context: Context,
-    private val appsageApi: AppsageApi,
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
@@ -30,15 +26,15 @@ class MainViewModel(
 
     private val _selectedModel = MutableStateFlow<String?>(null)
     val selectedModel: StateFlow<String?> = _selectedModel
+    
+    private val workManager = WorkManager.getInstance(context)
+    private var generationWorkId: UUID? = null
 
     init {
-        // Set default model instead of loading models
         _selectedModel.value = "x-ai/grok-4-fast"
-        
-        // Load initial API key
         loadApiKey()
     }
-    
+
     private fun loadApiKey() {
         viewModelScope.launch {
             val apiKey = settingsRepository.getApiKey()
@@ -48,292 +44,77 @@ class MainViewModel(
 
     fun generatePwa(prompt: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(
-                isGenerating = true, 
-                errorMessage = null,
-                generationStep = 0,
-                pwaGenerated = false
-            )
-            
-            try {
-                val apiKey = settingsRepository.getApiKey()
-                if (apiKey.isNullOrEmpty()) {
-                    _uiState.value = _uiState.value.copy(
-                        isGenerating = false, 
-                        errorMessage = "API key not set",
-                        generationStep = null
-                    )
-                    return@launch
-                }
-
-                // Step 0: Analyzing prompt
-                delay(500) // Brief delay for UI feedback
-                _uiState.value = _uiState.value.copy(generationStep = 0)
-
-                val selectedModelId = _selectedModel.value ?: "x-ai/grok-4-fast"
-                
-                val request = OpenRouterRequest(
-                    model = selectedModelId,
-                    messages = listOf(
-                        Message(
-                            role = "user",
-                            content = """Generate a complete PWA with HTML, CSS, and JavaScript code in JSON format. The PWA should implement: $prompt. Include index.html, style.css, and script.js in the JSON response. Also include a manifest.json file in the response. If the response is in JSON format, include these files at the top level of the JSON object. The manifest.json should include the proper name and short_name based on the prompt. For example:
-{
-  "index.html": "<!DOCTYPE html>...",
-  "style.css": "body { ... }",
-  "script.js": "console.log('...');",
-  "manifest.json": "{\\"name\\": \\"My PWA App\\", \\"short_name\\": \\"PWA App\\"}"
-}"""
-                        )
-                    )
-                )
-                
-                // Step 1: Generating code
-                _uiState.value = _uiState.value.copy(generationStep = 1)
-                
-                val response = try {
-                    appsageApi.generatePwa("Bearer $apiKey", request)
-                } catch (e: EOFException) {
-                    Log.e("MainViewModel", "EOFException during API call - response likely truncated", e)
-                    _uiState.value = _uiState.value.copy(
-                        isGenerating = false,
-                        generationStep = null,
-                        errorMessage = "API response was incomplete. Please try again later."
-                    )
-                    return@launch
-                }
-                
-                // Step 2: Styling UI
-                _uiState.value = _uiState.value.copy(generationStep = 2)
-                delay(300) // Brief delay for UI feedback
-                
-                if (response.choices.isNotEmpty()) {
-                    val content = response.choices[0].message.content
-                    
-                    // Step 3: Finalizing
-                    _uiState.value = _uiState.value.copy(generationStep = 3)
-                    
-                    extractAndSavePwaCode(content)
-                }
-            } catch (e: Exception) {
-                Log.e("MainViewModel", "Error generating PWA", e)
-                // Check if it's specifically an EOFException for better error messaging
-                if (e is EOFException || e.cause is EOFException) {
-                    _uiState.value = _uiState.value.copy(
-                        isGenerating = false,
-                        generationStep = null,
-                        errorMessage = "API response was incomplete. This may be due to a network timeout or connection issue. Please try again."
-                    )
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isGenerating = false,
-                        generationStep = null,
-                        errorMessage = e.message
-                    )
-                }
-            }
-        }
-    }
-
-    private fun extractAndSavePwaCode(responseContent: String) {
-        try {
-            // Try to parse the response as JSON, but handle incomplete responses gracefully
-            val jsonResponse = try {
-                JSONObject(responseContent.trim())
-            } catch (jsonException: Exception) {
-                // If JSON parsing fails, try to extract code from text blocks
-                Log.w("MainViewModel", "Could not parse response as JSON, trying code blocks", jsonException)
-                extractFromCodeBlocks(responseContent)
-                return
-            }
-            
-            // Extract code files
-            val htmlContent = jsonResponse.optString("index.html", "")
-            val cssContent = jsonResponse.optString("style.css", "")
-            val jsContent = jsonResponse.optString("script.js", "")
-            val manifestContent = jsonResponse.optString("manifest.json", "")
-            
-            // If the response is not in expected JSON format, try to extract code from text
-            if (htmlContent.isEmpty() && cssContent.isEmpty() && jsContent.isEmpty()) {
-                // Look for code blocks in the response
-                extractFromCodeBlocks(responseContent)
-            } else {
-                // Handle expected JSON format
-                val uuid = UUID.randomUUID().toString()
-                val pwaDir = File(context.getExternalFilesDir(null), uuid)
-                pwaDir.mkdirs()
-                
-                if (htmlContent.isNotEmpty()) {
-                    val htmlFile = File(pwaDir, "index.html")
-                    htmlFile.writeText(htmlContent)
-                }
-                
-                if (cssContent.isNotEmpty()) {
-                    val cssFile = File(pwaDir, "style.css")
-                    cssFile.writeText(cssContent)
-                }
-                
-                if (jsContent.isNotEmpty()) {
-                    val jsFile = File(pwaDir, "script.js")
-                    jsFile.writeText(jsContent)
-                }
-                
-                // Create manifest.json file if provided, otherwise create a basic one
-                val finalManifestContent = if (manifestContent.isNotEmpty()) {
-                    manifestContent
-                } else {
-                    """{
-    "name": "Generated PWA",
-    "short_name": "PWAGen",
-    "start_url": "/index.html",
-    "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#000000",
-    "icons": [
-        {
-            "src": "/icon.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        }
-    ]
-}"""
-                }
-                
-                val manifestFile = File(pwaDir, "manifest.json")
-                manifestFile.writeText(finalManifestContent)
-                
-                // Extract name from manifest for app_info.json
-                var pwaName = "Generated PWA"
-                try {
-                    val manifestJson = JSONObject(finalManifestContent)
-                    val shortName = manifestJson.optString("short_name")
-                    val manifestName = manifestJson.optString("name")
-                    
-                    // Prefer short_name, fallback to name from manifest
-                    val betterName = shortName.ifEmpty { manifestName }
-                    if (betterName.isNotEmpty()) {
-                        pwaName = betterName
-                    }
-                } catch (e: Exception) {
-                    Log.w("MainViewModel", "Could not extract name from manifest", e)
-                }
-                
-                // Create a basic app_info.json with the extracted name
-                val appInfoFile = File(pwaDir, "app_info.json")
-                appInfoFile.writeText("""{"name": "$pwaName", "uuid": "$uuid"}""")
-                
+            val apiKey = settingsRepository.getApiKey()
+            if (apiKey.isNullOrEmpty()) {
                 _uiState.value = _uiState.value.copy(
                     isGenerating = false,
-                    generationStep = null,
-                    pwaGenerated = true,
-                    pwaUuid = uuid
+                    errorMessage = "API key not set"
                 )
+                return@launch
             }
-        } catch (e: Exception) {
-            Log.e("MainViewModel", "Error extracting PWA code", e)
+
             _uiState.value = _uiState.value.copy(
-                isGenerating = false,
-                generationStep = null,
-                errorMessage = "Error extracting PWA code: ${e.message}"
+                isGenerating = true,
+                errorMessage = null,
+                pwaGenerated = false,
+                generationStep = 0
             )
+
+            val selectedModelId = _selectedModel.value ?: "x-ai/grok-4-fast"
+
+            val workRequest = OneTimeWorkRequestBuilder<PwaGenerationWorker>()
+                .setInputData(
+                    Data.Builder()
+                        .putString(PwaGenerationWorker.KEY_PROMPT, prompt)
+                        .putString(PwaGenerationWorker.KEY_API_KEY, apiKey)
+                        .putString(PwaGenerationWorker.KEY_SELECTED_MODEL, selectedModelId)
+                        .build()
+                )
+                .build()
+            
+            generationWorkId = workRequest.id
+            workManager.enqueue(workRequest)
+            
+            observeWork(generationWorkId!!)
         }
     }
-
-    private fun extractFromCodeBlocks(responseContent: String) {
-        val uuid = UUID.randomUUID().toString()
-        val pwaDir = File(context.getExternalFilesDir(null), uuid)
-        pwaDir.mkdirs()
-        
-        // Save the raw response for debugging
-        val responseFile = File(pwaDir, "raw_response.txt")
-        responseFile.writeText(responseContent)
-        
-        // Parse for code blocks from the text response
-        val htmlMatch = Regex("```html\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
-        val cssMatch = Regex("```css\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
-        val jsMatch = Regex("```javascript\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent) 
-            ?: Regex("```js\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
-        
-        // Extract manifest from code blocks if available
-        val manifestMatch = Regex("```json\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
-        
-        if (htmlMatch != null) {
-            val htmlCode = htmlMatch.groupValues[1]
-            val htmlFile = File(pwaDir, "index.html")
-            htmlFile.writeText(htmlCode)
-        }
-        
-        if (cssMatch != null) {
-            val cssCode = cssMatch.groupValues[1]
-            val cssFile = File(pwaDir, "style.css")
-            cssFile.writeText(cssCode)
-        }
-        
-        if (jsMatch != null) {
-            val jsCode = jsMatch.groupValues[1]
-            val jsFile = File(pwaDir, "script.js")
-            jsFile.writeText(jsCode)
-        }
-        
-        // Create manifest.json file - try to get from code blocks first, then create a basic one
-        var finalManifestContent = """{
-    "name": "Generated PWA",
-    "short_name": "PWAGen",
-    "start_url": "/index.html",
-    "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#000000",
-    "icons": [
-        {
-            "src": "/icon.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        }
-    ]
-}"""
-        
-        if (manifestMatch != null) {
-            val manifestCode = manifestMatch.groupValues[1]
-            // Try to parse the manifest to extract name
-            try {
-                val manifestJson = JSONObject(manifestCode)
-                val manifestName = manifestJson.optString("name", "Generated PWA")
-                // Update manifest with proper name
-                finalManifestContent = manifestCode
-            } catch (e: Exception) {
-                Log.w("MainViewModel", "Could not parse manifest from code blocks", e)
+    
+    private fun observeWork(workId: UUID) {
+        workManager.getWorkInfoByIdLiveData(workId).observeForever { workInfo ->
+            if (workInfo != null) {
+                when (workInfo.state) {
+                    WorkInfo.State.SUCCEEDED -> {
+                        val pwaUuid = workInfo.outputData.getString(PwaGenerationWorker.KEY_PWA_UUID)
+                        _uiState.value = _uiState.value.copy(
+                            isGenerating = false,
+                            generationStep = null,
+                            pwaGenerated = true,
+                            pwaUuid = pwaUuid,
+                            errorMessage = null
+                        )
+                        workManager.getWorkInfoByIdLiveData(workId).removeObserver { }
+                    }
+                    WorkInfo.State.FAILED -> {
+                        val error = workInfo.outputData.getString(PwaGenerationWorker.KEY_ERROR_MESSAGE)
+                        _uiState.value = _uiState.value.copy(
+                            isGenerating = false,
+                            generationStep = null,
+                            pwaGenerated = false,
+                            pwaUuid = null,
+                            errorMessage = error
+                        )
+                        workManager.getWorkInfoByIdLiveData(workId).removeObserver { }
+                    }
+                    WorkInfo.State.RUNNING -> {
+                        val step = workInfo.progress.getInt(PwaGenerationWorker.KEY_GENERATION_STEP, 0)
+                        _uiState.value = _uiState.value.copy(generationStep = step)
+                    }
+                    else -> {
+                        // Other states like ENQUEUED, BLOCKED, CANCELLED
+                    }
+                }
             }
         }
-        
-        val manifestFile = File(pwaDir, "manifest.json")
-        manifestFile.writeText(finalManifestContent)
-        
-        // Extract name from manifest for app_info.json
-        var pwaName = "Generated PWA"
-        try {
-            val manifestJson = JSONObject(finalManifestContent)
-            val shortName = manifestJson.optString("short_name")
-            val manifestName = manifestJson.optString("name")
-            
-            // Prefer short_name, fallback to name from manifest
-            val betterName = shortName.ifEmpty { manifestName }
-            if (betterName.isNotEmpty()) {
-                pwaName = betterName
-            }
-        } catch (e: Exception) {
-            Log.w("MainViewModel", "Could not extract name from manifest", e)
-        }
-        
-        // Create a basic app_info.json with the extracted name
-        val appInfoFile = File(pwaDir, "app_info.json")
-        appInfoFile.writeText("""{"name": "$pwaName", "uuid": "$uuid"}""")
-        
-        _uiState.value = _uiState.value.copy(
-            isGenerating = false,
-            generationStep = null,
-            pwaGenerated = true,
-            pwaUuid = uuid
-        )
     }
 
     fun clearErrorMessage() {
@@ -369,7 +150,6 @@ class MainViewModel(
                     
                     if (appInfoFile.exists() || manifestFile.exists()) {
                         try {
-                            // Try to get name from manifest.json first (prefer short_name)
                             var pwaName = "Untitled App"
                             
                             if (manifestFile.exists()) {
@@ -377,11 +157,9 @@ class MainViewModel(
                                     val manifestContent = manifestFile.readText()
                                     val manifestJson = org.json.JSONObject(manifestContent)
                                     
-                                    // Prefer short_name, fallback to name, then to app_info name
                                     val shortName = manifestJson.optString("short_name")
                                     val manifestName = manifestJson.optString("name")
                                     
-                                    // Prefer short_name, fallback to name
                                     val betterName = shortName.ifEmpty { manifestName }
                                     if (betterName.isNotEmpty()) {
                                         pwaName = betterName
@@ -391,7 +169,6 @@ class MainViewModel(
                                 }
                             }
                             
-                            // If we still don't have a good name, try app_info.json
                             if (pwaName == "Untitled App" && appInfoFile.exists()) {
                                 val appInfo = appInfoFile.readText()
                                 try {
@@ -408,7 +185,6 @@ class MainViewModel(
                             it.name to pwaName
                         } catch (e: Exception) {
                             Log.w("MainViewModel", "Error getting PWA name for ${it.name}", e)
-                            // Handle corrupted json files
                             it.name to "Untitled App (${it.name})"
                         }
                     } else {

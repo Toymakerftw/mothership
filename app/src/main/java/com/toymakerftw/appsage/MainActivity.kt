@@ -8,17 +8,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import com.toymakerftw.appsage.api.AppsageApi
 import com.toymakerftw.appsage.data.SettingsRepository
 import com.toymakerftw.appsage.ui.theme.AppsageTheme
 
 
 class MainActivity : ComponentActivity() {
 
-    private val appsageApi: AppsageApi by lazy { 
-        (application as AppsageApp).appsageApi 
-    }
-    
     private val settingsRepository: SettingsRepository by lazy { 
         SettingsRepository(this) 
     }
