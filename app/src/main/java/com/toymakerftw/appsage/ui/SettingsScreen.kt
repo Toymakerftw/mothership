@@ -40,8 +40,7 @@ import com.toymakerftw.appsage.ui.theme.naturalShadow
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    settingsViewModel: SettingsViewModel,
-    navController: NavController
+    settingsViewModel: SettingsViewModel
 ) {
     val apiKey by settingsViewModel.apiKey.collectAsState()
     var newApiKey by remember { mutableStateOf(apiKey ?: "") }

@@ -65,7 +65,7 @@ fun AppsageNav(settingsViewModel: SettingsViewModel) {
                 ReworkScreen(uuid, reworkViewModel, navController)
             }
             composable("settings") { 
-                SettingsScreen(settingsViewModel, navController)
+                SettingsScreen(settingsViewModel)
             }
         }
     }

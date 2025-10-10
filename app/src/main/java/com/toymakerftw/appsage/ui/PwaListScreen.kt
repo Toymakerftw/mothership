@@ -168,7 +168,6 @@ fun PwaListScreen(context: Context) {
                     ) {
                         PwaItemCard(
                             pwa = pwa,
-                            context = context,
                             onDelete = {
                                 pwaManager.deletePwa(pwa.uuid)
                                 pwas = pwaManager.getGeneratedPwas()
@@ -230,7 +229,6 @@ fun PwaListScreen(context: Context) {
 @Composable
 fun PwaItemCard(
     pwa: PwaManager.PwaInfo,
-    context: Context,
     onDelete: () -> Unit,
     onInstall: () -> Unit,
     onUninstall: () -> Unit,

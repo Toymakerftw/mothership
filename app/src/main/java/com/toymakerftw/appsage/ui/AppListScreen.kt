@@ -172,7 +172,7 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         contentPadding = PaddingValues(bottom = 80.dp)
                     ) {
-                        itemsIndexed(pwas) { index, pwa ->
+                        itemsIndexed(pwas) { _, pwa ->
                             AppCard(
                                 pwa = pwa,
                                 navController = navController,
@@ -191,16 +191,6 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
 
 @Composable
 private fun LoadingState() {
-    val infiniteTransition = rememberInfiniteTransition(label = "loading")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.8f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = EaseInOutCubic),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
     
     Card(
         modifier = Modifier

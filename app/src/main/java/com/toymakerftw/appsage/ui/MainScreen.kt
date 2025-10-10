@@ -157,7 +157,6 @@ fun MainScreen(
             ) {
                 GenerateButton(
                     prompt = prompt,
-                    uiState = uiState,
                     onGenerate = {
                         if (!uiState.apiKey.isNullOrBlank()) {
                             viewModel.generatePwa(prompt)
@@ -198,8 +197,7 @@ fun MainScreen(
                 )
             ) {
                 ProgressTimeline(
-                    currentStep = uiState.generationStep ?: 0,
-                    totalSteps = 4
+                    currentStep = uiState.generationStep ?: 0
                 )
             }
 
@@ -645,7 +643,6 @@ private fun PromptInputCard(
 @Composable
 private fun GenerateButton(
     prompt: String,
-    uiState: MainUiState,
     onGenerate: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -684,8 +681,7 @@ private fun GenerateButton(
 
 @Composable
 private fun ProgressTimeline(
-    currentStep: Int,
-    totalSteps: Int
+    currentStep: Int
 ) {
     val steps = listOf(
         TimelineStep(Icons.Default.Psychology, "Analyzing prompt", "Understanding your requirements"),

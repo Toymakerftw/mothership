@@ -395,8 +395,7 @@ fun ReworkScreen(
             )
         ) {
             ReworkProgressTimeline(
-                currentStep = uiState.generationStep ?: 1,
-                totalSteps = 5  // Updated to 5 steps (including backup)
+                currentStep = uiState.generationStep ?: 1
             )
         }
 
@@ -575,7 +574,7 @@ fun ReworkScreen(
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
             ) + fadeOut(animationSpec = tween(300))
         ) {
-            VersionHistoryCard(uuid = uuid, viewModel = viewModel, navController = navController)
+            VersionHistoryCard(uuid = uuid, viewModel = viewModel)
         }
     }
 }
@@ -650,8 +649,7 @@ private fun ReworkPromptCard(prompt: String) {
 
 @Composable
 private fun ReworkProgressTimeline(
-    currentStep: Int,
-    totalSteps: Int
+    currentStep: Int
 ) {
     val steps = listOf(
         TimelineStep(Icons.Default.Backup, "Creating backup", "Saving current version"),
@@ -844,8 +842,7 @@ private fun launchPreview(uuid: String, context: android.content.Context, pwaMan
 }
 
 @Composable
-private fun VersionHistoryCard(uuid: String, viewModel: ReworkViewModel, navController: NavController) {
-    val context = LocalContext.current
+private fun VersionHistoryCard(uuid: String, viewModel: ReworkViewModel) {
     val versionHistory by remember { mutableStateOf(viewModel.getVersionHistory(uuid)) }
     var expanded by remember { mutableStateOf(false) }
     
