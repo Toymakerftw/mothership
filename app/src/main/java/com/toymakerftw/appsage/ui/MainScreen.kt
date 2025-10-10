@@ -32,7 +32,6 @@ import com.toymakerftw.appsage.MainUiState
 import androidx.compose.material3.TextFieldDefaults
 import androidx.navigation.NavController
 import com.toymakerftw.appsage.MainViewModel
-import com.toymakerftw.appsage.ui.theme.naturalShadow
 
 @Composable
 fun MainScreen(
@@ -246,23 +245,22 @@ fun MainScreen(
 
 @Composable
 private fun FeatureHighlights() {
-    Card(
+    ElevatedCard(
         modifier = Modifier
-            .fillMaxWidth()
-            .naturalShadow(elevation = 2.dp, cornersRadius = 20.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(24.dp)
         ) {
             Text(
                 text = "What can Appsage do for you?",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -304,40 +302,40 @@ private fun FeatureItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 12.dp),
         verticalAlignment = Alignment.Top
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+                .size(56.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(24.dp)
             )
         }
         
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(16.dp))
         
         Column(
             modifier = Modifier.weight(1f)
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                modifier = Modifier.padding(top = 2.dp)
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
@@ -359,32 +357,32 @@ private fun MainHeader(modifier: Modifier = Modifier, alpha: Float = 1f) {
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = 12.dp),
+            .padding(bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                .size(88.dp)
+                .clip(RoundedCornerShape(32.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "🚀", fontSize = 24.sp, modifier = Modifier.scale(scale))
+            Text(text = "🚀", fontSize = 40.sp, modifier = Modifier.scale(scale))
         }
         
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
         
         Text(
             text = "Appsage",
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.displayMedium,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.primary.copy(alpha = alpha)
         )
         
         Text(
             text = "Describe your app, we'll build it",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f * alpha),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f * alpha),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 4.dp)
         )
@@ -396,47 +394,46 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     
-    val shadowElevation by animateDpAsState(
-        targetValue = if (isPressed) 4.dp else 2.dp,
+    val elevation by animateDpAsState(
+        targetValue = if (isPressed) 3.dp else 1.dp,
         animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "shadow_elevation"
+        label = "elevation"
     )
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .naturalShadow(
-                elevation = shadowElevation,
-                cornersRadius = 16.dp
-            )
             .clickable(
                 enabled = !hasApiKey,
-                onClick = onConfigure
+                onClick = onConfigure,
+                interactionSource = interactionSource,
+                indication = null
             ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (hasApiKey) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                MaterialTheme.colorScheme.surfaceVariant
             } else {
-                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
+                MaterialTheme.colorScheme.errorContainer
             }
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(16.dp))
                     .background(
-                                                if (hasApiKey) {
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        if (hasApiKey) {
+                            MaterialTheme.colorScheme.primaryContainer
                         } else {
-                            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                            MaterialTheme.colorScheme.errorContainer
                         }
                     ),
                 contentAlignment = Alignment.Center
@@ -444,31 +441,32 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
                 Icon(
                     imageVector = if (hasApiKey) Icons.Default.CheckCircle else Icons.Default.Warning,
                     contentDescription = null,
-                    tint = if (hasApiKey) MaterialTheme.colorScheme.primary 
-                           else MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
+                    tint = if (hasApiKey) MaterialTheme.colorScheme.onPrimaryContainer 
+                           else MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(24.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = if (hasApiKey) "API Key Configured" else "API Key Required",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (hasApiKey) MaterialTheme.colorScheme.primary 
-                           else MaterialTheme.colorScheme.error
+                    color = if (hasApiKey) MaterialTheme.colorScheme.onSurface 
+                           else MaterialTheme.colorScheme.onErrorContainer
                 )
                 Text(
                     text = if (hasApiKey) "Ready to generate apps" 
                            else "Configure API key to start generating",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (hasApiKey) MaterialTheme.colorScheme.onSurfaceVariant
+                           else MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
                 )
             }
             if (!hasApiKey) {
-                TextButton(
+                FilledTonalButton(
                     onClick = onConfigure,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
                         "Configure",
@@ -482,93 +480,11 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
 
 @Composable
 private fun UserPromptCard(prompt: String) {
-    Card(
+    OutlinedCard(
         modifier = Modifier
-            .fillMaxWidth()
-            .naturalShadow(elevation = 3.dp, cornersRadius = 20.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Psychology,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = "Creating Your App",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "Based on your request",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                    )
-                }
-            }
-            
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            ) {
-                Text(
-                    text = prompt,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PromptInputCard(
-    prompt: String,
-    onPromptChange: (String) -> Unit
-) {
-    var isPressed by remember { mutableStateOf(false) }
-    val shadowElevation by animateDpAsState(
-        targetValue = if (isPressed) 4.dp else 2.dp,
-        animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "shadow_elevation"
-    )
-    
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .naturalShadow(
-                elevation = shadowElevation,
-                cornersRadius = 20.dp
-            ),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.outlinedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
@@ -583,30 +499,108 @@ private fun PromptInputCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Psychology,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Creating Your App",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Based on your request",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Text(
+                    text = prompt,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(20.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PromptInputCard(
+    prompt: String,
+    onPromptChange: (String) -> Unit
+) {
+    var isPressed by remember { mutableStateOf(false) }
+    val elevation by animateDpAsState(
+        targetValue = if (isPressed) 3.dp else 1.dp,
+        animationSpec = tween(100, easing = FastOutSlowInEasing),
+        label = "elevation"
+    )
+    
+    OutlinedCard(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Create,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
                         text = "Create Your App",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "Describe what you want to build",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -626,11 +620,11 @@ private fun PromptInputCard(
                 placeholder = { 
                     Text(
                         "Examples:\n• A weather dashboard with dark mode\n• A todo list with categories\n• A recipe manager with favorites",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     ) 
                 },
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -654,15 +648,15 @@ private fun GenerateButton(
         label = "scale"
     )
     
-    Button(
+    FilledTonalButton(
         onClick = onGenerate,
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .height(64.dp)
             .scale(scale),
         enabled = prompt.isNotBlank(),
-        shape = RoundedCornerShape(16.dp),
-        contentPadding = PaddingValues(vertical = 12.dp),
+        shape = RoundedCornerShape(20.dp),
+        contentPadding = PaddingValues(vertical = 16.dp),
         interactionSource = interactionSource
     ) {
         Icon(
@@ -673,7 +667,7 @@ private fun GenerateButton(
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = "Generate App",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
     }
@@ -690,12 +684,11 @@ private fun ProgressTimeline(
         TimelineStep(Icons.Default.CheckCircle, "Finalizing", "Preparing your app")
     )
 
-    Card(
+    OutlinedCard(
         modifier = Modifier
-            .fillMaxWidth()
-            .naturalShadow(elevation = 3.dp, cornersRadius = 20.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.outlinedCardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
@@ -706,7 +699,7 @@ private fun ProgressTimeline(
         ) {
             Text(
                 text = "Generation Progress",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 20.dp)
@@ -750,8 +743,8 @@ private fun TimelineItem(
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(24.dp))
                     .background(
                         when {
                             isCompleted -> MaterialTheme.colorScheme.primary
@@ -766,19 +759,19 @@ private fun TimelineItem(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 } else if (isActive) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 2.dp
+                        strokeWidth = 3.dp
                     )
                 } else {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -788,7 +781,7 @@ private fun TimelineItem(
                 Box(
                     modifier = Modifier
                         .width(2.dp)
-                        .height(40.dp)
+                        .height(32.dp)
                         .background(
                             if (isCompleted) {
                                 MaterialTheme.colorScheme.primary
@@ -800,7 +793,7 @@ private fun TimelineItem(
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(20.dp))
 
         // Content
         Column(
@@ -810,21 +803,19 @@ private fun TimelineItem(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                 color = when {
                     isCompleted -> MaterialTheme.colorScheme.primary
                     isActive -> MaterialTheme.colorScheme.primary
-                    else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(
-                    alpha = if (isActive || isCompleted) 0.8f else 0.5f
-                ),
-                modifier = Modifier.padding(top = 2.dp)
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
@@ -833,48 +824,45 @@ private fun TimelineItem(
 @Composable
 private fun ErrorCard(errorMessage: String) {
     var isPressed by remember { mutableStateOf(false) }
-    val shadowElevation by animateDpAsState(
-        targetValue = if (isPressed) 3.dp else 2.dp,
+    val elevation by animateDpAsState(
+        targetValue = if (isPressed) 2.dp else 1.dp,
         animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "shadow_elevation"
+        label = "elevation"
     )
     
-    Card(
+    OutlinedCard(
         modifier = Modifier
-            .fillMaxWidth()
-            .naturalShadow(
-                elevation = shadowElevation,
-                cornersRadius = 16.dp
-            ),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
-        )
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(20.dp),
             verticalAlignment = Alignment.Top
         ) {
             Icon(
                 imageVector = Icons.Default.Error,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(24.dp)
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.size(28.dp)
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
                     text = "Generation Failed",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Text(
                     text = errorMessage,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
@@ -887,51 +875,48 @@ private fun SuccessCard(onViewApps: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     
-    val shadowElevation by animateDpAsState(
-        targetValue = if (isPressed) 3.dp else 2.dp,
+    val elevation by animateDpAsState(
+        targetValue = if (isPressed) 2.dp else 1.dp,
         animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "shadow_elevation"
+        label = "elevation"
     )
     
-    Card(
+    OutlinedCard(
         modifier = Modifier
-            .fillMaxWidth()
-            .naturalShadow(
-                elevation = shadowElevation,
-                cornersRadius = 16.dp
-            ),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
-        )
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp)
+                .padding(24.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(bottom = 16.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = "App Generated Successfully!",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -939,22 +924,22 @@ private fun SuccessCard(onViewApps: () -> Unit) {
             
             Text(
                 text = "Your app is ready to use. View it in your collection to start using it.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                modifier = Modifier.padding(bottom = 16.dp)
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 20.dp)
             )
             
             Button(
                 onClick = onViewApps,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(vertical = 12.dp),
+                shape = RoundedCornerShape(16.dp),
+                contentPadding = PaddingValues(vertical = 16.dp),
                 interactionSource = interactionSource
             ) {
                 Icon(
                     imageVector = Icons.Default.Apps,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(

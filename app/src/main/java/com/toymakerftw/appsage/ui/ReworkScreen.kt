@@ -34,7 +34,7 @@ import androidx.navigation.NavController
 import com.toymakerftw.appsage.PwaViewerActivity
 import com.toymakerftw.appsage.ReworkViewModel
 import com.toymakerftw.appsage.service.PwaManager
-import com.toymakerftw.appsage.ui.theme.naturalShadow
+
 import com.toymakerftw.appsage.versioncontrol.VersionInfo
 import org.json.JSONObject
 import java.io.File
@@ -143,15 +143,12 @@ fun ReworkScreen(
             
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .naturalShadow(
-                        elevation = shadowElevation,
-                        cornersRadius = 16.dp
-                    ),
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
-                )
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
             ) {
                 Row(
                     modifier = Modifier
@@ -227,15 +224,12 @@ fun ReworkScreen(
             
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .naturalShadow(
-                        elevation = shadowElevation,
-                        cornersRadius = 20.dp
-                    ),
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
-                )
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
             ) {
                 Column(
                     modifier = Modifier
@@ -423,15 +417,12 @@ fun ReworkScreen(
                 
                 Card(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .naturalShadow(
-                            elevation = shadowElevation,
-                            cornersRadius = 12.dp
-                        ),
+                        .fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
                 ) {
                     Text(
                         text = message,
@@ -465,15 +456,12 @@ fun ReworkScreen(
             
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .naturalShadow(
-                        elevation = shadowElevation,
-                        cornersRadius = 12.dp
-                    ),
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -525,15 +513,12 @@ fun ReworkScreen(
             
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .naturalShadow(
-                        elevation = shadowElevation,
-                        cornersRadius = 12.dp
-                    ),
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer
-                )
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -583,12 +568,12 @@ fun ReworkScreen(
 private fun ReworkPromptCard(prompt: String) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .naturalShadow(elevation = 3.dp, cornersRadius = 20.dp),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
             modifier = Modifier
@@ -661,12 +646,12 @@ private fun ReworkProgressTimeline(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .naturalShadow(elevation = 3.dp, cornersRadius = 20.dp),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
             modifier = Modifier
@@ -848,12 +833,12 @@ private fun VersionHistoryCard(uuid: String, viewModel: ReworkViewModel) {
     
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .naturalShadow(elevation = 3.dp, cornersRadius = 20.dp),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
         Column(
             modifier = Modifier

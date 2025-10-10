@@ -23,7 +23,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
-import com.toymakerftw.appsage.ui.theme.advancedShadow
+
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -196,16 +196,12 @@ private fun LoadingState() {
     
     Card(
         modifier = Modifier
-            .fillMaxSize()
-            .advancedShadow(
-                cornersRadius = 24.dp,
-                shadowBlurRadius = 8.dp
-            ),
+            .fillMaxSize(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Box(
             modifier = Modifier
@@ -274,16 +270,12 @@ private fun EmptyState(navController: NavController) {
     
     Card(
         modifier = Modifier
-            .fillMaxSize()
-            .advancedShadow(
-                cornersRadius = 24.dp,
-                shadowBlurRadius = 8.dp
-            ),
+            .fillMaxSize(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Box(
             modifier = Modifier
@@ -409,16 +401,12 @@ fun AppCard(
                 onLongClick = {
                     expanded = !expanded
                 }
-            )
-            .advancedShadow(
-                cornersRadius = 20.dp,
-                shadowBlurRadius = shadowBlurRadius
             ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -532,16 +520,12 @@ fun AppCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 0.dp)
-                        .padding(bottom = 24.dp)
-                        .advancedShadow(
-                            cornersRadius = 16.dp,
-                            shadowBlurRadius = 4.dp
-                        ),
+                        .padding(bottom = 24.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(
                         modifier = Modifier

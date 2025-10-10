@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.toymakerftw.appsage.SettingsViewModel
-import com.toymakerftw.appsage.ui.theme.naturalShadow
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -478,15 +478,12 @@ fun SettingsSectionCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 20.dp)
-            .naturalShadow(
-                elevation = shadowElevation,
-                cornersRadius = 20.dp
-            ),
+            .padding(bottom = 20.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
     ) {
         Column(
             modifier = Modifier
@@ -550,13 +547,10 @@ fun InfoCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .naturalShadow(
-                elevation = shadowElevation,
-                cornersRadius = 16.dp
-            ),
+            .padding(vertical = 8.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor)
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
     ) {
         Row(
             modifier = Modifier
@@ -605,15 +599,12 @@ fun ThemeToggleCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .naturalShadow(
-                elevation = shadowElevation,
-                cornersRadius = 20.dp
-            )
             .clickable { onThemeToggle() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
     ) {
         Row(
             modifier = Modifier
