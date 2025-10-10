@@ -67,11 +67,13 @@ fun AppListScreen(navController: NavController, viewModel: MainViewModel) {
         isLoading = false
     }
 
-    // Refresh when deletion happens
-    LaunchedEffect(viewModel.uiState.value.pwaDeleted) {
-        if (viewModel.uiState.value.pwaDeleted) {
-            pwas = pwaManager.getGeneratedPwas()
-            viewModel.clearPwaDeleted()
+    // Continuously monitor for deletion events
+    LaunchedEffect(Unit) {
+        viewModel.uiState.collect { state ->
+            if (state.pwaDeleted) {
+                pwas = pwaManager.getGeneratedPwas()
+                viewModel.clearPwaDeleted()
+            }
         }
     }
 
