@@ -1,3 +1,4 @@
+// SettingsScreen.kt
 package com.toymakerftw.appsage.ui
 
 import android.widget.Toast
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.toymakerftw.appsage.SettingsViewModel
+import com.toymakerftw.appsage.ui.theme.CardConstants
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -334,7 +336,7 @@ private fun ColumnScope.ApiKeyConfigSection(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 8.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = CardConstants.smallShape, // Consistent radius
         singleLine = true,
         colors = TextFieldDefaults.outlinedTextFieldColors(
             focusedBorderColor = borderColor,
@@ -365,7 +367,7 @@ private fun ColumnScope.ApiKeyConfigSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 12.dp),
-            shape = RoundedCornerShape(8.dp),
+            shape = CardConstants.smallShape, // Consistent radius
             color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         ) {
             Row(
@@ -410,7 +412,7 @@ private fun ColumnScope.ApiKeyConfigSection(
             modifier = Modifier
                 .weight(1f)
                 .scale(saveScale),
-            shape = RoundedCornerShape(12.dp),
+            shape = CardConstants.smallShape, // Consistent button radius
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
             Icon(
@@ -442,7 +444,7 @@ private fun ColumnScope.ApiKeyConfigSection(
             modifier = Modifier
                 .weight(1f)
                 .scale(clearScale),
-            shape = RoundedCornerShape(12.dp),
+            shape = CardConstants.smallShape, // Consistent button radius
             border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outline),
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
@@ -469,21 +471,16 @@ fun SettingsSectionCard(
     content: @Composable ColumnScope.() -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
-    val shadowElevation by animateDpAsState(
-        targetValue = if (isPressed) 4.dp else 2.dp,
-        animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "shadow_elevation"
-    )
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 20.dp),
-        shape = RoundedCornerShape(20.dp),
+        shape = CardConstants.largeShape, // Consistent radius
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -538,19 +535,14 @@ fun InfoCard(
     iconColor: Color
 ) {
     var isPressed by remember { mutableStateOf(false) }
-    val shadowElevation by animateDpAsState(
-        targetValue = if (isPressed) 3.dp else 2.dp,
-        animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "shadow_elevation"
-    )
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = CardConstants.mediumShape, // Consistent radius
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -590,21 +582,16 @@ fun ThemeToggleCard(
     onThemeToggle: () -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
-    val shadowElevation by animateDpAsState(
-        targetValue = if (isPressed) 4.dp else 2.dp,
-        animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "shadow_elevation"
-    )
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onThemeToggle() },
-        shape = RoundedCornerShape(20.dp),
+        shape = CardConstants.largeShape, // Consistent radius
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier

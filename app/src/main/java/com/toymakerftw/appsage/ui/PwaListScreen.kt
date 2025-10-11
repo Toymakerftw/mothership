@@ -33,6 +33,7 @@ import androidx.core.content.ContextCompat
 import com.toymakerftw.appsage.PwaInstaller
 import java.io.File
 import kotlinx.coroutines.delay
+import com.toymakerftw.appsage.ui.theme.CardConstants
 
 @Composable
 fun PwaListScreen(context: Context) {
@@ -249,7 +250,7 @@ fun PwaItemCard(
                 isPressed = true
                 onLaunch()
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = CardConstants.mediumShape, // Consistent radius
         elevation = CardDefaults.cardElevation(defaultElevation = if (isPressed) 2.dp else 1.dp)
     ) {
         Column(

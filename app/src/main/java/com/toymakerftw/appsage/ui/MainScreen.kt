@@ -1,3 +1,4 @@
+// Mainscreen.kt
 @file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.toymakerftw.appsage.ui
@@ -32,6 +33,7 @@ import com.toymakerftw.appsage.MainUiState
 import androidx.compose.material3.TextFieldDefaults
 import androidx.navigation.NavController
 import com.toymakerftw.appsage.MainViewModel
+import com.toymakerftw.appsage.ui.theme.CardConstants
 
 @Composable
 fun MainScreen(
@@ -41,38 +43,35 @@ fun MainScreen(
     val uiState by viewModel.uiState.collectAsState()
     var prompt by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
-    
+
     // Animate header on scroll
     val headerScale by animateFloatAsState(
         targetValue = if (scrollState.value > 100) 0.9f else 1f,
         animationSpec = tween(300, easing = FastOutSlowInEasing),
         label = "header_scale"
     )
-    
+
     val headerAlpha by animateFloatAsState(
         targetValue = if (scrollState.value > 100) 0.8f else 1f,
         animationSpec = tween(300, easing = FastOutSlowInEasing),
         label = "header_alpha"
     )
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
-                        )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
                     )
                 )
-                .verticalScroll(scrollState)
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
+            )
+            .verticalScroll(scrollState)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
             // Header with animation
             AnimatedVisibility(
                 visible = true,
@@ -240,18 +239,18 @@ fun MainScreen(
 
             Spacer(modifier = Modifier.height(80.dp)) // Extra space for bottom nav
         }
-    }
 }
 
 @Composable
 private fun FeatureHighlights() {
-    ElevatedCard(
+    Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        shape = CardConstants.extraLargeShape, // Consistent radius
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -260,30 +259,30 @@ private fun FeatureHighlights() {
         ) {
             Text(
                 text = "What can Appsage do for you?",
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
-            
+
             FeatureItem(
                 icon = Icons.Default.AutoAwesome,
                 title = "AI-Powered Generation",
                 description = "Create fully functional Progressive Web Apps with just a simple description"
             )
-            
+
             FeatureItem(
                 icon = Icons.Default.Code,
                 title = "Complete Code Generation",
                 description = "Get HTML, CSS, JavaScript, and manifest files ready to deploy"
             )
-            
+
             FeatureItem(
                 icon = Icons.Default.Smartphone,
                 title = "Mobile-First Design",
                 description = "All generated apps are responsive and work perfectly on any device"
             )
-            
+
             FeatureItem(
                 icon = Icons.Default.Security,
                 title = "Privacy-Focused",
@@ -307,7 +306,7 @@ private fun FeatureItem(
     ) {
         Box(
             modifier = Modifier
-                .size(56.dp)
+                .size(40.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
@@ -316,12 +315,12 @@ private fun FeatureItem(
                 imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
-        
+
         Spacer(modifier = Modifier.width(16.dp))
-        
+
         Column(
             modifier = Modifier.weight(1f)
         ) {
@@ -333,7 +332,7 @@ private fun FeatureItem(
             )
             Text(
                 text = description,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
             )
@@ -353,36 +352,36 @@ private fun MainHeader(modifier: Modifier = Modifier, alpha: Float = 1f) {
         ),
         label = "scale"
     )
-    
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = 16.dp),
+            .padding(bottom = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
-                .size(88.dp)
-                .clip(RoundedCornerShape(32.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
+                .size(60.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "🚀", fontSize = 40.sp, modifier = Modifier.scale(scale))
+            Text(text = "🚀", fontSize = 24.sp, modifier = Modifier.scale(scale))
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         Text(
             text = "Appsage",
-            style = MaterialTheme.typography.displayMedium,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.primary.copy(alpha = alpha)
         )
-        
+
         Text(
             text = "Describe your app, we'll build it",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f * alpha),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f * alpha),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 4.dp)
         )
@@ -393,13 +392,7 @@ private fun MainHeader(modifier: Modifier = Modifier, alpha: Float = 1f) {
 fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    
-    val elevation by animateDpAsState(
-        targetValue = if (isPressed) 3.dp else 1.dp,
-        animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "elevation"
-    )
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -409,15 +402,11 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
                 interactionSource = interactionSource,
                 indication = null
             ),
-        shape = RoundedCornerShape(20.dp),
+        shape = CardConstants.largeShape, // Consistent radius
         colors = CardDefaults.cardColors(
-            containerColor = if (hasApiKey) {
-                MaterialTheme.colorScheme.surfaceVariant
-            } else {
-                MaterialTheme.colorScheme.errorContainer
-            }
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -427,13 +416,13 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(40.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(
                         if (hasApiKey) {
                             MaterialTheme.colorScheme.primaryContainer
                         } else {
-                            MaterialTheme.colorScheme.errorContainer
+                            MaterialTheme.colorScheme.error
                         }
                     ),
                 contentAlignment = Alignment.Center
@@ -441,9 +430,9 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
                 Icon(
                     imageVector = if (hasApiKey) Icons.Default.CheckCircle else Icons.Default.Warning,
                     contentDescription = null,
-                    tint = if (hasApiKey) MaterialTheme.colorScheme.onPrimaryContainer 
-                           else MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(24.dp)
+                    tint = if (hasApiKey) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onError,
+                    modifier = Modifier.size(20.dp)
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
@@ -452,21 +441,21 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
                     text = if (hasApiKey) "API Key Configured" else "API Key Required",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = if (hasApiKey) MaterialTheme.colorScheme.onSurface 
-                           else MaterialTheme.colorScheme.onErrorContainer
+                    color = if (hasApiKey) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onErrorContainer
                 )
                 Text(
-                    text = if (hasApiKey) "Ready to generate apps" 
-                           else "Configure API key to start generating",
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = if (hasApiKey) "Ready to generate apps"
+                    else "Configure API key to start generating",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = if (hasApiKey) MaterialTheme.colorScheme.onSurfaceVariant
-                           else MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
+                    else MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
                 )
             }
             if (!hasApiKey) {
                 FilledTonalButton(
                     onClick = onConfigure,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = CardConstants.smallShape // Consistent button radius
                 ) {
                     Text(
                         "Configure",
@@ -480,13 +469,14 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
 
 @Composable
 private fun UserPromptCard(prompt: String) {
-    OutlinedCard(
+    Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.outlinedCardColors(
+        shape = CardConstants.extraLargeShape, // Consistent radius
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -499,7 +489,7 @@ private fun UserPromptCard(prompt: String) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(40.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
@@ -508,35 +498,36 @@ private fun UserPromptCard(prompt: String) {
                         imageVector = Icons.Default.Psychology,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
                         text = "Creating Your App",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "Based on your request",
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-            
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = CardConstants.mediumShape, // Consistent radius
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Text(
                     text = prompt,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(20.dp)
                 )
@@ -551,20 +542,15 @@ private fun PromptInputCard(
     onPromptChange: (String) -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
-    val elevation by animateDpAsState(
-        targetValue = if (isPressed) 3.dp else 1.dp,
-        animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "elevation"
-    )
-    
-    OutlinedCard(
+
+    Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.outlinedCardColors(
+        shape = CardConstants.extraLargeShape, // Consistent radius
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -577,7 +563,7 @@ private fun PromptInputCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(40.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
@@ -586,45 +572,46 @@ private fun PromptInputCard(
                         imageVector = Icons.Default.Create,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
                         text = "Create Your App",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "Describe what you want to build",
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-            
+
             OutlinedTextField(
                 value = prompt,
                 onValueChange = onPromptChange,
-                label = { 
+                label = {
                     Text(
                         "What kind of app do you want?",
-                        fontWeight = FontWeight.Medium
-                    ) 
+                        fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(140.dp),
-                placeholder = { 
+                placeholder = {
                     Text(
                         "Examples:\n• A weather dashboard with dark mode\n• A todo list with categories\n• A recipe manager with favorites",
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                    ) 
+                    )
                 },
-                shape = RoundedCornerShape(16.dp),
+                shape = CardConstants.mediumShape, // Consistent radius
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -641,22 +628,22 @@ private fun GenerateButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    
+
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.95f else 1f,
         animationSpec = tween(100, easing = FastOutSlowInEasing),
         label = "scale"
     )
-    
+
     FilledTonalButton(
         onClick = onGenerate,
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp)
+            .height(56.dp)
             .scale(scale),
         enabled = prompt.isNotBlank(),
-        shape = RoundedCornerShape(20.dp),
-        contentPadding = PaddingValues(vertical = 16.dp),
+        shape = CardConstants.largeShape, // Consistent button radius
+        contentPadding = PaddingValues(vertical = 12.dp),
         interactionSource = interactionSource
     ) {
         Icon(
@@ -667,7 +654,7 @@ private fun GenerateButton(
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = "Generate App",
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
     }
@@ -684,13 +671,14 @@ private fun ProgressTimeline(
         TimelineStep(Icons.Default.CheckCircle, "Finalizing", "Preparing your app")
     )
 
-    OutlinedCard(
+    Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.outlinedCardColors(
+        shape = CardConstants.extraLargeShape, // Consistent radius
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -699,7 +687,7 @@ private fun ProgressTimeline(
         ) {
             Text(
                 text = "Generation Progress",
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 20.dp)
@@ -776,7 +764,7 @@ private fun TimelineItem(
                     )
                 }
             }
-            
+
             if (!isLast) {
                 Box(
                     modifier = Modifier
@@ -813,7 +801,7 @@ private fun TimelineItem(
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
             )
@@ -824,20 +812,15 @@ private fun TimelineItem(
 @Composable
 private fun ErrorCard(errorMessage: String) {
     var isPressed by remember { mutableStateOf(false) }
-    val elevation by animateDpAsState(
-        targetValue = if (isPressed) 2.dp else 1.dp,
-        animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "elevation"
-    )
-    
-    OutlinedCard(
+
+    Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.outlinedCardColors(
+        shape = CardConstants.largeShape, // Consistent radius
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -861,7 +844,7 @@ private fun ErrorCard(errorMessage: String) {
                 )
                 Text(
                     text = errorMessage,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -874,21 +857,15 @@ private fun ErrorCard(errorMessage: String) {
 private fun SuccessCard(onViewApps: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    
-    val elevation by animateDpAsState(
-        targetValue = if (isPressed) 2.dp else 1.dp,
-        animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "elevation"
-    )
-    
-    OutlinedCard(
+
+    Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        shape = CardConstants.largeShape, // Consistent radius
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -901,7 +878,7 @@ private fun SuccessCard(onViewApps: () -> Unit) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(40.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
@@ -910,30 +887,35 @@ private fun SuccessCard(onViewApps: () -> Unit) {
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = "App Generated Successfully!",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            
+
             Text(
                 text = "Your app is ready to use. View it in your collection to start using it.",
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 20.dp)
             )
-            
+
             Button(
                 onClick = onViewApps,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                contentPadding = PaddingValues(vertical = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = CardConstants.mediumShape, // Consistent button radius
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                contentPadding = PaddingValues(vertical = 12.dp),
                 interactionSource = interactionSource
             ) {
                 Icon(
@@ -944,7 +926,8 @@ private fun SuccessCard(onViewApps: () -> Unit) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     "View My Apps",
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

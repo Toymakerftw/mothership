@@ -40,6 +40,7 @@ import org.json.JSONObject
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import com.toymakerftw.appsage.ui.theme.CardConstants
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -134,21 +135,14 @@ fun ReworkScreen(
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
             ) + fadeOut(animationSpec = tween(300))
         ) {
-            var isUuidCardPressed by remember { mutableStateOf(false) }
-            val shadowElevation by animateDpAsState(
-                targetValue = if (isUuidCardPressed) 3.dp else 2.dp,
-                animationSpec = tween(100, easing = FastOutSlowInEasing),
-                label = "shadow_elevation"
-            )
-            
             Card(
                 modifier = Modifier
                     .fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = CardConstants.mediumShape, // Consistent radius
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -215,21 +209,14 @@ fun ReworkScreen(
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
             ) + fadeOut(animationSpec = tween(300))
         ) {
-            var isPromptCardPressed by remember { mutableStateOf(false) }
-            val shadowElevation by animateDpAsState(
-                targetValue = if (isPromptCardPressed) 4.dp else 2.dp,
-                animationSpec = tween(100, easing = FastOutSlowInEasing),
-                label = "shadow_elevation"
-            )
-            
             Card(
                 modifier = Modifier
                     .fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
+                shape = CardConstants.largeShape, // Consistent radius
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -242,30 +229,30 @@ fun ReworkScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(
                                 text = "Modification Instructions",
-                                style = MaterialTheme.typography.titleLarge,
+                                style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
                                 text = "Describe the changes you want",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -285,11 +272,11 @@ fun ReworkScreen(
                         placeholder = {
                             Text(
                                 "Examples:\n• Add dark mode toggle\n• Change header color\n• Add search bar",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = CardConstants.mediumShape, // Consistent radius
                         colors = TextFieldDefaults.outlinedTextFieldColors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -324,7 +311,7 @@ fun ReworkScreen(
                         .weight(1f)
                         .height(56.dp),
                     enabled = reworkPrompt.isNotBlank(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = CardConstants.mediumShape, // Consistent button radius
                     contentPadding = PaddingValues(vertical = 12.dp)
                 ) {
                     Icon(
@@ -349,7 +336,7 @@ fun ReworkScreen(
                         .weight(1f)
                         .height(56.dp),
                     enabled = isAppReady,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = CardConstants.mediumShape, // Consistent button radius
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (uiState.pwaReworked) 
                             MaterialTheme.colorScheme.primary 
@@ -408,21 +395,14 @@ fun ReworkScreen(
             )
         ) {
             uiState.errorMessage?.let { message ->
-                var isErrorCardPressed by remember { mutableStateOf(false) }
-                val shadowElevation by animateDpAsState(
-                    targetValue = if (isErrorCardPressed) 3.dp else 2.dp,
-                    animationSpec = tween(100, easing = FastOutSlowInEasing),
-                    label = "shadow_elevation"
-                )
-                
                 Card(
                     modifier = Modifier
                         .fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = CardConstants.smallShape, // Consistent radius
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Text(
                         text = message,
@@ -447,21 +427,14 @@ fun ReworkScreen(
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
             )
         ) {
-            var isSuccessCardPressed by remember { mutableStateOf(false) }
-            val shadowElevation by animateDpAsState(
-                targetValue = if (isSuccessCardPressed) 3.dp else 2.dp,
-                animationSpec = tween(100, easing = FastOutSlowInEasing),
-                label = "shadow_elevation"
-            )
-            
             Card(
                 modifier = Modifier
                     .fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = CardConstants.smallShape, // Consistent radius
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -504,21 +477,14 @@ fun ReworkScreen(
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
             )
         ) {
-            var isRevertCardPressed by remember { mutableStateOf(false) }
-            val shadowElevation by animateDpAsState(
-                targetValue = if (isRevertCardPressed) 3.dp else 2.dp,
-                animationSpec = tween(100, easing = FastOutSlowInEasing),
-                label = "shadow_elevation"
-            )
-            
             Card(
                 modifier = Modifier
                     .fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = CardConstants.smallShape, // Consistent radius
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = shadowElevation)
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -569,11 +535,11 @@ private fun ReworkPromptCard(prompt: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = CardConstants.largeShape, // Consistent radius
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -586,46 +552,47 @@ private fun ReworkPromptCard(prompt: String) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
                         text = "Modifying Your App",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "Based on your modifications",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = CardConstants.mediumShape, // Consistent radius
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
-                )
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
                 Text(
                     text = prompt,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(16.dp)
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(20.dp)
                 )
             }
         }
@@ -647,11 +614,11 @@ private fun ReworkProgressTimeline(
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = CardConstants.extraLargeShape, // Consistent radius
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -660,7 +627,7 @@ private fun ReworkProgressTimeline(
         ) {
             Text(
                 text = "Rework Progress",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 20.dp)
@@ -710,8 +677,8 @@ private fun TimelineItem(
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(24.dp))
                     .background(
                         when {
                             isCompleted -> MaterialTheme.colorScheme.primary
@@ -726,20 +693,20 @@ private fun TimelineItem(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 } else if (isActive) {
                     // Add pulsing animation to the active step
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp).scale(scale),
+                        modifier = Modifier.size(24.dp).scale(scale),
                         color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 2.dp
+                        strokeWidth = 3.dp
                     )
                 } else {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -749,7 +716,7 @@ private fun TimelineItem(
                 Box(
                     modifier = Modifier
                         .width(2.dp)
-                        .height(40.dp)
+                        .height(32.dp)
                         .background(
                             if (isCompleted) {
                                 MaterialTheme.colorScheme.primary
@@ -761,7 +728,7 @@ private fun TimelineItem(
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(20.dp))
 
         // Content
         Column(
@@ -771,21 +738,19 @@ private fun TimelineItem(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                 color = when {
                     isCompleted -> MaterialTheme.colorScheme.primary
                     isActive -> MaterialTheme.colorScheme.primary
-                    else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(
-                    alpha = if (isActive || isCompleted) 0.8f else 0.5f
-                ),
-                modifier = Modifier.padding(top = 2.dp)
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
@@ -834,11 +799,11 @@ private fun VersionHistoryCard(uuid: String, viewModel: ReworkViewModel) {
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = CardConstants.largeShape, // Consistent radius
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -853,30 +818,30 @@ private fun VersionHistoryCard(uuid: String, viewModel: ReworkViewModel) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.History,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
                             text = "Version History",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
                             text = "${versionHistory.versions.size} versions saved",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -901,8 +866,8 @@ private fun VersionHistoryCard(uuid: String, viewModel: ReworkViewModel) {
                     if (versionHistory.versions.isEmpty()) {
                         Text(
                             text = "No version history available yet. Rework your app to create backups.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 8.dp)
                         )
                     } else {
@@ -930,15 +895,16 @@ private fun VersionItem(version: VersionInfo, uuid: String, viewModel: ReworkVie
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = CardConstants.mediumShape, // Consistent radius
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
@@ -951,12 +917,12 @@ private fun VersionItem(version: VersionInfo, uuid: String, viewModel: ReworkVie
                         imageVector = Icons.Default.Restore,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Version ${version.versionId}",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -966,7 +932,7 @@ private fun VersionItem(version: VersionInfo, uuid: String, viewModel: ReworkVie
                 
                 Text(
                     text = dateStr,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 
@@ -974,7 +940,7 @@ private fun VersionItem(version: VersionInfo, uuid: String, viewModel: ReworkVie
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = version.commitMessage,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                     )
                 }
@@ -990,7 +956,7 @@ private fun VersionItem(version: VersionInfo, uuid: String, viewModel: ReworkVie
                         Toast.makeText(context, "Failed to restore version", Toast.LENGTH_SHORT).show()
                     }
                 },
-                shape = RoundedCornerShape(8.dp),
+                shape = CardConstants.smallShape, // Consistent button radius
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer

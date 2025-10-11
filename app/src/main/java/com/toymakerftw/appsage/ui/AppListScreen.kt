@@ -1,3 +1,4 @@
+// AppListScreen.kt - No changes needed as this is our reference style
 @file:OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 
 package com.toymakerftw.appsage.ui
@@ -45,6 +46,7 @@ import androidx.navigation.NavController
 import com.toymakerftw.appsage.MainViewModel
 import com.toymakerftw.appsage.PwaInstaller
 import com.toymakerftw.appsage.PwaViewerActivity
+import com.toymakerftw.appsage.ui.theme.CardConstants
 import com.toymakerftw.appsage.service.PwaManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -197,11 +199,11 @@ private fun LoadingState() {
     Card(
         modifier = Modifier
             .fillMaxSize(),
-        shape = RoundedCornerShape(24.dp),
+        shape = CardConstants.extraLargeShape, // Consistent radius
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier
@@ -271,11 +273,11 @@ private fun EmptyState(navController: NavController) {
     Card(
         modifier = Modifier
             .fillMaxSize(),
-        shape = RoundedCornerShape(24.dp),
+        shape = CardConstants.extraLargeShape, // Consistent radius
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
             modifier = Modifier
@@ -331,7 +333,7 @@ private fun EmptyState(navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = CardConstants.mediumShape, // Consistent button radius
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
@@ -368,20 +370,8 @@ fun AppCard(
         mutableStateOf(isShortcutInstalled(context, pwa.uuid))
     }
     
-    // Card elevation animation
-    val elevation by animateDpAsState(
-        targetValue = if (expanded) 12.dp else 8.dp,
-        label = "card_elevation",
-        animationSpec = tween(300, easing = FastOutSlowInEasing)
-    )
-    
     // Card scale animation on press
     var isPressed by remember { mutableStateOf(false) }
-    val shadowBlurRadius by animateDpAsState(
-        targetValue = if (isPressed) 12.dp else elevation,
-        animationSpec = tween(100, easing = FastOutSlowInEasing),
-        label = "shadow_blur"
-    )
     
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
@@ -402,11 +392,11 @@ fun AppCard(
                     expanded = !expanded
                 }
             ),
-        shape = RoundedCornerShape(20.dp),
+        shape = CardConstants.largeShape, // Consistent radius
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxWidth()
@@ -521,11 +511,11 @@ fun AppCard(
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 0.dp)
                         .padding(bottom = 24.dp),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = CardConstants.mediumShape, // Consistent radius
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -553,7 +543,7 @@ fun AppCard(
                                         containerColor = MaterialTheme.colorScheme.errorContainer,
                                         contentColor = MaterialTheme.colorScheme.onErrorContainer
                                     ),
-                                    shape = RoundedCornerShape(12.dp)
+                                    shape = CardConstants.smallShape // Consistent button radius
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.Delete,
@@ -580,7 +570,7 @@ fun AppCard(
                                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                                     ),
-                                    shape = RoundedCornerShape(12.dp)
+                                    shape = CardConstants.smallShape // Consistent button radius
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
@@ -610,7 +600,7 @@ fun AppCard(
                                     if (hasIndexFile) MaterialTheme.colorScheme.tertiary
                                     else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                                 ),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = CardConstants.smallShape // Consistent button radius
                             ) {
                                 Icon(
                                     imageVector = Icons.Outlined.Share,
@@ -640,7 +630,7 @@ fun AppCard(
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primary
                                 ),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = CardConstants.smallShape // Consistent button radius
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Edit,
@@ -661,7 +651,7 @@ fun AppCard(
                                 colors = ButtonDefaults.textButtonColors(
                                     contentColor = MaterialTheme.colorScheme.error
                                 ),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = CardConstants.smallShape // Consistent button radius
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
