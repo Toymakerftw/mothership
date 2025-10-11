@@ -72,173 +72,173 @@ fun MainScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-            // Header with animation
-            AnimatedVisibility(
-                visible = true,
-                enter = slideInVertically(
-                    initialOffsetY = { -40 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(300)),
-                exit = slideOutVertically(
-                    targetOffsetY = { -40 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(300))
-            ) {
-                MainHeader(
-                    modifier = Modifier.scale(headerScale),
-                    alpha = headerAlpha
-                )
-            }
-
-            // API Key Status Card - Hidden during generation
-            AnimatedVisibility(
-                visible = !uiState.isGenerating,
-                enter = slideInVertically(
-                    initialOffsetY = { 40 },
-                    animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
-                exit = slideOutVertically(
-                    targetOffsetY = { -40 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(300))
-            ) {
-                ApiKeyStatusCard(
-                    hasApiKey = !uiState.apiKey.isNullOrBlank(),
-                    onConfigure = { navController?.navigate("settings") }
-                )
-            }
-
-            // User Prompt Card - Only visible during generation
-            AnimatedVisibility(
-                visible = uiState.isGenerating,
-                enter = slideInVertically(
-                    initialOffsetY = { 40 },
-                    animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
-                exit = slideOutVertically(
-                    targetOffsetY = { -40 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(300))
-            ) {
-                UserPromptCard(prompt = prompt)
-            }
-
-            // Prompt Input Card - Hidden during generation
-            AnimatedVisibility(
-                visible = !uiState.isGenerating,
-                enter = slideInVertically(
-                    initialOffsetY = { 40 },
-                    animationSpec = tween(300, delayMillis = 200, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(300, delayMillis = 200)),
-                exit = slideOutVertically(
-                    targetOffsetY = { -40 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(300))
-            ) {
-                PromptInputCard(
-                    prompt = prompt,
-                    onPromptChange = { prompt = it }
-                )
-            }
-
-            // Generate Button - Hidden during generation
-            AnimatedVisibility(
-                visible = !uiState.isGenerating,
-                enter = slideInVertically(
-                    initialOffsetY = { 40 },
-                    animationSpec = tween(300, delayMillis = 250, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(300, delayMillis = 250)),
-                exit = slideOutVertically(
-                    targetOffsetY = { -40 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(300))
-            ) {
-                GenerateButton(
-                    prompt = prompt,
-                    onGenerate = {
-                        if (!uiState.apiKey.isNullOrBlank()) {
-                            viewModel.generatePwa(prompt)
-                        } else {
-                            navController?.navigate("settings")
-                        }
-                    }
-                )
-            }
-
-            // Feature Highlights - Hidden during generation, success, or error
-            AnimatedVisibility(
-                visible = !uiState.isGenerating && !uiState.pwaGenerated && uiState.errorMessage == null,
-                enter = slideInVertically(
-                    initialOffsetY = { 40 },
-                    animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
-                exit = slideOutVertically(
-                    targetOffsetY = { -40 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(300))
-            ) {
-                FeatureHighlights()
-            }
-
-            // Progress Timeline - Only visible during generation
-            AnimatedVisibility(
-                visible = uiState.isGenerating,
-                enter = expandVertically(
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeIn(
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ),
-                exit = shrinkVertically(
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeOut(
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                )
-            ) {
-                ProgressTimeline(
-                    currentStep = uiState.generationStep ?: 0
-                )
-            }
-
-            // Error Message with animation
-            AnimatedVisibility(
-                visible = uiState.errorMessage != null,
-                enter = slideInVertically(
-                    initialOffsetY = { 40 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeIn(
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ),
-                exit = slideOutVertically(
-                    targetOffsetY = { -40 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeOut(
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                )
-            ) {
-                ErrorCard(errorMessage = uiState.errorMessage ?: "")
-            }
-
-            // Success Message with animation
-            AnimatedVisibility(
-                visible = uiState.pwaGenerated,
-                enter = slideInVertically(
-                    initialOffsetY = { 40 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeIn(
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ),
-                exit = slideOutVertically(
-                    targetOffsetY = { -40 },
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                ) + fadeOut(
-                    animationSpec = tween(300, easing = FastOutSlowInEasing)
-                )
-            ) {
-                SuccessCard(onViewApps = { navController?.navigate("app_list") })
-            }
-
-            Spacer(modifier = Modifier.height(80.dp)) // Extra space for bottom nav
+        // Header with animation
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                initialOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            MainHeader(
+                modifier = Modifier.scale(headerScale),
+                alpha = headerAlpha
+            )
         }
+
+        // API Key Status Card - Hidden during generation
+        AnimatedVisibility(
+            visible = !uiState.isGenerating,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            ApiKeyStatusCard(
+                hasApiKey = !uiState.apiKey.isNullOrBlank(),
+                onConfigure = { navController?.navigate("settings") }
+            )
+        }
+
+        // User Prompt Card - Only visible during generation
+        AnimatedVisibility(
+            visible = uiState.isGenerating,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 100, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 100)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            UserPromptCard(prompt = prompt)
+        }
+
+        // Prompt Input Card - Hidden during generation
+        AnimatedVisibility(
+            visible = !uiState.isGenerating,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 200, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 200)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            PromptInputCard(
+                prompt = prompt,
+                onPromptChange = { prompt = it }
+            )
+        }
+
+        // Generate Button - Hidden during generation
+        AnimatedVisibility(
+            visible = !uiState.isGenerating,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 250, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 250)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            GenerateButton(
+                prompt = prompt,
+                onGenerate = {
+                    if (!uiState.apiKey.isNullOrBlank()) {
+                        viewModel.generatePwa(prompt)
+                    } else {
+                        navController?.navigate("settings")
+                    }
+                }
+            )
+        }
+
+        // Feature Highlights - Hidden during generation, success, or error
+        AnimatedVisibility(
+            visible = !uiState.isGenerating && !uiState.pwaGenerated && uiState.errorMessage == null,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            FeatureHighlights()
+        }
+
+        // Progress Timeline - Only visible during generation
+        AnimatedVisibility(
+            visible = uiState.isGenerating,
+            enter = expandVertically(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ),
+            exit = shrinkVertically(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
+        ) {
+            ProgressTimeline(
+                currentStep = uiState.generationStep ?: 0
+            )
+        }
+
+        // Error Message with animation
+        AnimatedVisibility(
+            visible = uiState.errorMessage != null,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
+        ) {
+            ErrorCard(errorMessage = uiState.errorMessage ?: "")
+        }
+
+        // Success Message with animation
+        AnimatedVisibility(
+            visible = uiState.pwaGenerated,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
+        ) {
+            SuccessCard(onViewApps = { navController?.navigate("app_list") })
+        }
+
+        Spacer(modifier = Modifier.height(80.dp)) // Extra space for bottom nav
+    }
 }
 
 @Composable
@@ -246,7 +246,7 @@ private fun FeatureHighlights() {
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = CardConstants.extraLargeShape, // Consistent radius
+        shape = CardConstants.extraLargeShape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -326,7 +326,7 @@ private fun FeatureItem(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -402,60 +402,66 @@ fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
                 interactionSource = interactionSource,
                 indication = null
             ),
-        shape = CardConstants.largeShape, // Consistent radius
+        shape = CardConstants.extraLargeShape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(24.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        if (hasApiKey) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.error
-                        }
-                    ),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
             ) {
-                Icon(
-                    imageVector = if (hasApiKey) Icons.Default.CheckCircle else Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = if (hasApiKey) MaterialTheme.colorScheme.onPrimaryContainer
-                    else MaterialTheme.colorScheme.onError,
-                    modifier = Modifier.size(20.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            if (hasApiKey) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.errorContainer
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (hasApiKey) Icons.Default.CheckCircle else Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = if (hasApiKey) MaterialTheme.colorScheme.onPrimaryContainer
+                        else MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = if (hasApiKey) "API Key Configured" else "API Key Required",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (hasApiKey) MaterialTheme.colorScheme.onSurface
+                        else MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Text(
+                        text = if (hasApiKey) "Ready to generate apps"
+                        else "Configure API key to start generating",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (hasApiKey) MaterialTheme.colorScheme.onSurfaceVariant
+                        else MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
+                    )
+                }
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (hasApiKey) "API Key Configured" else "API Key Required",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = if (hasApiKey) MaterialTheme.colorScheme.onSurface
-                    else MaterialTheme.colorScheme.onErrorContainer
-                )
-                Text(
-                    text = if (hasApiKey) "Ready to generate apps"
-                    else "Configure API key to start generating",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (hasApiKey) MaterialTheme.colorScheme.onSurfaceVariant
-                    else MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
-                )
-            }
+
             if (!hasApiKey) {
                 FilledTonalButton(
                     onClick = onConfigure,
-                    shape = CardConstants.smallShape // Consistent button radius
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = CardConstants.mediumShape
                 ) {
                     Text(
                         "Configure",
@@ -472,7 +478,7 @@ private fun UserPromptCard(prompt: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = CardConstants.extraLargeShape, // Consistent radius
+        shape = CardConstants.extraLargeShape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -519,7 +525,7 @@ private fun UserPromptCard(prompt: String) {
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = CardConstants.mediumShape, // Consistent radius
+                shape = CardConstants.mediumShape,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
@@ -541,12 +547,10 @@ private fun PromptInputCard(
     prompt: String,
     onPromptChange: (String) -> Unit
 ) {
-    var isPressed by remember { mutableStateOf(false) }
-
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = CardConstants.extraLargeShape, // Consistent radius
+        shape = CardConstants.extraLargeShape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -611,7 +615,7 @@ private fun PromptInputCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
-                shape = CardConstants.mediumShape, // Consistent radius
+                shape = CardConstants.mediumShape,
                 colors = TextFieldDefaults.outlinedTextFieldColors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -642,7 +646,7 @@ private fun GenerateButton(
             .height(56.dp)
             .scale(scale),
         enabled = prompt.isNotBlank(),
-        shape = CardConstants.largeShape, // Consistent button radius
+        shape = CardConstants.largeShape,
         contentPadding = PaddingValues(vertical = 12.dp),
         interactionSource = interactionSource
     ) {
@@ -674,7 +678,7 @@ private fun ProgressTimeline(
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = CardConstants.extraLargeShape, // Consistent radius
+        shape = CardConstants.extraLargeShape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -791,7 +795,7 @@ private fun TimelineItem(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
                 color = when {
                     isCompleted -> MaterialTheme.colorScheme.primary
@@ -811,42 +815,67 @@ private fun TimelineItem(
 
 @Composable
 private fun ErrorCard(errorMessage: String) {
-    var isPressed by remember { mutableStateOf(false) }
-
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = CardConstants.largeShape, // Consistent radius
+        shape = CardConstants.extraLargeShape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.Top
+                .padding(24.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Error,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = "Generation Failed",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.error),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Error,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onError,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Generation Failed",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Text(
+                        text = "An error occurred while generating your app",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = CardConstants.mediumShape,
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
                 Text(
                     text = errorMessage,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(16.dp)
                 )
             }
         }
@@ -861,7 +890,7 @@ private fun SuccessCard(onViewApps: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth(),
-        shape = CardConstants.largeShape, // Consistent radius
+        shape = CardConstants.extraLargeShape,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -891,16 +920,23 @@ private fun SuccessCard(onViewApps: () -> Unit) {
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = "App Generated Successfully!",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Column {
+                    Text(
+                        text = "App Generated Successfully!",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Your app is ready to use",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             Text(
-                text = "Your app is ready to use. View it in your collection to start using it.",
+                text = "View it in your collection to start using it.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 20.dp)
@@ -911,7 +947,7 @@ private fun SuccessCard(onViewApps: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = CardConstants.mediumShape, // Consistent button radius
+                shape = CardConstants.mediumShape,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
