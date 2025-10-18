@@ -24,7 +24,11 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLDecoder
 import java.util.*
-import kotlin.concurrent.thread
+import androidx.activity.OnBackPressedCallback
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PwaViewerActivity : ComponentActivity() {
     companion object {
@@ -64,6 +68,17 @@ class PwaViewerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_pwa_splash) // Show splash screen initially
+
+        // Handle back press
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (::webView.isInitialized && webView.canGoBack()) {
+                    webView.goBack()
+                } else {
+                    finish()
+                }
+            }
+        })
 
         // Check for internet permission
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.INTERNET) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
@@ -218,29 +233,33 @@ class PwaViewerActivity : ComponentActivity() {
             // Still try to load the PWA as it might have offline capabilities
         }
 
-        try {
-            // Generate a unique port for the PWA
-            serverPort = generateUniquePort(pwaUuid!!)
-            
-            val serverIntent = Intent(this, PwaHttpServerService::class.java).apply {
-                action = PwaHttpServerService.ACTION_START_SERVER
-                putExtra(PwaHttpServerService.EXTRA_PWA_UUID, pwaUuid)
-                putExtra(PwaHttpServerService.EXTRA_PORT, serverPort)
-            }
-            startService(serverIntent)
+        lifecycleScope.launch {
+            try {
+                // Generate a unique port for the PWA on a background thread
+                serverPort = withContext(Dispatchers.IO) {
+                    generateUniquePort(pwaUuid!!)
+                }
+                
+                val serverIntent = Intent(this@PwaViewerActivity, PwaHttpServerService::class.java).apply {
+                    action = PwaHttpServerService.ACTION_START_SERVER
+                    putExtra(PwaHttpServerService.EXTRA_PWA_UUID, pwaUuid)
+                    putExtra(PwaHttpServerService.EXTRA_PORT, serverPort)
+                }
+                startService(serverIntent)
 
-            handler.postDelayed({
-                checkServerAndLoadPwa()
-            }, SERVER_START_DELAY)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error starting HTTP server or loading PWA: ${e.message}")
-            Toast.makeText(this, "Error loading PWA", Toast.LENGTH_LONG).show()
-            finish()
+                handler.postDelayed({
+                    checkServerAndLoadPwa()
+                }, SERVER_START_DELAY)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error starting HTTP server or loading PWA: ${e.message}")
+                Toast.makeText(this@PwaViewerActivity, "Error loading PWA", Toast.LENGTH_LONG).show()
+                finish()
+            }
         }
     }
 
     private fun checkServerAndLoadPwa() {
-        thread {
+        lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val url = URL("http://localhost:$serverPort/")
                 val connection = url.openConnection() as HttpURLConnection
@@ -251,24 +270,22 @@ class PwaViewerActivity : ComponentActivity() {
                 val responseCode = connection.responseCode
                 connection.disconnect()
 
-                if (responseCode == 200) {
-                    handler.post {
+                withContext(Dispatchers.Main) {
+                    if (responseCode == 200) {
                         setContentView(webView) // Switch to WebView after server is ready
                         val serverUrl = "http://localhost:$serverPort/?t=${System.currentTimeMillis()}"
                         Log.d(TAG, "Loading PWA from local server: $serverUrl")
                         webView.loadUrl(serverUrl)
-                    }
-                } else {
-                    Log.e(TAG, "Server responded with error code: $responseCode")
-                    handler.post {
-                        Toast.makeText(this, "Server error: $responseCode", Toast.LENGTH_LONG).show()
+                    } else {
+                        Log.e(TAG, "Server responded with error code: $responseCode")
+                        Toast.makeText(this@PwaViewerActivity, "Server error: $responseCode", Toast.LENGTH_LONG).show()
                         finish()
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Server not responding: ${e.message}")
-                handler.post {
-                    Toast.makeText(this, "Failed to connect to PWA server", Toast.LENGTH_LONG).show()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@PwaViewerActivity, "Failed to connect to PWA server", Toast.LENGTH_LONG).show()
                     finish()
                 }
             }
@@ -289,8 +306,7 @@ class PwaViewerActivity : ComponentActivity() {
     
     private fun isPortAvailable(port: Int): Boolean {
         return try {
-            val serverSocket = java.net.ServerSocket(port)
-            serverSocket.close()
+            java.net.ServerSocket(port).use { it.close() }
             true
         } catch (e: java.net.BindException) {
             false
@@ -321,15 +337,6 @@ class PwaViewerActivity : ComponentActivity() {
             startService(serverIntent)
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping HTTP server: ${e.message}")
-        }
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        if (::webView.isInitialized && webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
         }
     }
 

@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
-
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,10 +47,10 @@ import com.toymakerftw.appsage.PwaInstaller
 import com.toymakerftw.appsage.PwaViewerActivity
 import com.toymakerftw.appsage.ui.theme.CardConstants
 import com.toymakerftw.appsage.service.PwaManager
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import net.lingala.zip4j.ZipFile
 import java.io.File
 import org.json.JSONObject
@@ -369,6 +368,7 @@ fun AppCard(
     var isInstalled by remember(pwa.uuid) {
         mutableStateOf(isShortcutInstalled(context, pwa.uuid))
     }
+    val scope = rememberCoroutineScope()
     
     // Card scale animation on press
     var isPressed by remember { mutableStateOf(false) }
@@ -588,7 +588,9 @@ fun AppCard(
                             // Share button
                             OutlinedButton(
                                 onClick = {
-                                    sharePwa(pwa.name, pwaDir, context)
+                                    scope.launch {
+                                        sharePwa(pwa.name, pwaDir, context)
+                                    }
                                 },
                                 modifier = Modifier.weight(1f),
                                 enabled = hasIndexFile,
@@ -747,12 +749,12 @@ private fun launchPwa(pwa: PwaManager.PwaInfo, context: Context) {
     }
 }
 
-private fun sharePwa(
+private suspend fun sharePwa(
     pwaName: String,
     pwaDir: File,
     context: Context
 ) {
-    CoroutineScope(Dispatchers.IO).launch {
+    withContext(Dispatchers.IO) {
         try {
             if (pwaDir.exists()) {
                 val zipFileName = "${pwaName.replace("[^a-zA-Z0-9]".toRegex(), "_")}.zip"
@@ -763,7 +765,7 @@ private fun sharePwa(
                 val zip = ZipFile(zipFile)
                 zip.addFolder(pwaDir)
 
-                CoroutineScope(Dispatchers.Main).launch {
+                withContext(Dispatchers.Main) {
                     try {
                         val uri = FileProvider.getUriForFile(
                             context,
@@ -784,12 +786,12 @@ private fun sharePwa(
                     }
                 }
             } else {
-                CoroutineScope(Dispatchers.Main).launch {
+                withContext(Dispatchers.Main) {
                     Toast.makeText(context, "App directory not found", Toast.LENGTH_LONG).show()
                 }
             }
         } catch (e: Exception) {
-            CoroutineScope(Dispatchers.Main).launch {
+            withContext(Dispatchers.Main) {
                 Toast.makeText(context, "Failed to create ZIP: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }

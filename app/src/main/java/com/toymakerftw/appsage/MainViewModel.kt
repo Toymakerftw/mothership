@@ -4,6 +4,9 @@ import android.app.Application
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.Observer
+import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
@@ -40,7 +43,6 @@ class MainViewModel @Inject constructor(
     val selectedModel: StateFlow<String?> = _selectedModel
     
     private var generationWorkId: UUID? = null
-    private var workObserver: androidx.lifecycle.Observer<WorkInfo>? = null
 
     init {
         _selectedModel.value = DEFAULT_MODEL_ID
@@ -96,63 +98,48 @@ class MainViewModel @Inject constructor(
     }
     
     private fun observeWork(workId: UUID) {
-        // Create and store the observer reference to allow proper removal
-        val observer = androidx.lifecycle.Observer<WorkInfo> { workInfo ->
-            if (workInfo != null) {
-                when (workInfo.state) {
-                    WorkInfo.State.SUCCEEDED -> {
-                        val pwaUuid = workInfo.outputData.getString(PwaGenerationWorker.KEY_PWA_UUID)
-                        _uiState.value = _uiState.value.copy(
-                            isGenerating = false,
-                            generationStep = null,
-                            pwaGenerated = true,
-                            pwaUuid = pwaUuid,
-                            errorMessage = null
-                        )
-                        // Remove the observer after work is complete
-                        workObserver?.let { observer ->
-                            workManager.getWorkInfoByIdLiveData(workId).removeObserver(observer)
+        viewModelScope.launch {
+            workManager.getWorkInfoByIdLiveData(workId).asFlow().collect { workInfo ->
+                if (workInfo != null) {
+                    when (workInfo.state) {
+                        WorkInfo.State.SUCCEEDED -> {
+                            val pwaUuid = workInfo.outputData.getString(PwaGenerationWorker.KEY_PWA_UUID)
+                            _uiState.value = _uiState.value.copy(
+                                isGenerating = false,
+                                generationStep = null,
+                                pwaGenerated = true,
+                                pwaUuid = pwaUuid,
+                                errorMessage = null
+                            )
                         }
-                    }
-                    WorkInfo.State.FAILED -> {
-                        val error = workInfo.outputData.getString(PwaGenerationWorker.KEY_ERROR_MESSAGE)
-                        _uiState.value = _uiState.value.copy(
-                            isGenerating = false,
-                            generationStep = null,
-                            pwaGenerated = false,
-                            pwaUuid = null,
-                            errorMessage = error
-                        )
-                        // Remove the observer after work is complete
-                        workObserver?.let { observer ->
-                            workManager.getWorkInfoByIdLiveData(workId).removeObserver(observer)
+                        WorkInfo.State.FAILED -> {
+                            val error = workInfo.outputData.getString(PwaGenerationWorker.KEY_ERROR_MESSAGE)
+                            _uiState.value = _uiState.value.copy(
+                                isGenerating = false,
+                                generationStep = null,
+                                pwaGenerated = false,
+                                pwaUuid = null,
+                                errorMessage = error
+                            )
                         }
-                    }
-                    WorkInfo.State.CANCELLED -> {
-                        _uiState.value = _uiState.value.copy(
-                            isGenerating = false,
-                            generationStep = null,
-                            errorMessage = "Work was cancelled"
-                        )
-                        // Remove the observer after work is cancelled
-                        workObserver?.let { observer ->
-                            workManager.getWorkInfoByIdLiveData(workId).removeObserver(observer)
+                        WorkInfo.State.CANCELLED -> {
+                            _uiState.value = _uiState.value.copy(
+                                isGenerating = false,
+                                generationStep = null,
+                                errorMessage = "Work was cancelled"
+                            )
                         }
-                    }
-                    WorkInfo.State.RUNNING -> {
-                        val step = workInfo.progress.getInt(PwaGenerationWorker.KEY_GENERATION_STEP, 0)
-                        _uiState.value = _uiState.value.copy(generationStep = step)
-                    }
-                    WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
-                        // Optionally handle these states if needed
+                        WorkInfo.State.RUNNING -> {
+                            val step = workInfo.progress.getInt(PwaGenerationWorker.KEY_GENERATION_STEP, 0)
+                            _uiState.value = _uiState.value.copy(generationStep = step)
+                        }
+                        WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {
+                            // Optionally handle these states if needed
+                        }
                     }
                 }
             }
         }
-        
-        // Store the observer for potential future cleanup
-        workObserver = observer
-        workManager.getWorkInfoByIdLiveData(workId).observeForever(observer)
     }
 
     fun clearErrorMessage() {
@@ -182,17 +169,6 @@ class MainViewModel @Inject constructor(
 
     suspend fun getPwas(): List<Pair<String, String>> {
         return pwaRepository.getGeneratedPwas()
-    }
-    
-    override fun onCleared() {
-        super.onCleared()
-        // Remove any active observer when the ViewModel is cleared
-        generationWorkId?.let { workId ->
-            workObserver?.let { observer ->
-                workManager.getWorkInfoByIdLiveData(workId).removeObserver(observer)
-            }
-        }
-        workObserver = null
     }
 }
 

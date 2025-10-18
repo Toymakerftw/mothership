@@ -380,7 +380,7 @@ fun ReworkScreen(
             )
         ) {
             ReworkProgressTimeline(
-                currentStep = uiState.generationStep ?: 1
+                currentStep = uiState.generationStep ?: 0
             )
         }
 
@@ -642,8 +642,8 @@ private fun ReworkProgressTimeline(
                     icon = step.icon,
                     title = step.title,
                     subtitle = step.subtitle,
-                    isCompleted = index < currentStep - 1, // Fixed: Adjusted for 1-based indexing
-                    isActive = index == currentStep - 1, // Fixed: Adjusted for 1-based indexing
+                    isCompleted = index < currentStep,
+                    isActive = index == currentStep,
                     isLast = index == steps.size - 1
                 )
             }

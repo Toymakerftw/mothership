@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
@@ -60,32 +61,32 @@ class ReworkViewModel @Inject constructor(
     }
 
     private fun observeWork(workId: UUID) {
-        workManager.getWorkInfoByIdLiveData(workId).observeForever { workInfo ->
-            if (workInfo != null) {
-                when (workInfo.state) {
-                    WorkInfo.State.SUCCEEDED -> {
-                        _uiState.value = _uiState.value.copy(
-                            isReworking = false,
-                            pwaReworked = true,
-                            generationStep = null
-                        )
-                        workManager.getWorkInfoByIdLiveData(workId).removeObserver { }
-                    }
-                    WorkInfo.State.FAILED -> {
-                        val error = workInfo.outputData.getString(PwaReworkWorker.KEY_ERROR_MESSAGE)
-                        _uiState.value = _uiState.value.copy(
-                            isReworking = false,
-                            errorMessage = error,
-                            generationStep = null
-                        )
-                        workManager.getWorkInfoByIdLiveData(workId).removeObserver { }
-                    }
-                    WorkInfo.State.RUNNING -> {
-                        val step = workInfo.progress.getInt(PwaReworkWorker.KEY_GENERATION_STEP, 0)
-                        _uiState.value = _uiState.value.copy(generationStep = step)
-                    }
-                    else -> {
-                        // Other states
+        viewModelScope.launch {
+            workManager.getWorkInfoByIdLiveData(workId).asFlow().collect { workInfo ->
+                if (workInfo != null) {
+                    when (workInfo.state) {
+                        WorkInfo.State.SUCCEEDED -> {
+                            _uiState.value = _uiState.value.copy(
+                                isReworking = false,
+                                pwaReworked = true,
+                                generationStep = null
+                            )
+                        }
+                        WorkInfo.State.FAILED -> {
+                            val error = workInfo.outputData.getString(PwaReworkWorker.KEY_ERROR_MESSAGE)
+                            _uiState.value = _uiState.value.copy(
+                                isReworking = false,
+                                errorMessage = error,
+                                generationStep = null
+                            )
+                        }
+                        WorkInfo.State.RUNNING -> {
+                            val step = workInfo.progress.getInt(PwaReworkWorker.KEY_GENERATION_STEP, 0)
+                            _uiState.value = _uiState.value.copy(generationStep = step)
+                        }
+                        else -> {
+                            // Other states like BLOCKED, ENQUEUED, CANCELLED
+                        }
                     }
                 }
             }

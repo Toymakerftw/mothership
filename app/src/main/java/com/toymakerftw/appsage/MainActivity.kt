@@ -10,7 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
-import com.google.accompanist.systemuicontroller.rememberSystemUiController
+
 import com.toymakerftw.appsage.data.SettingsRepository
 import com.toymakerftw.appsage.ui.theme.AppsageTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -36,16 +36,6 @@ class MainActivity : ComponentActivity() {
             AppsageTheme(
                 darkTheme = isDarkThemeState.value
             ) {
-                val systemUiController = rememberSystemUiController()
-                val colorScheme = MaterialTheme.colorScheme
-                
-                SideEffect {
-                    systemUiController.setStatusBarColor(
-                        color = colorScheme.background,
-                        darkIcons = !isDarkThemeState.value
-                    )
-                }
-                
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),

@@ -19,7 +19,7 @@ class PwaHttpServerService : Service() {
     }
 
     // Map to store multiple server instances by port
-    private val serverMap = mutableMapOf<Int, PwaHttpServer>()
+    private val serverMap = java.util.concurrent.ConcurrentHashMap<Int, PwaHttpServer>()
 
     override fun onCreate() {
         super.onCreate()
