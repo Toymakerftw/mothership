@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.net.ConnectivityManager
 import android.os.Bundle
 import android.os.Handler
@@ -25,6 +26,7 @@ import java.net.URL
 import java.net.URLDecoder
 import java.util.*
 import androidx.activity.OnBackPressedCallback
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -45,7 +47,7 @@ class PwaViewerActivity : ComponentActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private var orbRetryCount = 0
     private val MAX_ORB_RETRIES = 2 // Allow only 2 retries
-    
+
     private val pwaReworkedReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: android.content.Context?, intent: Intent?) {
             if (intent?.action == "com.toymakerftw.appsage.PWA_REWORKED") {
@@ -67,6 +69,9 @@ class PwaViewerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         setContentView(R.layout.activity_pwa_splash) // Show splash screen initially
 
         // Handle back press
@@ -115,26 +120,47 @@ class PwaViewerActivity : ComponentActivity() {
             return
         }
 
-        // Try to get a better name from manifest.json
+        var themeColor: Int? = null
+        var isDarkMode = false
+
+        // Try to get a better name and theme color from manifest.json
         try {
             val pwaDir = File(getExternalFilesDir(null), pwaUuid!!)
             val manifestFile = File(pwaDir, "manifest.json")
-            
+
             if (manifestFile.exists()) {
                 val manifestContent = manifestFile.readText()
                 val manifestJson = JSONObject(manifestContent)
                 val shortName = manifestJson.optString("short_name")
                 val manifestName = manifestJson.optString("name")
-                
+
                 // Prefer short_name, fallback to name from manifest
                 val betterName = shortName.ifEmpty { manifestName }
                 if (betterName.isNotEmpty()) {
                     pwaName = betterName
                 }
+
+                val themeColorStr = manifestJson.optString("theme_color")
+                if (themeColorStr.isNotEmpty()) {
+                    themeColor = Color.parseColor(themeColorStr)
+                }
+
+                val backgroundColorStr = manifestJson.optString("background_color")
+                if (backgroundColorStr.isNotEmpty()) {
+                    val bgColor = Color.parseColor(backgroundColorStr)
+                    // Check if the background color is dark
+                    isDarkMode = isColorDark(bgColor)
+                }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Could not read manifest for better name: ${e.message}")
+            Log.w(TAG, "Could not read manifest for better name or theme: ${e.message}")
         }
+
+        val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+        insetsController.isAppearanceLightStatusBars = !isDarkMode
+
+        window.statusBarColor = themeColor ?: Color.TRANSPARENT
+
 
         // Initialize WebView but don't set it as content view yet
         webView = WebView(this)
@@ -239,7 +265,7 @@ class PwaViewerActivity : ComponentActivity() {
                 serverPort = withContext(Dispatchers.IO) {
                     generateUniquePort(pwaUuid!!)
                 }
-                
+
                 val serverIntent = Intent(this@PwaViewerActivity, PwaHttpServerService::class.java).apply {
                     action = PwaHttpServerService.ACTION_START_SERVER
                     putExtra(PwaHttpServerService.EXTRA_PWA_UUID, pwaUuid)
@@ -303,7 +329,7 @@ class PwaViewerActivity : ComponentActivity() {
         // If all ports in range are taken, return the base port (fallback)
         return SERVER_PORT_BASE
     }
-    
+
     private fun isPortAvailable(port: Int): Boolean {
         return try {
             java.net.ServerSocket(port).use { it.close() }
@@ -319,7 +345,7 @@ class PwaViewerActivity : ComponentActivity() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null)
         stopHttpServer()
-        
+
         // Unregister receiver for PWA rework notifications
         try {
             unregisterReceiver(pwaReworkedReceiver)
@@ -349,5 +375,10 @@ class PwaViewerActivity : ComponentActivity() {
                 networkCapabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) ||
                 networkCapabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) ||
                 networkCapabilities.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET))
+    }
+
+    private fun isColorDark(color: Int): Boolean {
+        val darkness = 1 - (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255
+        return darkness >= 0.5
     }
 }
