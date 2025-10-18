@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.toymakerftw.appsage.SettingsViewModel
 import com.toymakerftw.appsage.ui.theme.CardConstants
+import androidx.compose.material3.OutlinedTextFieldDefaults
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -338,7 +339,7 @@ private fun ColumnScope.ApiKeyConfigSection(
             .padding(bottom = 8.dp),
         shape = CardConstants.smallShape, // Consistent radius
         singleLine = true,
-        colors = TextFieldDefaults.outlinedTextFieldColors(
+        colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = borderColor,
             unfocusedBorderColor = borderColor
         ),
@@ -470,7 +471,6 @@ fun SettingsSectionCard(
     subtitle: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    var isPressed by remember { mutableStateOf(false) }
     
     Card(
         modifier = Modifier
@@ -534,7 +534,6 @@ fun InfoCard(
     backgroundColor: Color,
     iconColor: Color
 ) {
-    var isPressed by remember { mutableStateOf(false) }
     
     Card(
         modifier = Modifier
@@ -581,7 +580,6 @@ fun ThemeToggleCard(
     isDarkTheme: Boolean,
     onThemeToggle: () -> Unit
 ) {
-    var isPressed by remember { mutableStateOf(false) }
     
     Card(
         modifier = Modifier

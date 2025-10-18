@@ -23,7 +23,6 @@ import com.toymakerftw.appsage.ReworkViewModel
 @Composable
 fun AppsageNav(settingsViewModel: SettingsViewModel) {
     val navController = rememberNavController()
-    val context = LocalContext.current
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     
     // Don't show bottom navigation on rework screen only (settings screen will show bottom nav now)

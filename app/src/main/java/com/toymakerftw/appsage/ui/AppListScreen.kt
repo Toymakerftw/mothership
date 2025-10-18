@@ -436,7 +436,6 @@ fun AppCard(
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    val appIcon by remember(pwa.name) { mutableStateOf(getAppIcon(pwa.name)) }
                     Text(
                         text = pwa.name,
                         style = MaterialTheme.typography.titleLarge,

@@ -82,11 +82,6 @@ fun StatusCard(
         }
     }
     
-    val textColor = when (statusType) {
-        StatusType.Error -> MaterialTheme.colorScheme.onErrorContainer
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    
     Card(
         modifier = modifier,
         shape = CardConstants.mediumShape,

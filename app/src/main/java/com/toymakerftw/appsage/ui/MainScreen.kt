@@ -30,7 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.toymakerftw.appsage.MainUiState
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.navigation.NavController
 import com.toymakerftw.appsage.MainViewModel
 import com.toymakerftw.appsage.ui.theme.CardConstants
@@ -391,7 +391,6 @@ private fun MainHeader(modifier: Modifier = Modifier, alpha: Float = 1f) {
 @Composable
 fun ApiKeyStatusCard(hasApiKey: Boolean, onConfigure: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
 
     Card(
         modifier = Modifier
@@ -616,7 +615,7 @@ private fun PromptInputCard(
                     )
                 },
                 shape = CardConstants.mediumShape,
-                colors = TextFieldDefaults.outlinedTextFieldColors(
+                colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline
                 )
@@ -885,7 +884,6 @@ private fun ErrorCard(errorMessage: String) {
 @Composable
 private fun SuccessCard(onViewApps: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
 
     Card(
         modifier = Modifier
