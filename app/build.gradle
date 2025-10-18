@@ -66,6 +66,9 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0'
     implementation 'androidx.compose.runtime:runtime-livedata:1.5.4'
     
+    // System UI Controller for status bar theming
+    implementation "com.google.accompanist:accompanist-systemuicontroller:0.32.0"
+    
     // Hilt for dependency injection
     implementation 'com.google.dagger:hilt-android:2.48'
     ksp 'com.google.dagger:hilt-compiler:2.48'

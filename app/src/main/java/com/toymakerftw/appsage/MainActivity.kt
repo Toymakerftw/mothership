@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.toymakerftw.appsage.data.SettingsRepository
 import com.toymakerftw.appsage.ui.theme.AppsageTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -23,6 +26,8 @@ class MainActivity : ComponentActivity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        
         setContent {
             val settingsViewModel: SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
             
@@ -31,6 +36,16 @@ class MainActivity : ComponentActivity() {
             AppsageTheme(
                 darkTheme = isDarkThemeState.value
             ) {
+                val systemUiController = rememberSystemUiController()
+                val colorScheme = MaterialTheme.colorScheme
+                
+                SideEffect {
+                    systemUiController.setStatusBarColor(
+                        color = colorScheme.background,
+                        darkIcons = !isDarkThemeState.value
+                    )
+                }
+                
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
