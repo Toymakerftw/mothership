@@ -16,6 +16,7 @@ class SettingsRepository(val context: Context) {
 
     private val API_KEY_KEY = stringPreferencesKey("api_key")
     private val THEME_PREFERENCE_KEY = booleanPreferencesKey("theme_preference")
+    private val SELECTED_MODEL_KEY = stringPreferencesKey("selected_model")
 
     suspend fun saveApiKey(apiKey: String) {
         // Validate API key format (basic validation - should start with 'sk-' for most API providers)
@@ -62,5 +63,30 @@ class SettingsRepository(val context: Context) {
 
     fun getThemePreferenceFlow() = context.dataStore.data.map { preferences ->
         preferences[THEME_PREFERENCE_KEY] ?: false // Default to light theme
+    }
+
+    suspend fun setSelectedModel(modelId: String) {
+        try {
+            context.dataStore.edit { preferences ->
+                preferences[SELECTED_MODEL_KEY] = modelId
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SettingsRepository", "Error setting selected model", e)
+            throw e
+        }
+    }
+
+    fun getSelectedModelFlow() = context.dataStore.data.map { preferences ->
+        preferences[SELECTED_MODEL_KEY] ?: "x-ai/grok-4-fast" // Default to the same as MainViewModel
+    }
+
+    suspend fun getSelectedModel(): String? {
+        return try {
+            val preferences = context.dataStore.data.first()
+            preferences[SELECTED_MODEL_KEY]
+        } catch (e: Exception) {
+            android.util.Log.e("SettingsRepository", "Error reading selected model from DataStore", e)
+            null
+        }
     }
 }

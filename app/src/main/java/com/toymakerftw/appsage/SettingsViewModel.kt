@@ -19,6 +19,9 @@ class SettingsViewModel @Inject constructor(
     
     private val _isDarkTheme = MutableStateFlow(false)
     val isDarkTheme = _isDarkTheme.asStateFlow()
+    
+    private val _selectedModel = MutableStateFlow("x-ai/grok-4-fast")  // Default model
+    val selectedModel = _selectedModel.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -29,6 +32,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.getThemePreferenceFlow().collect { isDarkTheme ->
                 _isDarkTheme.value = isDarkTheme
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.getSelectedModelFlow().collect { selectedModel ->
+                _selectedModel.value = selectedModel
             }
         }
     }
@@ -60,6 +68,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.setThemePreference(isDark)
             _isDarkTheme.value = isDark
+        }
+    }
+    
+    fun setSelectedModel(modelId: String) {
+        viewModelScope.launch {
+            settingsRepository.setSelectedModel(modelId)
+            _selectedModel.value = modelId
         }
     }
 }

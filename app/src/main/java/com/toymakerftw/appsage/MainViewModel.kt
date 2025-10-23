@@ -45,14 +45,22 @@ class MainViewModel @Inject constructor(
     private var generationWorkId: UUID? = null
 
     init {
-        _selectedModel.value = DEFAULT_MODEL_ID
         observeApiKey()
+        observeSelectedModel()
     }
 
     private fun observeApiKey() {
         viewModelScope.launch {
             settingsRepository.getApiKeyFlow().collect { apiKey ->
                 _uiState.value = _uiState.value.copy(apiKey = apiKey)
+            }
+        }
+    }
+
+    private fun observeSelectedModel() {
+        viewModelScope.launch {
+            settingsRepository.getSelectedModelFlow().collect { selectedModel ->
+                _selectedModel.value = selectedModel
             }
         }
     }

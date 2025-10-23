@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.toymakerftw.appsage.SettingsViewModel
 import com.toymakerftw.appsage.ui.theme.CardConstants
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.OutlinedTextFieldDefaults
 
 
@@ -153,6 +155,45 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Model Selection Card with animation
+        val selectedModel by settingsViewModel.selectedModel.collectAsState()
+        val modelOptions = listOf(
+            "x-ai/grok-4-fast",
+            "tngtech/deepseek-r1t2-chimera:free", 
+            "openai/gpt-oss-20b:free",
+            "google/gemini-2.0-flash-exp:free"
+        )
+        
+        AnimatedVisibility(
+            visible = true,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 150, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 150)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            ModelSelectionCard(
+                selectedModel = selectedModel,
+                modelOptions = modelOptions,
+                onModelChange = { model ->
+                    settingsViewModel.setSelectedModel(model)
+                    
+                    // Also update the MainViewModel's selected model if it's available
+                    // This ensures the change is reflected in the main generation flow
+                    Toast.makeText(
+                        context,
+                        "Model changed to: ${model.split("/").last()}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         // Info Cards with animation
         AnimatedVisibility(
             visible = true,
@@ -178,8 +219,8 @@ fun SettingsScreen(
             visible = true,
             enter = slideInVertically(
                 initialOffsetY = { 40 },
-                animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
+                animationSpec = tween(300, delayMillis = 250, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 250)),
             exit = slideOutVertically(
                 targetOffsetY = { -40 },
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
@@ -203,8 +244,8 @@ fun SettingsScreen(
             visible = true,
             enter = slideInVertically(
                 initialOffsetY = { 40 },
-                animationSpec = tween(300, delayMillis = 400, easing = FastOutSlowInEasing)
-            ) + fadeIn(animationSpec = tween(300, delayMillis = 400)),
+                animationSpec = tween(300, delayMillis = 300, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 300)),
             exit = slideOutVertically(
                 targetOffsetY = { -40 },
                 animationSpec = tween(300, easing = FastOutSlowInEasing)
@@ -569,6 +610,110 @@ fun InfoCard(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     modifier = Modifier.padding(top = 4.dp)
                 )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ModelSelectionCard(
+    selectedModel: String,
+    modelOptions: List<String>,
+    onModelChange: (String) -> Unit
+) {
+    
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = CardConstants.largeShape, // Consistent radius
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Api,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "AI Model",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Select the AI model for PWA generation",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            
+            // Dropdown for model selection
+            var expanded by remember { mutableStateOf(false) }
+            
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
+                    value = selectedModel,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Selected Model") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    ),
+                    textStyle = MaterialTheme.typography.bodyMedium
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    modelOptions.forEach { model ->
+                        DropdownMenuItem(
+                            text = { 
+                                val modelName = model.split("/").last()
+                                Text(modelName) 
+                            },
+                            onClick = {
+                                onModelChange(model)
+                                expanded = false
+                            },
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
+                        )
+                    }
+                }
             }
         }
     }
