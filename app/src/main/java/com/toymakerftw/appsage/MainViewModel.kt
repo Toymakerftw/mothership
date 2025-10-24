@@ -175,6 +175,41 @@ class MainViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(pwaDeleted = false)
     }
 
+    fun makePwaResponsive(uuid: String) {
+        viewModelScope.launch {
+            val apiKey = _uiState.value.apiKey
+            if (apiKey.isNullOrEmpty()) {
+                _uiState.value = _uiState.value.copy(
+                    errorMessage = "API key not set"
+                )
+                return@launch
+            }
+
+            // Create a rework prompt to make the PWA responsive
+            val reworkPrompt = "Make this PWA mobile responsive and ensure JavaScript is properly linked. Add proper viewport meta tag, mobile-first CSS with media queries, appropriate touch targets, and ensure script.js is properly included in the HTML."
+
+            val workRequest = OneTimeWorkRequestBuilder<PwaReworkWorker>()
+                .setInputData(
+                    Data.Builder()
+                        .putString(PwaReworkWorker.KEY_UUID, uuid)
+                        .putString(PwaReworkWorker.KEY_REWORK_PROMPT, reworkPrompt)
+                        .putString(PwaReworkWorker.KEY_API_KEY, apiKey)
+                        .build()
+                )
+                .build()
+
+            workManager.enqueue(workRequest)
+
+            // Send a broadcast to notify the activity that rework has started
+            val context = getApplication<Application>()
+            val intent = android.content.Intent("com.toymakerftw.appsage.PWA_REWORKED").apply {
+                putExtra("pwa_uuid", uuid)
+                putExtra("rework_type", "responsiveness")
+            }
+            context.sendBroadcast(intent)
+        }
+    }
+
     suspend fun getPwas(): List<Pair<String, String>> {
         return pwaRepository.getGeneratedPwas()
     }
