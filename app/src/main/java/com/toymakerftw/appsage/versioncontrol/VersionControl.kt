@@ -21,7 +21,8 @@ data class VersionHistory(
 )
 
 class VersionControl(private val context: Context) {
-    private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss").withZone(ZoneId.systemDefault())
+    // Use Android ICU library instead of java.time for API level compatibility
+    private val dateFormat = android.icu.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", java.util.Locale.getDefault())
 
     fun createBackup(uuid: String, commitMessage: String = "Auto-backup before rework"): Boolean {
         val pwaDir = File(context.getExternalFilesDir(null), uuid)
@@ -31,7 +32,7 @@ class VersionControl(private val context: Context) {
         }
 
         val timestamp = System.currentTimeMillis()
-        val versionId = dateFormat.format(Instant.ofEpochMilli(timestamp))
+        val versionId = dateFormat.format(java.util.Date(timestamp))
         val backupDir = File(context.getExternalFilesDir(null), "$uuid/versions/$versionId")
         
         if (!backupDir.exists()) {

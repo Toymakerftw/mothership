@@ -203,6 +203,7 @@ class MainViewModel @Inject constructor(
             // Send a broadcast to notify the activity that rework has started
             val context = getApplication<Application>()
             val intent = android.content.Intent("com.toymakerftw.appsage.PWA_REWORKED").apply {
+                setPackage(context.packageName)  // Make the intent explicit to prevent interception
                 putExtra("pwa_uuid", uuid)
                 putExtra("rework_type", "responsiveness")
             }
