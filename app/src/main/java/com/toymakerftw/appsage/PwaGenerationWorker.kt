@@ -72,6 +72,14 @@ class PwaGenerationWorker(
   "manifest.json": "{\"name\": \"My PWA App\", \"short_name\": \"PWA App\"}"
 }
 
+CRITICAL REQUIREMENTS:
+1. HTML must include proper viewport meta tag for mobile responsiveness: <meta name="viewport" content="width=device-width, initial-scale=1.0">
+2. CSS must use mobile-first approach with appropriate media queries for larger screens
+3. HTML must properly include the script.js file with a script tag
+4. Ensure all UI elements are mobile-friendly with appropriate touch targets
+5. Use modern CSS techniques like flexbox or grid for responsive layouts
+6. Include proper meta tags and PWA features
+
 IMPORTANT: Return only the JSON object with the files. Do not include any explanation, reasoning, or additional text before or after the JSON. The response should begin and end with the JSON structure. Do not wrap the JSON in markdown code blocks if possible."""
                     )
                 ),
