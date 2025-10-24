@@ -44,7 +44,15 @@ data class OpenRouterRequest(
     @SerializedName("model")
     val model: String,
     @SerializedName("messages")
-    val messages: List<Message>
+    val messages: List<Message>,
+    @SerializedName("temperature")
+    val temperature: Float? = null,
+    @SerializedName("max_tokens")
+    val maxTokens: Int? = null,
+    @SerializedName("provider")
+    val provider: Map<String, Any>? = null,
+    @SerializedName("stream")
+    val stream: Boolean? = null
 )
 
 data class Message(

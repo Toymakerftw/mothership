@@ -89,9 +89,22 @@ class PwaReworkWorker(
             setProgress(workDataOf(KEY_GENERATION_STEP to 4))
             delay(500)
 
+            // Determine if reasoning should be disabled for specific models
+            val selectedModelId = "x-ai/grok-4-fast" // Currently hardcoded, but can be changed in future
+            val disableReasoning = selectedModelId in listOf(
+                "tngtech/deepseek-r1t2-chimera:free",
+                "openai/gpt-oss-20b:free"
+            )
+            
+            val temperature = if (disableReasoning) 0.1f else 0.7f // Lower temperature for more deterministic responses when reasoning is disabled
+            
             val request = OpenRouterRequest(
-                model = "x-ai/grok-4-fast",
-                messages = listOf(Message(role = "user", content = fullPrompt))
+                model = selectedModelId,
+                messages = listOf(Message(role = "user", content = fullPrompt + """
+
+IMPORTANT: Return only the JSON object with the updated files. Do not include any explanation, reasoning, or additional text before or after the JSON. The response should begin and end with the JSON structure. Do not wrap the JSON in markdown code blocks if possible.""")),
+                temperature = temperature,
+                stream = false
             )
 
             val response = appsageApi.generatePwa("Bearer $apiKey", request)

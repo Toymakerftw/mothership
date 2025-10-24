@@ -51,6 +51,14 @@ class PwaGenerationWorker(
             setProgress(workDataOf(KEY_GENERATION_STEP to 0))
             delay(500)
 
+            // Determine if reasoning should be disabled for specific models
+            val disableReasoning = selectedModelId in listOf(
+                "tngtech/deepseek-r1t2-chimera:free",
+                "openai/gpt-oss-20b:free"
+            )
+            
+            val temperature = if (disableReasoning) 0.1f else 0.7f // Lower temperature for more deterministic responses when reasoning is disabled
+            
             val request = OpenRouterRequest(
                 model = selectedModelId,
                 messages = listOf(
@@ -62,9 +70,13 @@ class PwaGenerationWorker(
   "style.css": "body { ... }",
   "script.js": "console.log('...');",
   "manifest.json": "{\"name\": \"My PWA App\", \"short_name\": \"PWA App\"}"
-}"""
+}
+
+IMPORTANT: Return only the JSON object with the files. Do not include any explanation, reasoning, or additional text before or after the JSON. The response should begin and end with the JSON structure. Do not wrap the JSON in markdown code blocks if possible."""
                     )
-                )
+                ),
+                temperature = temperature,
+                stream = false
             )
 
             // Step 1: Generating code
@@ -103,13 +115,17 @@ class PwaGenerationWorker(
         pwaDir.mkdirs()
 
         try {
+            // First, try to extract JSON by looking for the actual JSON object in the response
+            // This handles cases where reasoning or other text surrounds the JSON
+            val extractedJson = extractJsonFromResponse(responseContent)
+            
             val jsonResponse = try {
                 // Validate and sanitize the JSON before using it
-                if (!isValidJsonStructure(responseContent.trim())) {
+                if (!isValidJsonStructure(extractedJson.trim())) {
                     Log.w("PwaGenerationWorker", "Invalid JSON structure received, trying code blocks")
                     return extractFromCodeBlocks(responseContent, pwaDir, uuid)
                 }
-                JSONObject(responseContent.trim())
+                JSONObject(extractedJson.trim())
             } catch (jsonException: Exception) {
                 Log.w("PwaGenerationWorker", "Could not parse response as JSON, trying code blocks", jsonException)
                 return extractFromCodeBlocks(responseContent, pwaDir, uuid)
@@ -141,6 +157,23 @@ class PwaGenerationWorker(
             // In case of error, we still have the raw response saved in extractFromCodeBlocks
             throw e // Re-throw to be caught by the main try-catch and result in failure
         }
+    }
+    
+    private fun extractJsonFromResponse(responseContent: String): String {
+        var content = responseContent.trim()
+        
+        // Look for JSON object pattern - starting with { and ending with }
+        val jsonStartIndex = content.indexOf('{')
+        val jsonEndIndex = content.lastIndexOf('}')
+        
+        if (jsonStartIndex != -1 && jsonEndIndex != -1 && jsonEndIndex > jsonStartIndex) {
+            // Extract the main JSON object
+            content = content.substring(jsonStartIndex, jsonEndIndex + 1)
+        }
+        
+        // Remove any extra text that might be around the JSON
+        // For example, if there are newlines or markdown formatting
+        return content.trim()
     }
     
     private fun isValidJsonStructure(jsonStr: String): Boolean {
