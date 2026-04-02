@@ -58,6 +58,39 @@ class AppsageApi {
         }
     }
 
+    suspend fun fetchAvailableModels(apiKey: String): List<String> {
+        val client = okhttp3.OkHttpClient()
+        val request = okhttp3.Request.Builder()
+            .url("https://generativelanguage.googleapis.com/v1beta/models?key=$apiKey")
+            .build()
+
+        return try {
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return emptyList()
+                val body = response.body?.string() ?: return emptyList()
+                val json = org.json.JSONObject(body)
+                val modelsArray = json.getJSONArray("models")
+                val modelList = mutableListOf<String>()
+                for (i in 0 until modelsArray.length()) {
+                    val model = modelsArray.getJSONObject(i)
+                    val name = model.getString("name").removePrefix("models/")
+                    // Only include models that support content generation
+                    val supportedMethods = model.getJSONArray("supportedGenerationMethods")
+                    for (j in 0 until supportedMethods.length()) {
+                        if (supportedMethods.getString(j) == "generateContent") {
+                            modelList.add(name)
+                            break
+                        }
+                    }
+                }
+                modelList.sorted()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
     companion object {
         fun create(): AppsageApi {
             return AppsageApi()

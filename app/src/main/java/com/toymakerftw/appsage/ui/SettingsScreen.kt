@@ -23,6 +23,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -157,11 +158,8 @@ fun SettingsScreen(
 
         // Model Selection Card with animation
         val selectedModel by settingsViewModel.selectedModel.collectAsState()
-        val modelOptions = listOf(
-            "gemini-2.5-flash",
-            "gemini-1.5-flash",
-            "gemini-1.5-pro"
-        )
+        val availableModels by settingsViewModel.availableModels.collectAsState()
+        val isFetchingModels by settingsViewModel.isFetchingModels.collectAsState()
         
         AnimatedVisibility(
             visible = true,
@@ -176,7 +174,9 @@ fun SettingsScreen(
         ) {
             ModelSelectionCard(
                 selectedModel = selectedModel,
-                modelOptions = modelOptions,
+                modelOptions = availableModels,
+                isFetching = isFetchingModels,
+                onRefresh = { settingsViewModel.refreshModels() },
                 onModelChange = { model ->
                     settingsViewModel.setSelectedModel(model)
                     
@@ -619,6 +619,8 @@ fun InfoCard(
 fun ModelSelectionCard(
     selectedModel: String,
     modelOptions: List<String>,
+    isFetching: Boolean,
+    onRefresh: () -> Unit,
     onModelChange: (String) -> Unit
 ) {
     
@@ -655,7 +657,7 @@ fun ModelSelectionCard(
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "AI Model",
                         style = MaterialTheme.typography.titleLarge,
@@ -666,6 +668,30 @@ fun ModelSelectionCard(
                         text = "Select the AI model for PWA generation",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
+                }
+
+                // Refresh button with animation
+                val infiniteTransition = rememberInfiniteTransition(label = "refresh_rotation")
+                val rotation by infiniteTransition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = 360f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1000, easing = LinearEasing),
+                        repeatMode = RepeatMode.Restart
+                    ),
+                    label = "rotation"
+                )
+
+                IconButton(
+                    onClick = onRefresh,
+                    enabled = !isFetching
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Refresh Models",
+                        modifier = if (isFetching) Modifier.rotate(rotation) else Modifier,
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -702,7 +728,7 @@ fun ModelSelectionCard(
                     modelOptions.forEach { model ->
                         DropdownMenuItem(
                             text = { 
-                                val modelName = model.split("/").last()
+                                val modelName = if (model.contains("/")) model.split("/").last() else model
                                 Text(modelName) 
                             },
                             onClick = {
