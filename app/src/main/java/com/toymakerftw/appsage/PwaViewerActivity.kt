@@ -178,8 +178,8 @@ class PwaViewerActivity : ComponentActivity() {
         webSettings.cacheMode = WebSettings.LOAD_DEFAULT
         // Enable internet access for PWAs
         webSettings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-        // Set a user agent that identifies as a mobile browser
-        webSettings.userAgentString = "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 AppsagePWA"
+        // Use default user agent but append our app identifier
+        webSettings.userAgentString = webSettings.userAgentString + " AppsagePWA"
         // Enable DOM storage for PWA features
         webSettings.domStorageEnabled = true
 
