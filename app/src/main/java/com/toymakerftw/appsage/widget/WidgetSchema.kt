@@ -6,7 +6,8 @@ import androidx.annotation.Keep
 data class WidgetLayout(
     val root: WidgetNode?,
     val themeColor: String? = null,
-    val backgroundColor: String? = null
+    val backgroundColor: String? = null,
+    val initialState: Map<String, Any>? = null
 )
 
 @Keep
@@ -24,5 +25,6 @@ data class WidgetNode(
     val fillMaxHeight: Boolean? = null,
     val padding: Int? = null,
     val actionPrompt: String? = null, // Used for buttons
+    val visibleIf: String? = null, // e.g. "!%is_done%" or "%count% > 0"
     val children: List<WidgetNode>? = null
 )

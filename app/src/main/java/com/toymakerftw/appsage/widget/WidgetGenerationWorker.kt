@@ -51,11 +51,18 @@ class WidgetGenerationWorker(
                 - Use fontSize 14-18 for body text, 20-28 for titles. They will auto-scale down.
                 - Limit nesting depth to 3 levels max for performance.
                 
+                OFFLINE INTERACTION ENGINE:
+                - You can create widgets that update INSTANTLY without AI using "local:" actions and "%state_key%" variables.
+                - ACTIONS: Set "actionPrompt" to "local:toggle:key", "local:set:key:val", "local:inc:key", or "local:dec:key".
+                - VARIABLES: Use "%key%" in any "text" field to display the current value of that state key.
+                - VISIBILITY: Use "visibleIf": "%key%", "!%key%", or "%key% == value" to hide/show nodes.
+                - INITIAL STATE: You MUST define starting values in the "initialState" map at the root.
+                
                 The JSON must PERFECTLY match this structure:
                 {
                   "root": {
                      "type": "column" | "row" | "text" | "button" | "spacer",
-                     "text": "String for text/button",
+                     "text": "String with optional %vars%",
                      "color": "#HEXCOLOR",
                      "backgroundColor": "#HEXCOLOR",
                      "fontSize": Int,
@@ -65,13 +72,18 @@ class WidgetGenerationWorker(
                      "fillMaxWidth": Boolean,
                      "fillMaxHeight": Boolean,
                      "padding": Int,
-                     "actionPrompt": "String to send back if this button is tapped",
+                     "actionPrompt": "Prompt string OR local:command",
+                     "visibleIf": "Condition string",
                      "children": [ array of child WidgetNode objects ]
                   },
-                  "backgroundColor": "#HEXCOLOR"
+                  "backgroundColor": "#HEXCOLOR",
+                  "initialState": { "key": value, ... }
                 }
                 
-                Always return ONLY the JSON block. Do not include markdown formatting or explanations. Make the UI gorgeous and useful with modern hex colors and clean typography.
+                Example for a Counter: initialState: {"count": 0}, text: "Count: %count%", actionPrompt: "local:inc:count".
+                Example for a Toggle: initialState: {"is_on": false}, text: "Switch On", visibleIf: "!%is_on%", actionPrompt: "local:toggle:is_on".
+                
+                Always return ONLY the JSON block. Do not include markdown formatting or explanations. Make the UI gorgeous and useful.
             """.trimIndent()
 
             val generativeModel = GenerativeModel(
@@ -90,7 +102,7 @@ class WidgetGenerationWorker(
             }
 
             // Verify it parses
-            Gson().fromJson(generatedJson, WidgetLayout::class.java)
+            val layout = Gson().fromJson(generatedJson, WidgetLayout::class.java)
 
             // Always save to WidgetManager for persistence
             val widgetManager = WidgetManager(context)
@@ -102,6 +114,11 @@ class WidgetGenerationWorker(
                 updateAppWidgetState(context, glanceId) { prefs ->
                     prefs[DynamicGlanceWidget.KEY_LAYOUT_JSON] = generatedJson
                     prefs[DynamicGlanceWidget.KEY_PROMPT] = prompt
+                    
+                    // Set initial state if provided
+                    layout.initialState?.let {
+                        prefs[DynamicGlanceWidget.KEY_STATE_JSON] = Gson().toJson(it)
+                    }
                 }
                 DynamicGlanceWidget().update(context, glanceId)
             }

@@ -46,6 +46,7 @@ class DynamicGlanceWidget : GlanceAppWidget() {
 
     companion object {
         val KEY_LAYOUT_JSON = stringPreferencesKey("layout_json")
+        val KEY_STATE_JSON = stringPreferencesKey("state_json")
         val KEY_PROMPT = stringPreferencesKey("prompt")
 
         // Responsive breakpoints
@@ -63,7 +64,14 @@ class DynamicGlanceWidget : GlanceAppWidget() {
         provideContent {
             val prefs = currentState<Preferences>()
             val layoutJson = prefs[KEY_LAYOUT_JSON]
+            val stateJson = prefs[KEY_STATE_JSON] ?: "{}"
             val size = LocalSize.current
+            
+            val state = try {
+                Gson().fromJson(stateJson, Map::class.java) as Map<String, Any>
+            } catch (e: Exception) {
+                emptyMap<String, Any>()
+            }
 
             GlanceTheme {
                 if (layoutJson.isNullOrEmpty()) {
@@ -100,7 +108,7 @@ class DynamicGlanceWidget : GlanceAppWidget() {
                                 .background(bgColor)
                                 .cornerRadius(16.dp)
                         ) {
-                            parsedLayout.root?.let { RenderNode(it, scaleFactor) }
+                            parsedLayout.root?.let { RenderNode(it, state, scaleFactor) }
                         }
                     } else {
                         Text(
@@ -114,7 +122,10 @@ class DynamicGlanceWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun RenderNode(node: WidgetNode, scaleFactor: Float = 1.0f) {
+    private fun RenderNode(node: WidgetNode, state: Map<String, Any>, scaleFactor: Float = 1.0f) {
+        // Conditional Visibility Check
+        if (!evaluateVisibility(node.visibleIf, state)) return
+
         val scaledPadding = ((node.padding ?: 0) * scaleFactor).toInt()
         var modifier = GlanceModifier.padding(scaledPadding.dp)
         
@@ -150,7 +161,7 @@ class DynamicGlanceWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.Top
                 ) {
                     node.children?.forEach { child ->
-                        RenderNode(child, scaleFactor)
+                        RenderNode(child, state, scaleFactor)
                     }
                 }
             }
@@ -161,7 +172,7 @@ class DynamicGlanceWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.Start
                 ) {
                     node.children?.forEach { child ->
-                        RenderNode(child, scaleFactor)
+                        RenderNode(child, state, scaleFactor)
                     }
                 }
             }
@@ -169,8 +180,9 @@ class DynamicGlanceWidget : GlanceAppWidget() {
                 val weight = if (node.fontWeight == "bold") FontWeight.Bold else FontWeight.Normal
                 val textColor = parseColor(node.color) ?: Color.Black
                 val scaledFontSize = ((node.fontSize ?: 14) * scaleFactor).toInt().coerceAtLeast(8)
+                val processedText = substituteState(node.text ?: "", state)
                 Text(
-                    text = node.text ?: "",
+                    text = processedText,
                     modifier = modifier,
                     style = TextStyle(
                         color = ColorProvider(textColor),
@@ -187,8 +199,9 @@ class DynamicGlanceWidget : GlanceAppWidget() {
                 val promptParamKey = ActionParameters.Key<String>("actionPrompt")
                 val params = actionParametersOf(promptParamKey to (node.actionPrompt ?: ""))
                 
+                val processedText = substituteState(node.text ?: "Button", state)
                 Button(
-                    text = node.text ?: "Button",
+                    text = processedText,
                     onClick = actionRunCallback<ActionReceiver>(parameters = params),
                     modifier = modifier,
                     colors = ButtonDefaults.buttonColors(
@@ -200,6 +213,43 @@ class DynamicGlanceWidget : GlanceAppWidget() {
             "spacer" -> {
                 Spacer(modifier = modifier)
             }
+        }
+    }
+
+    private fun substituteState(text: String, state: Map<String, Any>): String {
+        var result = text
+        state.forEach { (key, value) ->
+            result = result.replace("%$key%", value.toString())
+        }
+        return result
+    }
+
+    private fun evaluateVisibility(condition: String?, state: Map<String, Any>): Boolean {
+        if (condition == null) return true
+        
+        return try {
+            val trimmed = condition.trim()
+            if (trimmed.startsWith("!")) {
+                val key = trimmed.substring(1).replace("%", "")
+                val value = state[key]
+                value == null || value == false || value == 0 || value == "" || value == "false"
+            } else if (trimmed.contains("==")) {
+                val parts = trimmed.split("==")
+                val key = parts[0].trim().replace("%", "")
+                val target = parts[1].trim().replace("\"", "").replace("'", "")
+                state[key]?.toString() == target
+            } else if (trimmed.contains("!=")) {
+                val parts = trimmed.split("!=")
+                val key = parts[0].trim().replace("%", "")
+                val target = parts[1].trim().replace("\"", "").replace("'", "")
+                state[key]?.toString() != target
+            } else {
+                val key = trimmed.replace("%", "")
+                val value = state[key]
+                value == true || value == "true" || (value is Number && value.toInt() > 0) || (value is String && value.isNotEmpty() && value != "false" && value != "0")
+            }
+        } catch (e: Exception) {
+            true // Default to visible on error
         }
     }
 
