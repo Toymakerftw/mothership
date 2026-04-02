@@ -130,7 +130,8 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no text ou
             }
 
             // Sanitize the content to prevent potential XSS or other injection issues
-            val htmlContent = sanitizeContent(jsonResponse.optString("index.html", ""))
+            var htmlContent = sanitizeContent(jsonResponse.optString("index.html", ""))
+            htmlContent = ensureEssentialTags(htmlContent)
             val cssContent = sanitizeContent(jsonResponse.optString("style.css", ""))
             val jsContent = sanitizeContent(jsonResponse.optString("script.js", ""))
             val manifestContent = sanitizeManifestContent(jsonResponse.optString("manifest.json", ""))
@@ -188,7 +189,6 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no text ou
         // Basic sanitization to remove potentially harmful content
         // In a real application, you would want more thorough sanitization
         return content
-            .replace(Regex("<script[\\s\\S]*?>[\\s\\S]*?</script>", RegexOption.IGNORE_CASE), "")
             .replace(Regex("javascript:", RegexOption.IGNORE_CASE), "js:")
             .replace(Regex("on\\w+\\s*=", RegexOption.IGNORE_CASE), "sanitized_")
     }
@@ -224,7 +224,7 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no text ou
         val manifestContent = allMatches["json"]
 
         htmlContent?.let { 
-            val sanitizedHtml = sanitizeContent(it) 
+            val sanitizedHtml = ensureEssentialTags(sanitizeContent(it)) 
             File(pwaDir, "index.html").writeText(sanitizedHtml) 
         }
         cssContent?.let { 
@@ -294,5 +294,39 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no text ou
             Log.w("PwaGenerationWorker", "Could not extract name from manifest", e)
             "Generated PWA"
         }
+    }
+
+    private fun ensureEssentialTags(html: String): String {
+        if (html.isEmpty()) return html
+        var processedHtml = html
+        
+        // Add basic HTML structure if missing
+        if (!processedHtml.contains("<html", ignoreCase = true)) {
+            processedHtml = "<!DOCTYPE html>\n<html>\n<head></head>\n<body>\n$processedHtml\n</body>\n</html>"
+        }
+        if (!processedHtml.contains("<head", ignoreCase = true)) {
+            processedHtml = processedHtml.replaceFirst(Regex("<html[^>]*>", RegexOption.IGNORE_CASE), "$0\n<head></head>")
+        }
+        if (!processedHtml.contains("<body", ignoreCase = true)) {
+            processedHtml = processedHtml.replaceFirst(Regex("</head>", RegexOption.IGNORE_CASE), "</head>\n<body>")
+            processedHtml = processedHtml.replaceFirst(Regex("</html>", RegexOption.IGNORE_CASE), "</body>\n</html>")
+        }
+
+        // Ensure viewport meta tag exists
+        if (!processedHtml.contains("name=\"viewport\"", ignoreCase = true)) {
+            processedHtml = processedHtml.replaceFirst(Regex("<head[^>]*>", RegexOption.IGNORE_CASE), "$0\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">")
+        }
+
+        // Ensure script.js is linked
+        if (!processedHtml.contains("script.js", ignoreCase = true)) {
+            processedHtml = processedHtml.replaceFirst(Regex("</body>", RegexOption.IGNORE_CASE), "    <script src=\"script.js\"></script>\n</body>")
+        }
+
+        // Ensure style.css is linked
+        if (!processedHtml.contains("style.css", ignoreCase = true)) {
+            processedHtml = processedHtml.replaceFirst(Regex("</head>", RegexOption.IGNORE_CASE), "    <link rel=\"stylesheet\" href=\"style.css\">\n</head>")
+        }
+
+        return processedHtml
     }
 }

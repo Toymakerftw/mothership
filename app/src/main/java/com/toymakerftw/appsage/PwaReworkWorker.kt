@@ -139,7 +139,10 @@ IMPORTANT: Return ONLY the JSON object with the updated files. No markdown, no e
             var updated = false
             for (key in keys) {
                 if (jsonResponse.get(key) is String) {
-                    val content = jsonResponse.getString(key)
+                    var content = jsonResponse.getString(key)
+                    if (key == "index.html") {
+                        content = ensureEssentialTags(content)
+                    }
                     File(pwaDir, key).writeText(content)
                     updated = true
                 }
@@ -162,9 +165,43 @@ IMPORTANT: Return ONLY the JSON object with the updated files. No markdown, no e
             ?: Regex("```js\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
         val jsonMatch = Regex("```json\\s*(.*?)\\s*```", RegexOption.DOT_MATCHES_ALL).find(responseContent)
 
-        htmlMatch?.let { File(pwaDir, "index.html").writeText(it.groupValues[1]) }
+        htmlMatch?.let { File(pwaDir, "index.html").writeText(ensureEssentialTags(it.groupValues[1])) }
         cssMatch?.let { File(pwaDir, "style.css").writeText(it.groupValues[1]) }
         jsMatch?.let { File(pwaDir, "script.js").writeText(it.groupValues[1]) }
         jsonMatch?.let { File(pwaDir, "manifest.json").writeText(it.groupValues[1]) }
+    }
+
+    private fun ensureEssentialTags(html: String): String {
+        if (html.isEmpty()) return html
+        var processedHtml = html
+        
+        // Add basic HTML structure if missing
+        if (!processedHtml.contains("<html", ignoreCase = true)) {
+            processedHtml = "<!DOCTYPE html>\n<html>\n<head></head>\n<body>\n$processedHtml\n</body>\n</html>"
+        }
+        if (!processedHtml.contains("<head", ignoreCase = true)) {
+            processedHtml = processedHtml.replaceFirst(Regex("<html[^>]*>", RegexOption.IGNORE_CASE), "$0\n<head></head>")
+        }
+        if (!processedHtml.contains("<body", ignoreCase = true)) {
+            processedHtml = processedHtml.replaceFirst(Regex("</head>", RegexOption.IGNORE_CASE), "</head>\n<body>")
+            processedHtml = processedHtml.replaceFirst(Regex("</html>", RegexOption.IGNORE_CASE), "</body>\n</html>")
+        }
+
+        // Ensure viewport meta tag exists
+        if (!processedHtml.contains("name=\"viewport\"", ignoreCase = true)) {
+            processedHtml = processedHtml.replaceFirst(Regex("<head[^>]*>", RegexOption.IGNORE_CASE), "$0\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">")
+        }
+
+        // Ensure script.js is linked
+        if (!processedHtml.contains("script.js", ignoreCase = true)) {
+            processedHtml = processedHtml.replaceFirst(Regex("</body>", RegexOption.IGNORE_CASE), "    <script src=\"script.js\"></script>\n</body>")
+        }
+
+        // Ensure style.css is linked
+        if (!processedHtml.contains("style.css", ignoreCase = true)) {
+            processedHtml = processedHtml.replaceFirst(Regex("</head>", RegexOption.IGNORE_CASE), "    <link rel=\"stylesheet\" href=\"style.css\">\n</head>")
+        }
+
+        return processedHtml
     }
 }
