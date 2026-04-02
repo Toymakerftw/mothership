@@ -132,8 +132,8 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no text ou
             // Sanitize the content to prevent potential XSS or other injection issues
             var htmlContent = sanitizeContent(jsonResponse.optString("index.html", ""))
             htmlContent = ensureEssentialTags(htmlContent)
-            val cssContent = sanitizeContent(jsonResponse.optString("style.css", ""))
-            val jsContent = sanitizeContent(jsonResponse.optString("script.js", ""))
+            val cssContent = jsonResponse.optString("style.css", "")
+            val jsContent = jsonResponse.optString("script.js", "")
             val manifestContent = sanitizeManifestContent(jsonResponse.optString("manifest.json", ""))
 
             if (htmlContent.isEmpty() && cssContent.isEmpty() && jsContent.isEmpty()) {
@@ -228,12 +228,10 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no text ou
             File(pwaDir, "index.html").writeText(sanitizedHtml) 
         }
         cssContent?.let { 
-            val sanitizedCss = sanitizeContent(it) 
-            File(pwaDir, "style.css").writeText(sanitizedCss) 
+            File(pwaDir, "style.css").writeText(it) 
         }
         jsContent?.let { 
-            val sanitizedJs = sanitizeContent(it)
-            val validatedJs = validateAndSanitizeJS(sanitizedJs)
+            val validatedJs = validateAndSanitizeJS(it)
             File(pwaDir, "script.js").writeText(validatedJs) 
         }
 
