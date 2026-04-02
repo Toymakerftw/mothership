@@ -41,6 +41,16 @@ class WidgetGenerationWorker(
             val fullPrompt = """
                 You are a UI layout engine. Your job is to output a single JSON object that represents a native Android Widget UI layout matching the user's prompt: "$prompt".
                 
+                CRITICAL RESPONSIVE RULES:
+                - The widget MUST look good at ALL sizes: tiny (57x57dp), medium (130x130dp), large (250x130dp), and extra-large (250x250dp).
+                - Font sizes and padding values are automatically scaled down for smaller sizes, so design for the LARGE size as baseline.
+                - Use "fillMaxWidth": true on your root container and key children so the layout stretches.
+                - Prefer "column" as root type for vertical stacking. Use "row" for side-by-side elements.
+                - Keep text SHORT and concise. Titles max 20 chars, descriptions max 50 chars.
+                - Use moderate padding (8-16), not large values that waste space on small widgets.
+                - Use fontSize 14-18 for body text, 20-28 for titles. They will auto-scale down.
+                - Limit nesting depth to 3 levels max for performance.
+                
                 The JSON must PERFECTLY match this structure:
                 {
                   "root": {
@@ -61,7 +71,7 @@ class WidgetGenerationWorker(
                   "backgroundColor": "#HEXCOLOR"
                 }
                 
-                Always return ONLY the JSON block. Do not include markdown formatting or explanations. Make the UI gorgeous and useful. You can use standard hex colors.
+                Always return ONLY the JSON block. Do not include markdown formatting or explanations. Make the UI gorgeous and useful with modern hex colors and clean typography.
             """.trimIndent()
 
             val generativeModel = GenerativeModel(

@@ -3,6 +3,7 @@ package com.toymakerftw.appsage.widget
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
@@ -12,9 +13,11 @@ import androidx.glance.ButtonDefaults
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalSize
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -27,7 +30,9 @@ import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.width
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
@@ -42,23 +47,37 @@ class DynamicGlanceWidget : GlanceAppWidget() {
     companion object {
         val KEY_LAYOUT_JSON = stringPreferencesKey("layout_json")
         val KEY_PROMPT = stringPreferencesKey("prompt")
+
+        // Responsive breakpoints
+        private val SMALL = DpSize(57.dp, 57.dp)
+        private val MEDIUM = DpSize(130.dp, 130.dp)
+        private val LARGE = DpSize(250.dp, 130.dp)
+        private val EXTRA_LARGE = DpSize(250.dp, 250.dp)
     }
+
+    override val sizeMode = SizeMode.Responsive(
+        setOf(SMALL, MEDIUM, LARGE, EXTRA_LARGE)
+    )
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
             val prefs = currentState<Preferences>()
             val layoutJson = prefs[KEY_LAYOUT_JSON]
-            
+            val size = LocalSize.current
+
             GlanceTheme {
                 if (layoutJson.isNullOrEmpty()) {
                     Column(
-                        modifier = GlanceModifier.fillMaxSize().background(Color.DarkGray).padding(16.dp),
+                        modifier = GlanceModifier.fillMaxSize().background(Color.DarkGray).padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Awaiting AI Generation...",
-                            style = TextStyle(color = ColorProvider(Color.White))
+                            text = if (size.width < 130.dp) "..." else "Awaiting AI...",
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontSize = if (size.width < 130.dp) 10.sp else 14.sp
+                            )
                         )
                     }
                 } else {
@@ -70,13 +89,23 @@ class DynamicGlanceWidget : GlanceAppWidget() {
 
                     if (parsedLayout != null) {
                         val bgColor = parseColor(parsedLayout.backgroundColor) ?: Color.White
-                        Column(modifier = GlanceModifier.fillMaxSize().background(bgColor)) {
-                            parsedLayout.root?.let { RenderNode(it) }
+                        val scaleFactor = when {
+                            size.width < 130.dp -> 0.6f
+                            size.width < 250.dp -> 0.85f
+                            else -> 1.0f
+                        }
+                        Column(
+                            modifier = GlanceModifier
+                                .fillMaxSize()
+                                .background(bgColor)
+                                .cornerRadius(16.dp)
+                        ) {
+                            parsedLayout.root?.let { RenderNode(it, scaleFactor) }
                         }
                     } else {
                         Text(
-                            text = "Error rendering widget layout",
-                            style = TextStyle(color = ColorProvider(Color.Red))
+                            text = "Error rendering",
+                            style = TextStyle(color = ColorProvider(Color.Red), fontSize = 12.sp)
                         )
                     }
                 }
@@ -85,8 +114,9 @@ class DynamicGlanceWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun RenderNode(node: WidgetNode) {
-        var modifier = GlanceModifier.padding((node.padding ?: 0).dp)
+    private fun RenderNode(node: WidgetNode, scaleFactor: Float = 1.0f) {
+        val scaledPadding = ((node.padding ?: 0) * scaleFactor).toInt()
+        var modifier = GlanceModifier.padding(scaledPadding.dp)
         
         if (node.fillMaxWidth == true) modifier = modifier.fillMaxWidth()
         if (node.fillMaxHeight == true) modifier = modifier.fillMaxHeight()
@@ -101,7 +131,6 @@ class DynamicGlanceWidget : GlanceAppWidget() {
             modifier = modifier.cornerRadius(it.dp)
         }
         
-        // Define standard alignments based on JSON property
         val hAlign = when(node.align) {
             "center" -> Alignment.CenterHorizontally
             "end" -> Alignment.End
@@ -121,7 +150,7 @@ class DynamicGlanceWidget : GlanceAppWidget() {
                     verticalAlignment = Alignment.Top
                 ) {
                     node.children?.forEach { child ->
-                        RenderNode(child)
+                        RenderNode(child, scaleFactor)
                     }
                 }
             }
@@ -132,21 +161,23 @@ class DynamicGlanceWidget : GlanceAppWidget() {
                     horizontalAlignment = Alignment.Start
                 ) {
                     node.children?.forEach { child ->
-                        RenderNode(child)
+                        RenderNode(child, scaleFactor)
                     }
                 }
             }
             "text" -> {
                 val weight = if (node.fontWeight == "bold") FontWeight.Bold else FontWeight.Normal
                 val textColor = parseColor(node.color) ?: Color.Black
+                val scaledFontSize = ((node.fontSize ?: 14) * scaleFactor).toInt().coerceAtLeast(8)
                 Text(
                     text = node.text ?: "",
                     modifier = modifier,
                     style = TextStyle(
                         color = ColorProvider(textColor),
-                        fontSize = (node.fontSize ?: 14).sp,
+                        fontSize = scaledFontSize.sp,
                         fontWeight = weight
-                    )
+                    ),
+                    maxLines = if (scaleFactor < 0.7f) 1 else 10
                 )
             }
             "button" -> {
