@@ -7,7 +7,6 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.toymakerftw.appsage.api.AppsageApi
 import com.toymakerftw.appsage.api.Message
-import com.toymakerftw.appsage.api.OpenRouterRequest
 import com.toymakerftw.appsage.data.SettingsRepository
 import kotlinx.coroutines.delay
 import java.io.File
@@ -35,7 +34,7 @@ class PwaGenerationWorker(
     override suspend fun doWork(): Result {
         val prompt = inputData.getString(KEY_PROMPT)
         val apiKey = inputData.getString(KEY_API_KEY)
-        val selectedModelId = inputData.getString(KEY_SELECTED_MODEL) ?: "x-ai/grok-4-fast"
+        val selectedModelId = inputData.getString(KEY_SELECTED_MODEL) ?: "gemini-2.5-flash"
 
         if (prompt.isNullOrEmpty() || apiKey.isNullOrEmpty()) {
             return Result.failure(workDataOf(KEY_ERROR_MESSAGE to "Prompt or API key is missing."))
@@ -51,60 +50,45 @@ class PwaGenerationWorker(
             setProgress(workDataOf(KEY_GENERATION_STEP to 0))
             delay(500)
 
-            // Determine if reasoning should be disabled for specific models
-            val disableReasoning = selectedModelId in listOf(
-                "tngtech/deepseek-r1t2-chimera:free",
-                "openai/gpt-oss-20b:free"
-            )
-            
-            val temperature = if (disableReasoning) 0.1f else 0.7f // Lower temperature for more deterministic responses when reasoning is disabled
-            
-            val request = OpenRouterRequest(
-                model = selectedModelId,
-                messages = listOf(
-                    Message(
-                        role = "user",
-                        content = """Generate a complete mobile first PWA with HTML, CSS, and JavaScript code in JSON format. The PWA should implement: $prompt. Include index.html, style.css, and script.js in the JSON response. Also include a manifest.json file in the response. If the response is in JSON format, include these files at the top level of the JSON object. The manifest.json should include the proper name and short_name based on the prompt. For example:
+            val fullPrompt = """Generate a high-quality, modern, and visually appealing mobile-first PWA with HTML, CSS, and JavaScript code in JSON format, following the Cloudflare Vibe SDK style. 
+The PWA should implement: $prompt.
+
+Include index.html, style.css, script.js, and manifest.json in the JSON response.
+
+CRITICAL VIBE SDK STANDARDS:
+1. Polished UI/UX: Use modern CSS (Flexbox, Grid, Variables), smooth transitions, and high-quality aesthetics.
+2. Mobile-First & Responsive: Viewport meta tag is MANDATORY. Design for touch first, then adapt for desktop.
+3. Clean, Modular Code: Write well-structured HTML and JavaScript (ES6+).
+4. Interactive Feedback: Ensure the UI responds to user input with animations or state changes.
+5. Accessibility: Use semantic tags and proper ARIA labels.
+6. Installable: Provide a comprehensive manifest.json with appropriate icons (use placeholders like https://via.placeholder.com/192 if needed) and theme colors.
+
+OUTPUT FORMAT (JSON ONLY):
 {
   "index.html": "<!DOCTYPE html>...",
-  "style.css": "body { ... }",
-  "script.js": "console.log('...');",
-  "manifest.json": "{\"name\": \"My PWA App\", \"short_name\": \"PWA App\"}"
+  "style.css": ":root { ... }",
+  "script.js": "document.addEventListener('...', () => { ... });",
+  "manifest.json": "{\"name\": \"...\", \"short_name\": \"...\", \"theme_color\": \"...\", \"background_color\": \"...\", \"display\": \"standalone\", \"start_url\": \"/index.html\"}"
 }
 
-CRITICAL REQUIREMENTS:
-1. HTML must include proper viewport meta tag for mobile responsiveness: <meta name="viewport" content="width=device-width, initial-scale=1.0">
-2. CSS must use mobile-first approach with appropriate media queries for larger screens
-3. HTML must properly include the script.js file with a script tag
-4. Ensure all UI elements are mobile-friendly with appropriate touch targets
-5. Use modern CSS techniques like flexbox or grid for responsive layouts
-6. Include proper meta tags and PWA features
-
-IMPORTANT: Return only the JSON object with the files. Do not include any explanation, reasoning, or additional text before or after the JSON. The response should begin and end with the JSON structure. Do not wrap the JSON in markdown code blocks if possible."""
-                    )
-                ),
-                temperature = temperature,
-                stream = false
-            )
+IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no text outside the JSON structure."""
 
             // Step 1: Generating code
             setProgress(workDataOf(KEY_GENERATION_STEP to 1))
-            val response = appsageApi.generatePwa("Bearer $apiKey", request)
+            val response = appsageApi.generatePwa(apiKey, selectedModelId, listOf(Message("user", fullPrompt)))
 
             // Step 2: Styling UI
             setProgress(workDataOf(KEY_GENERATION_STEP to 2))
             delay(300)
 
-            if (response.choices.isNotEmpty()) {
-                val content = response.choices[0].message.content
-                
+            if (response != null) {
                 // Step 3: Finalizing
                 setProgress(workDataOf(KEY_GENERATION_STEP to 3))
                 
-                val pwaUuid = extractAndSavePwaCode(content)
+                val pwaUuid = extractAndSavePwaCode(response)
                 return Result.success(workDataOf(KEY_PWA_UUID to pwaUuid))
             } else {
-                return Result.failure(workDataOf(KEY_ERROR_MESSAGE to "API returned no choices."))
+                return Result.failure(workDataOf(KEY_ERROR_MESSAGE to "API returned no response."))
             }
         } catch (e: Exception) {
             Log.e("PwaGenerationWorker", "Error generating PWA", e)

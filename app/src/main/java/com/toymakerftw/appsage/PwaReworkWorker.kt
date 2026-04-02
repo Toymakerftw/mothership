@@ -7,7 +7,6 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.toymakerftw.appsage.api.AppsageApi
 import com.toymakerftw.appsage.api.Message
-import com.toymakerftw.appsage.api.OpenRouterRequest
 import com.toymakerftw.appsage.versioncontrol.VersionControl
 import kotlinx.coroutines.delay
 import java.io.File
@@ -89,42 +88,35 @@ class PwaReworkWorker(
             setProgress(workDataOf(KEY_GENERATION_STEP to 4))
             delay(500)
 
-            // Determine if reasoning should be disabled for specific models
-            val selectedModelId = "x-ai/grok-4-fast" // Currently hardcoded, but can be changed in future
-            val disableReasoning = selectedModelId in listOf(
-                "tngtech/deepseek-r1t2-chimera:free",
-                "openai/gpt-oss-20b:free"
-            )
-            
-            val temperature = if (disableReasoning) 0.1f else 0.7f // Lower temperature for more deterministic responses when reasoning is disabled
-            
-            val request = OpenRouterRequest(
-                model = selectedModelId,
-                messages = listOf(Message(role = "user", content = fullPrompt + """
+            val selectedModelId = "gemini-2.5-flash"
+            val fullPromptWithRequirements = fullPrompt + """
 
-CRITICAL REQUIREMENTS FOR THE OUTPUT:
-1. HTML must include proper viewport meta tag for mobile responsiveness: <meta name="viewport" content="width=device-width, initial-scale=1.0">
-2. CSS must use mobile-first approach with appropriate media queries for larger screens
-3. HTML must properly include the script.js file with a script tag
-4. Ensure all UI elements are mobile-friendly with appropriate touch targets
-5. Use modern CSS techniques like flexbox or grid for responsive layouts
-6. Include proper meta tags and PWA features
-7. Make sure JavaScript is properly linked and functional
+CRITICAL VIBE SDK STANDARDS FOR THE OUTPUT:
+1. Polished UI/UX: Use modern CSS (Flexbox, Grid, Variables), smooth transitions, and high-quality aesthetics.
+2. Mobile-First & Responsive: Viewport meta tag is MANDATORY. Design for touch first, then adapt for desktop.
+3. Clean, Modular Code: Write well-structured HTML and JavaScript (ES6+).
+4. Interactive Feedback: Ensure the UI responds to user input with animations or state changes.
+5. Accessibility: Use semantic tags and proper ARIA labels.
+6. Installable: Provide a comprehensive manifest.json with appropriate icons and theme colors.
 
-IMPORTANT: Return only the JSON object with the updated files. Do not include any explanation, reasoning, or additional text before or after the JSON. The response should begin and end with the JSON structure. Do not wrap the JSON in markdown code blocks if possible.""")),
-                temperature = temperature,
-                stream = false
-            )
+OUTPUT FORMAT (JSON ONLY):
+{
+  "index.html": "<!DOCTYPE html>...",
+  "style.css": ":root { ... }",
+  "script.js": "document.addEventListener('...', () => { ... });",
+  "manifest.json": "{\"name\": \"...\", \"short_name\": \"...\", \"theme_color\": \"...\", \"background_color\": \"...\", \"display\": \"standalone\", \"start_url\": \"/index.html\"}"
+}
 
-            val response = appsageApi.generatePwa("Bearer $apiKey", request)
+IMPORTANT: Return ONLY the JSON object with the updated files. No markdown, no explanations, no text outside the JSON structure."""
 
-            if (response.choices.isNotEmpty()) {
-                val content = response.choices[0].message.content
-                updatePwaCode(uuid, content)
+            val response = appsageApi.generatePwa(apiKey, selectedModelId, listOf(Message("user", fullPromptWithRequirements)))
+
+            if (response != null) {
+                updatePwaCode(uuid, response)
                 versionControl.clearOldVersions(uuid)
                 return Result.success()
             } else {
-                return Result.failure(workDataOf(KEY_ERROR_MESSAGE to "API returned no choices."))
+                return Result.failure(workDataOf(KEY_ERROR_MESSAGE to "API returned no response."))
             }
         } catch (e: Exception) {
             Log.e("PwaReworkWorker", "Error reworking PWA", e)

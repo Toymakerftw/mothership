@@ -32,7 +32,7 @@ class MainViewModel @Inject constructor(
     private val pwaRepository = PwaRepository(getApplication())
 
     companion object {
-        const val DEFAULT_MODEL_ID = "x-ai/grok-4-fast"
+        const val DEFAULT_MODEL_ID = "gemini-2.5-flash"
         const val MAX_PROMPT_LENGTH = 2000 // Maximum allowed prompt length
     }
 

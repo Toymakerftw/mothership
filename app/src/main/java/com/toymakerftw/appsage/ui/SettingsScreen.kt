@@ -158,10 +158,9 @@ fun SettingsScreen(
         // Model Selection Card with animation
         val selectedModel by settingsViewModel.selectedModel.collectAsState()
         val modelOptions = listOf(
-            "x-ai/grok-4-fast",
-            "tngtech/deepseek-r1t2-chimera:free", 
-            "openai/gpt-oss-20b:free",
-            "google/gemini-2.0-flash-exp:free"
+            "gemini-2.5-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-pro"
         )
         
         AnimatedVisibility(
@@ -209,7 +208,7 @@ fun SettingsScreen(
             InfoCard(
                 icon = Icons.Default.Info,
                 title = "About API Keys",
-                content = "Appsage requires an OpenRouter API key to generate PWAs. You can get a free key from OpenRouter. Your key is stored securely on your device and never sent to our servers.",
+                content = "Appsage requires a Google Gemini API key to generate PWAs. You can get a key from Google AI Studio. Your key is stored securely on your device and never sent to our servers.",
                 backgroundColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f),
                 iconColor = MaterialTheme.colorScheme.primary
             )
@@ -229,7 +228,7 @@ fun SettingsScreen(
             InfoCard(
                 icon = Icons.Default.Security,
                 title = "Security & Privacy",
-                content = "Your API key is encrypted and stored securely on your device. We never store or transmit your prompts or generated code. All processing happens directly between your device and OpenRouter.",
+                content = "Your API key is encrypted and stored securely on your device. We never store or transmit your prompts or generated code. All processing happens directly between your device and Google's Generative AI SDK.",
                 backgroundColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.1f),
                 iconColor = MaterialTheme.colorScheme.secondary
             )
@@ -318,7 +317,7 @@ private fun ColumnScope.ApiKeyConfigSection(
     onClear: () -> Unit
 ) {
     Text(
-        text = "Your OpenRouter API key enables PWA generation. It's stored securely on your device and only sent to OpenRouter's servers.",
+        text = "Your Google Gemini API key enables PWA generation. It's stored securely on your device and only sent to Google's servers.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
         modifier = Modifier.padding(bottom = 16.dp)
@@ -337,13 +336,13 @@ private fun ColumnScope.ApiKeyConfigSection(
         onValueChange = onApiKeyChange,
         label = {
             Text(
-                "OpenRouter API Key",
+                "Gemini API Key",
                 fontWeight = FontWeight.Medium
             )
         },
         placeholder = {
             Text(
-                "sk-or-...",
+                "AIza...",
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
         },
@@ -450,7 +449,7 @@ private fun ColumnScope.ApiKeyConfigSection(
                 isSavePressed = true
                 onSave()
             },
-            enabled = newApiKey.isNotBlank() && newApiKey.startsWith("sk-or-"),
+            enabled = newApiKey.isNotBlank(),
             modifier = Modifier
                 .weight(1f)
                 .scale(saveScale),

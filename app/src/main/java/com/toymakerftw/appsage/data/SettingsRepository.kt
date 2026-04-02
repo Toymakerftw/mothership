@@ -19,10 +19,7 @@ class SettingsRepository(val context: Context) {
     private val SELECTED_MODEL_KEY = stringPreferencesKey("selected_model")
 
     suspend fun saveApiKey(apiKey: String) {
-        // Validate API key format (basic validation - should start with 'sk-' for most API providers)
-        if (apiKey.isNotEmpty() && !apiKey.startsWith("sk-")) {
-            android.util.Log.w("SettingsRepository", "API key does not follow standard format (should start with 'sk-')")
-        }
+        // Validation removed as Gemini API keys don't follow a fixed prefix
         
         try {
             context.dataStore.edit { preferences ->
@@ -77,7 +74,7 @@ class SettingsRepository(val context: Context) {
     }
 
     fun getSelectedModelFlow() = context.dataStore.data.map { preferences ->
-        preferences[SELECTED_MODEL_KEY] ?: "x-ai/grok-4-fast" // Default to the same as MainViewModel
+        preferences[SELECTED_MODEL_KEY] ?: "gemini-2.5-flash" // Default to gemini-2.5-flash
     }
 
     suspend fun getSelectedModel(): String? {
