@@ -14,6 +14,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.toymakerftw.appsage.data.SettingsRepository
 import com.toymakerftw.appsage.data.PwaRepository
+import com.toymakerftw.appsage.widget.WidgetGenerationWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -102,6 +103,79 @@ class MainViewModel @Inject constructor(
             workManager.enqueue(workRequest)
             
             observeWork(generationWorkId!!)
+        }
+    }
+
+    fun generateWidget(prompt: String) {
+        viewModelScope.launch {
+            val apiKey = _uiState.value.apiKey
+            if (apiKey.isNullOrEmpty()) {
+                _uiState.value = _uiState.value.copy(
+                    isGenerating = false,
+                    errorMessage = "API key not set"
+                )
+                return@launch
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isGenerating = true,
+                errorMessage = null,
+                pwaGenerated = false,
+                widgetGenerated = false,
+                generationStep = 0
+            )
+
+            val workRequest = OneTimeWorkRequestBuilder<WidgetGenerationWorker>()
+                .setInputData(
+                    Data.Builder()
+                        .putString(WidgetGenerationWorker.KEY_PROMPT, prompt)
+                        .putInt(WidgetGenerationWorker.KEY_APP_WIDGET_ID, -1) // headless
+                        .build()
+                )
+                .build()
+
+            generationWorkId = workRequest.id
+            workManager.enqueue(workRequest)
+            observeWidgetWork(generationWorkId!!)
+        }
+    }
+
+    private fun observeWidgetWork(workId: UUID) {
+        viewModelScope.launch {
+            workManager.getWorkInfoByIdLiveData(workId).asFlow().collect { workInfo ->
+                if (workInfo != null) {
+                    when (workInfo.state) {
+                        WorkInfo.State.SUCCEEDED -> {
+                            _uiState.value = _uiState.value.copy(
+                                isGenerating = false,
+                                generationStep = null,
+                                widgetGenerated = true,
+                                errorMessage = null
+                            )
+                        }
+                        WorkInfo.State.FAILED -> {
+                            val error = workInfo.outputData.getString(WidgetGenerationWorker.KEY_ERROR_MESSAGE)
+                            _uiState.value = _uiState.value.copy(
+                                isGenerating = false,
+                                generationStep = null,
+                                widgetGenerated = false,
+                                errorMessage = error ?: "Widget generation failed"
+                            )
+                        }
+                        WorkInfo.State.CANCELLED -> {
+                            _uiState.value = _uiState.value.copy(
+                                isGenerating = false,
+                                generationStep = null,
+                                errorMessage = "Work was cancelled"
+                            )
+                        }
+                        WorkInfo.State.RUNNING -> {
+                            _uiState.value = _uiState.value.copy(generationStep = 0)
+                        }
+                        WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> {}
+                    }
+                }
+            }
         }
     }
     
@@ -223,5 +297,6 @@ data class MainUiState(
     val pwaUuid: String? = null,
     val errorMessage: String? = null,
     val apiKey: String? = null,
-    val pwaDeleted: Boolean = false
+    val pwaDeleted: Boolean = false,
+    val widgetGenerated: Boolean = false
 )

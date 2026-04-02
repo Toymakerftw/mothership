@@ -42,6 +42,7 @@ fun MainScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var prompt by remember { mutableStateOf("") }
+    var generationMode by remember { mutableStateOf("app") } // "app" or "widget"
     val scrollState = rememberScrollState()
 
     // Animate header on scroll
@@ -141,6 +142,24 @@ fun MainScreen(
             )
         }
 
+        // Generation Mode Toggle - Hidden during generation
+        AnimatedVisibility(
+            visible = !uiState.isGenerating,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, delayMillis = 220, easing = FastOutSlowInEasing)
+            ) + fadeIn(animationSpec = tween(300, delayMillis = 220)),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(animationSpec = tween(300))
+        ) {
+            GenerationModeSelector(
+                selectedMode = generationMode,
+                onModeChange = { generationMode = it }
+            )
+        }
+
         // Generate Button - Hidden during generation
         AnimatedVisibility(
             visible = !uiState.isGenerating,
@@ -155,9 +174,14 @@ fun MainScreen(
         ) {
             GenerateButton(
                 prompt = prompt,
+                isWidget = generationMode == "widget",
                 onGenerate = {
                     if (!uiState.apiKey.isNullOrBlank()) {
-                        viewModel.generatePwa(prompt)
+                        if (generationMode == "widget") {
+                            viewModel.generateWidget(prompt)
+                        } else {
+                            viewModel.generatePwa(prompt)
+                        }
                     } else {
                         navController?.navigate("settings")
                     }
@@ -235,6 +259,25 @@ fun MainScreen(
             )
         ) {
             SuccessCard(onViewApps = { navController?.navigate("app_list") })
+        }
+
+        // Widget Success Message
+        AnimatedVisibility(
+            visible = uiState.widgetGenerated,
+            enter = slideInVertically(
+                initialOffsetY = { 40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeIn(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { -40 },
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            ) + fadeOut(
+                animationSpec = tween(300, easing = FastOutSlowInEasing)
+            )
+        ) {
+            WidgetSuccessCard()
         }
 
         Spacer(modifier = Modifier.height(80.dp)) // Extra space for bottom nav
@@ -625,8 +668,81 @@ private fun PromptInputCard(
 }
 
 @Composable
+private fun GenerationModeSelector(
+    selectedMode: String,
+    onModeChange: (String) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = CardConstants.extraLargeShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            Text(
+                text = "What do you want to create?",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                FilterChip(
+                    selected = selectedMode == "app",
+                    onClick = { onModeChange("app") },
+                    label = {
+                        Text(
+                            "Web App (PWA)",
+                            fontWeight = if (selectedMode == "app") FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Smartphone,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = CardConstants.mediumShape
+                )
+                FilterChip(
+                    selected = selectedMode == "widget",
+                    onClick = { onModeChange("widget") },
+                    label = {
+                        Text(
+                            "Home Widget",
+                            fontWeight = if (selectedMode == "widget") FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Widgets,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = CardConstants.mediumShape
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun GenerateButton(
     prompt: String,
+    isWidget: Boolean = false,
     onGenerate: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -650,13 +766,13 @@ private fun GenerateButton(
         interactionSource = interactionSource
     ) {
         Icon(
-            imageVector = Icons.Default.AutoAwesome,
+            imageVector = if (isWidget) Icons.Default.Widgets else Icons.Default.AutoAwesome,
             contentDescription = null,
             modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Text(
-            text = "Generate App",
+            text = if (isWidget) "Generate Widget" else "Generate App",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
@@ -964,6 +1080,65 @@ private fun SuccessCard(onViewApps: () -> Unit) {
                     fontWeight = FontWeight.Bold
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun WidgetSuccessCard() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth(),
+        shape = CardConstants.extraLargeShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Widgets,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Widget Generated!",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Your widget is ready",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Text(
+                text = "To place it on your Home Screen, long-press your Home Screen → Widgets → find \"Appsage Dynamic Widget\" and drag it. Then select this widget from the list.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
