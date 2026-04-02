@@ -190,7 +190,7 @@ IMPORTANT: Return ONLY the JSON object. No markdown, no explanations, no text ou
         // In a real application, you would want more thorough sanitization
         return content
             .replace(Regex("javascript:", RegexOption.IGNORE_CASE), "js:")
-            .replace(Regex("on\\w+\\s*=", RegexOption.IGNORE_CASE), "sanitized_")
+            .replace(Regex("\\bon\\w+\\s*=", RegexOption.IGNORE_CASE), "sanitized_")
     }
     
     private fun sanitizeManifestContent(content: String): String {
