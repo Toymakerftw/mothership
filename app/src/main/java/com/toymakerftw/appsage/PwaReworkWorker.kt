@@ -103,6 +103,7 @@ CRITICAL VIBE SDK STANDARDS FOR THE OUTPUT:
 5. Interactive Feedback: Ensure the UI responds to user input with animations or state changes.
 6. Accessibility: Use semantic tags and proper ARIA labels.
 7. Installable: Provide a comprehensive manifest.json with appropriate icons and theme colors.
+8. Adaptability & Scaling (CRITICAL): The layout MUST adapt seamlessly to different display sizes and pixel densities. Never use hardcoded pixel heights that cause vertical clipping. Use `dvh` or `svh` for viewport heights, flexbox with sensible shrinking, and fluid typography (e.g. `clamp()`). Incorporate `overflow-y: auto` for main scrollable areas. Use `env(safe-area-inset-top, 32px)` and `env(safe-area-inset-bottom, 32px)` for padding to prevent UI from hiding behind system bars.
 
 OUTPUT FORMAT (JSON ONLY):
 {
@@ -187,9 +188,15 @@ IMPORTANT: Return ONLY the JSON object with the updated files. No markdown, no e
             processedHtml = processedHtml.replaceFirst(Regex("</html>", RegexOption.IGNORE_CASE), "</body>\n</html>")
         }
 
-        // Ensure viewport meta tag exists
+        // Ensure viewport meta tag exists and has viewport-fit=cover
         if (!processedHtml.contains("name=\"viewport\"", ignoreCase = true)) {
-            processedHtml = processedHtml.replaceFirst(Regex("<head[^>]*>", RegexOption.IGNORE_CASE), "$0\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">")
+            processedHtml = processedHtml.replaceFirst(Regex("<head[^>]*>", RegexOption.IGNORE_CASE), "$0\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover\">")
+        } else if (!processedHtml.contains("viewport-fit", ignoreCase = true)) {
+            processedHtml = processedHtml.replace(Regex("(<meta[^>]*name=[\"']viewport[\"'][^>]*content=[\"'])([^\"']*)([\"'][^>]*>)", RegexOption.IGNORE_CASE)) { matchResult ->
+                val content = matchResult.groupValues[2]
+                val separator = if (content.trim().isNotEmpty() && !content.trim().endsWith(",")) ", " else ""
+                "${matchResult.groupValues[1]}${content}${separator}viewport-fit=cover${matchResult.groupValues[3]}"
+            }
         }
 
         // Ensure script.js is linked

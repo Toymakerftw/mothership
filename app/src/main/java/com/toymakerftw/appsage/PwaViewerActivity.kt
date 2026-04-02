@@ -176,6 +176,8 @@ class PwaViewerActivity : ComponentActivity() {
         webSettings.displayZoomControls = false
         webSettings.databaseEnabled = true
         webSettings.cacheMode = WebSettings.LOAD_DEFAULT
+        // Lock text scale to 100% to prevent standard device display size from breaking rigid PWA layouts
+        webSettings.textZoom = 100
         // Enable internet access for PWAs
         webSettings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
         // Use default user agent but append our app identifier
