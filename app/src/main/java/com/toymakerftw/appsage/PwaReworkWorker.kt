@@ -94,10 +94,15 @@ class PwaReworkWorker(
 CRITICAL VIBE SDK STANDARDS FOR THE OUTPUT:
 1. Polished UI/UX: Use modern CSS (Flexbox, Grid, Variables), smooth transitions, and high-quality aesthetics.
 2. Mobile-First & Responsive: Viewport meta tag is MANDATORY. Design for touch first, then adapt for desktop.
-3. Clean, Modular Code: Write well-structured HTML and JavaScript (ES6+).
-4. Interactive Feedback: Ensure the UI responds to user input with animations or state changes.
-5. Accessibility: Use semantic tags and proper ARIA labels.
-6. Installable: Provide a comprehensive manifest.json with appropriate icons and theme colors.
+3. JS TECHNICAL REQUIREMENTS (CRITICAL):
+   - Wrap all logic in `document.addEventListener('DOMContentLoaded', ...)` to prevent "null element" errors.
+   - Use `const` and `let` only. No `var`.
+   - Ensure script.js is correctly linked at the end of index.html's `<body>`.
+   - Ensure all updated or new features have robust JS logic with error handling.
+4. Clean, Modular Code: Write well-structured HTML and JavaScript (ES6+).
+5. Interactive Feedback: Ensure the UI responds to user input with animations or state changes.
+6. Accessibility: Use semantic tags and proper ARIA labels.
+7. Installable: Provide a comprehensive manifest.json with appropriate icons and theme colors.
 
 OUTPUT FORMAT (JSON ONLY):
 {

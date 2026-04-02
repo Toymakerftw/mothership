@@ -58,10 +58,16 @@ Include index.html, style.css, script.js, and manifest.json in the JSON response
 CRITICAL VIBE SDK STANDARDS:
 1. Polished UI/UX: Use modern CSS (Flexbox, Grid, Variables), smooth transitions, and high-quality aesthetics.
 2. Mobile-First & Responsive: Viewport meta tag is MANDATORY. Design for touch first, then adapt for desktop.
-3. Clean, Modular Code: Write well-structured HTML and JavaScript (ES6+).
-4. Interactive Feedback: Ensure the UI responds to user input with animations or state changes.
-5. Accessibility: Use semantic tags and proper ARIA labels.
-6. Installable: Provide a comprehensive manifest.json with appropriate icons (use placeholders like https://via.placeholder.com/192 if needed) and theme colors.
+3. JS TECHNICAL REQUIREMENTS (IMPORTANT):
+   - Wrap all logic in `document.addEventListener('DOMContentLoaded', ...)` to prevent "null element" errors.
+   - Use `const` and `let` only. No `var`.
+   - Implement error handling for any API calls or data persistence.
+   - Ensure script.js is correctly linked at the end of index.html's `<body>`.
+   - IDs used in `document.getElementById` MUST match the IDs defined in the HTML exactly.
+4. Clean, Modular Code: Write well-structured HTML and JavaScript (ES6+).
+5. Interactive Feedback: Ensure the UI responds to user input with animations or state changes.
+6. Accessibility: Use semantic tags and proper ARIA labels.
+7. Installable: Provide a comprehensive manifest.json with appropriate icons and theme colors.
 
 OUTPUT FORMAT (JSON ONLY):
 {

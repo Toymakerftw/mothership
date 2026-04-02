@@ -22,9 +22,15 @@ class AppsageApi {
                     1. Polished UI/UX: Use modern design patterns, interactive elements, and interactive feedback.
                     2. Mobile-First: Prioritize mobile responsiveness and touch-friendly interactions.
                     3. Clean Code: Write modular, well-commented HTML, CSS (using variables), and JavaScript.
-                    4. Performance: Ensure fast loading times and efficient code.
-                    5. Accessibility: Use semantic HTML and ARIA roles for inclusivity.
-                    6. PWA Features: Include a complete manifest.json and ensure the app is installable.
+                    4. Robust JavaScript:
+                       - ALWAYS wrap code in `document.addEventListener('DOMContentLoaded', ...)` or use modules.
+                       - Use `const` and `let`, never `var`.
+                       - Implement proper error handling with try-catch blocks, especially for `fetch` and `localStorage`.
+                       - Ensure all event listeners are correctly attached to elements that exist.
+                       - Use descriptive variable and function names.
+                    5. Performance: Ensure fast loading times and efficient code.
+                    6. Accessibility: Use semantic HTML and ARIA roles for inclusivity.
+                    7. PWA Features: Include a complete manifest.json and ensure the app is installable.
                     
                     STYLING: Use modern Vanilla CSS with Flexbox/Grid and CSS variables. If requested, you can use Tailwind CSS via CDN.
                     ARCHITECTURE: Keep logic separate from presentation. Use modern ES6+ features in JavaScript.
